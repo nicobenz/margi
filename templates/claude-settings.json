@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(margi/**)",
+      "Bash(margi finalize:*)",
+      "Bash(margi outline:*)",
+      "Bash(margi status:*)",
+      "Bash(margi extract-pdfs:*)"
+    ],
+    "deny": [
+      "Edit(**/*.typ)",
+      "Edit(**/*.bib)",
+      "Edit(**/*.tex)",
+      "Edit(**/*.qmd)",
+      "Edit(thesis.config.yml)",
+      "Edit(AGENTS.md)",
+      "Edit(.agents/**)",
+      "Edit(.githooks/**)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)"
+    ]
+  }
+}

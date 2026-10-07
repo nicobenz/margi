@@ -1,0 +1,14 @@
+#!/bin/sh
+# margi guard: keeps human commits and margi commits separate.
+#   - a commit touches either only margi/ (message "margi: ...") or nothing in margi/
+#   - margi/feedback/ is append-only
+# Installed by `margi init`. CI repeats this check, so --no-verify does not bypass it.
+if ! command -v margi >/dev/null 2>&1; then
+  echo "margi guard: \`margi\` is not on PATH; install it (uv tool install git+https://github.com/nicobenz/margi) or commit with --no-verify (CI will still check)." >&2
+  exit 1
+fi
+# An x86_64 git on Apple Silicon runs hooks under Rosetta; run margi natively instead.
+if [ "$(sysctl -n sysctl.proc_translated 2>/dev/null)" = "1" ]; then
+  exec arch -arm64 "$(command -v margi)" guard --staged "$1"
+fi
+exec margi guard --staged "$1"
