@@ -7,12 +7,31 @@ requires-python = ">=3.10"
 authors = [{ name = "Nico Benz" }]
 license = "MIT"
 license-files = ["LICENSE"]
+keywords = ["thesis", "academic-writing", "digital-humanities", "ai", "feedback", "typst", "agent-skills"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Text Processing :: Markup",
+]
 dependencies = [
   "click>=8.1",
   "pyyaml>=6.0",
   "jsonschema>=4.20",
   "pypdf>=4.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/nicobenz/margi"
+Repository = "https://github.com/nicobenz/margi"
+Issues = "https://github.com/nicobenz/margi/issues"
 
 [project.scripts]
 margi = "margi.cli:main"
@@ -31,6 +50,9 @@ packages = ["src/margi"]
 "skills" = "margi/_bundled/skills"
 "templates" = "margi/_bundled/templates"
 "AGENTS.md" = "margi/_bundled/AGENTS.md"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "skills", "templates", "tests", "AGENTS.md", "README.md", "LICENSE"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

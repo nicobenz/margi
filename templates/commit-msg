@@ -4,7 +4,7 @@
 #   - margi/feedback/ is append-only
 # Installed by `margi init`. CI repeats this check, so --no-verify does not bypass it.
 if ! command -v margi >/dev/null 2>&1; then
-  echo "margi guard: \`margi\` is not on PATH; install it (uv tool install git+https://github.com/nicobenz/margi) or commit with --no-verify (CI will still check)." >&2
+  echo "margi guard: \`margi\` is not on PATH; install it (uv tool install margi) or commit with --no-verify (CI will still check)." >&2
   exit 1
 fi
 # An x86_64 git on Apple Silicon runs hooks under Rosetta; run margi natively instead.

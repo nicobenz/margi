@@ -10,7 +10,7 @@ are kept separate from yours. Git hooks and CI enforce this. You don't have to t
 ## Install
 
 ```sh
-uv tool install git+https://github.com/nicobenz/margi   # or: pipx install ...
+uv tool install margi   # or: pipx install margi
 cd my-thesis && margi init
 ```
 
