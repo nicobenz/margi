@@ -1,0 +1,38 @@
+id: default
+version: "1.0"
+title: Default rubric for humanities / digital humanities theses
+scale:
+  min: 1
+  max: 5
+  anchors:
+    1: fails — the category's basic expectation is not met
+    2: weak — present, but with substantial problems
+    3: adequate — meets expectations with clear room to improve
+    4: good — solid, only minor issues
+    5: excellent — exemplary for an MSc thesis
+categories:
+  - id: alignment
+    file: alignment.md
+    title: Alignment with research question
+  - id: argument
+    file: argument.md
+    title: Argument and reasoning
+  - id: evidence
+    file: evidence.md
+    title: Evidence and sources
+  - id: scholarship
+    file: scholarship.md
+    title: Engagement with scholarship
+  - id: method
+    file: method.md
+    title: Methodological transparency
+  - id: structure
+    file: structure.md
+    title: Structure and coherence
+  - id: style
+    file: style.md
+    title: Academic style and precision
+notes: >
+  Not every category applies equally to every section (e.g. `method` for an introduction).
+  If a category does not apply, score it anyway only if meaningful; otherwise omit it and
+  explain the omission in the summary.
