@@ -1,0 +1,29 @@
+name: margi guard
+on:
+  push:
+  pull_request:
+
+env:
+  # where CI installs margi from — set to your published margi repository
+  MARGI_SOURCE: git+https://github.com/nicobenz/margi
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Install margi
+        run: uv tool install "margi @ ${MARGI_SOURCE}@v$(cat .agents/skills/margi/VERSION)"
+      - name: Check commits
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="origin/${{ github.base_ref }}..HEAD"
+          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="${{ github.event.before }}..HEAD"
+          fi
+          margi guard --range "$RANGE"

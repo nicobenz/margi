@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nicobenz/margi/schema/feedback.schema.json",
+  "title": "margi feedback",
+  "description": "Draft = what the agent writes to margi/.staging/. Record = draft + run + provenance, written only by `margi finalize`.",
+  "$defs": {
+    "command": {
+      "enum": ["onboard", "challenge", "grade", "outline", "read", "todos"]
+    },
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line_start", "line_end", "quote"],
+      "properties": {
+        "file": { "type": "string", "minLength": 1 },
+        "line_start": { "type": "integer", "minimum": 1 },
+        "line_end": { "type": "integer", "minimum": 1 },
+        "quote": { "type": "string", "minLength": 1, "maxLength": 400 },
+        "anchor_status": {
+          "description": "Set by finalize only.",
+          "enum": ["ok", "relocated", "unresolved"]
+        }
+      }
+    },
+    "comment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "severity", "body"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]+$" },
+        "anchor": { "$ref": "#/$defs/anchor" },
+        "category": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["major", "minor", "note"] },
+        "body": {
+          "description": "Names the problem. Never contains replacement prose for the thesis.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        }
+      }
+    },
+    "score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "max", "rationale"],
+      "properties": {
+        "score": { "type": "number", "minimum": 0 },
+        "max": { "type": "number", "exclusiveMinimum": 0 },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 1500 },
+        "comment_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "draft_properties": {
+      "command": { "$ref": "#/$defs/command" },
+      "scope": { "type": "string", "minLength": 1, "maxLength": 120 },
+      "summary": { "type": "string", "maxLength": 3000 },
+      "files_read": {
+        "description": "Repo-relative paths the agent read. Finalize hashes them.",
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "scores": {
+        "type": "object",
+        "additionalProperties": { "$ref": "#/$defs/score" }
+      },
+      "comments": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/comment" }
+      },
+      "payload": {
+        "description": "Command-specific data (outline counts, read ratings, onboard sources, challenge log, todo ids).",
+        "type": "object"
+      },
+      "agent": {
+        "description": "Self-reported by the agent; finalize records it with model_source=self-reported.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "model": { "type": "string" },
+          "harness": { "type": "string" }
+        }
+      }
+    },
+    "draft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "scope"],
+      "properties": {
+        "command": { "$ref": "#/$defs/draft_properties/command" },
+        "scope": { "$ref": "#/$defs/draft_properties/scope" },
+        "summary": { "$ref": "#/$defs/draft_properties/summary" },
+        "files_read": { "$ref": "#/$defs/draft_properties/files_read" },
+        "scores": { "$ref": "#/$defs/draft_properties/scores" },
+        "comments": { "$ref": "#/$defs/draft_properties/comments" },
+        "payload": { "$ref": "#/$defs/draft_properties/payload" },
+        "agent": { "$ref": "#/$defs/draft_properties/agent" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head_sha", "files", "model", "model_source", "margi_version", "timestamp", "docs"],
+      "properties": {
+        "head_sha": { "type": ["string", "null"] },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": { "type": "string" },
+              "sha256": { "type": ["string", "null"] },
+              "source": { "enum": ["HEAD", "worktree", "missing"] }
+            }
+          }
+        },
+        "rubric": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "version": { "type": "string" },
+            "sha256": { "type": "string" },
+            "path": { "type": "string" }
+          }
+        },
+        "docs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sha256", "completeness"],
+          "properties": {
+            "sha256": { "type": ["string", "null"] },
+            "completeness": { "type": "number", "minimum": 0, "maximum": 1 },
+            "low_confidence": { "type": "boolean" }
+          }
+        },
+        "model": { "type": ["string", "null"] },
+        "model_source": { "enum": ["wrapper", "self-reported", "none"] },
+        "harness": { "type": ["string", "null"] },
+        "margi_version": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "run", "provenance", "command", "scope"],
+      "properties": {
+        "schema": { "const": "margi/record@1" },
+        "run": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id"],
+          "properties": { "id": { "type": "string" } }
+        },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "command": { "$ref": "#/$defs/draft_properties/command" },
+        "scope": { "$ref": "#/$defs/draft_properties/scope" },
+        "summary": { "$ref": "#/$defs/draft_properties/summary" },
+        "files_read": { "$ref": "#/$defs/draft_properties/files_read" },
+        "scores": { "$ref": "#/$defs/draft_properties/scores" },
+        "comments": { "$ref": "#/$defs/draft_properties/comments" },
+        "payload": { "$ref": "#/$defs/draft_properties/payload" },
+        "agent": { "$ref": "#/$defs/draft_properties/agent" }
+      }
+    }
+  }
+}

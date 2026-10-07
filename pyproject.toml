@@ -1,0 +1,36 @@
+[project]
+name = "margi"
+version = "0.1.0"
+description = "AI in the margins, never in the text. A feedback layer for human-written theses."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Nico Benz" }]
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+  "click>=8.1",
+  "pyyaml>=6.0",
+  "jsonschema>=4.20",
+  "pypdf>=4.0",
+]
+
+[project.scripts]
+margi = "margi.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/margi"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "margi/_bundled/skills"
+"templates" = "margi/_bundled/templates"
+"AGENTS.md" = "margi/_bundled/AGENTS.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
