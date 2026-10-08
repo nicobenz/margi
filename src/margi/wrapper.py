@@ -113,9 +113,9 @@ def run(cfg: Config, command: str, args: list[str], *, force: bool = False) -> F
         raise WrapperError(f"agent exited with status {proc.returncode}; nothing was committed")
 
     # The skill normally finalizes itself; finalize anything left over.
-    pending = load_drafts(cfg) or any(c.path.startswith(MARGI_DIR + "/") for c in worktree_changes(cfg.root))
+    pending = load_drafts(cfg) or (cfg.has_git and any(c.path.startswith(MARGI_DIR + "/") for c in worktree_changes(cfg.root)))
     if not pending:
-        return FinalizeResult()
+        return FinalizeResult(has_git=cfg.has_git)
     return finalize(
         cfg,
         model=model,

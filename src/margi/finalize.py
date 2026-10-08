@@ -35,14 +35,20 @@ class FinalizeResult:
     records: list[Path] = field(default_factory=list)
     commit: str | None = None
     message: str | None = None
+    has_git: bool = True
 
 
 # --------------------------------------------------------------------------- preflight
 
 
 def preflight(cfg: Config) -> list[str]:
-    """Violations that block a run: changes outside margi/, or edits to existing feedback."""
+    """Violations that block a run: changes outside margi/, or edits to existing feedback.
+
+    Without git there is no baseline to compare against, so nothing is checked.
+    """
     problems = []
+    if not cfg.has_git:
+        return problems
     for c in worktree_changes(cfg.root):
         paths = [c.path] + ([c.orig_path] if c.orig_path else [])
         if any(not in_margi(p) for p in paths):
@@ -70,8 +76,8 @@ def _norm(text: str) -> str:
 
 
 def _read_source(cfg: Config, path: str) -> tuple[bytes | None, str]:
-    """Committed content for thesis files, worktree content for margi/ files."""
-    if in_margi(path):
+    """Committed content for thesis files, worktree content for margi/ files (and everything without git)."""
+    if in_margi(path) or not cfg.has_git:
         p = cfg.root / path
         return (p.read_bytes(), "worktree") if p.is_file() else (None, "missing")
     data = file_at_head(cfg.root, path)
@@ -198,7 +204,7 @@ def build_record(
         m, src, h = None, "none", harness or agent.get("harness")
 
     record["provenance"] = {
-        "head_sha": head_sha(cfg.root),
+        "head_sha": head_sha(cfg.root) if cfg.has_git else None,
         "files": files,
         "rubric": resolve_rubric(cfg) if draft["command"] == "grade" else None,
         "docs": {
@@ -239,7 +245,7 @@ def finalize(
     feedback = cfg.root / FEEDBACK
     feedback.mkdir(parents=True, exist_ok=True)
 
-    result = FinalizeResult()
+    result = FinalizeResult(has_git=cfg.has_git)
     for i, (path, draft) in enumerate(drafts):
         rid = run_id if len(drafts) == 1 else f"{run_id}-{i + 1}"
         record = build_record(cfg, draft, rid, now, model=model, harness=harness, model_source=model_source)
@@ -267,6 +273,8 @@ def finalize(
 
 def bot_commit(cfg: Config, subject: str, run_id: str | None = None) -> str | None:
     """Stage everything under margi/ and commit it as the margi bot. Returns the SHA or None."""
+    if not cfg.has_git:
+        return None
     git("add", "-A", "--", MARGI_DIR, cwd=cfg.root)
     if not git("diff", "--cached", "--name-only", cwd=cfg.root).split():
         return None

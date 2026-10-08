@@ -62,6 +62,20 @@ margi commits  → only margi/                   ("margi: grade 2.1", author mar
 
 `git log -- margi/` is the complete AI audit trail for your advisors.
 
+### Without git
+
+margi also works in a folder that isn't a git repository. Every command still runs and still
+writes provenance-stamped records to `margi/feedback/`, but everything that needs git is skipped:
+
+- no commits;
+- no check that nothing outside `margi/` changed;
+- anchors and file hashes come from the working tree, not `HEAD`;
+- no commit hook, and `margi guard` refuses to run.
+
+So the separation is not enforced until you add git. Once you run `git init`, run
+`uv run margi init` again to install the hook and make the first two commits. From then on,
+everything is enforced.
+
 ## Layout
 
 ```
