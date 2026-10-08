@@ -2,27 +2,23 @@
 format: typst
 main: {{main}}               # entry file; #include "..." is followed
 
-# Optional aliases for `margi grade <alias>`; otherwise use numbers (2.1) or titles.
+# Optional aliases for `/margi grade <alias>`; otherwise use numbers (2.1) or titles.
 sections: {}
 #  prior-work: { heading: "Prior Work" }
 
-count: chars                 # chars | chars_no_spaces | words (used by `margi outline`)
+count: chars                 # chars | chars_no_spaces | words (used by `/margi outline`)
 
 onboard:
   source: README.md          # where your exposé / idea notes live (override with --from)
 
 literature:
-  dir: lit                   # PDFs rated by `margi read`
+  dir: lit                   # PDFs rated by `/margi read`
   bib: null                  # e.g. refs.bib
 
 rubric: default              # margi/rubrics/<id>/ overrides the bundled rubric
 
 docs:
   min_completeness: 0.7      # grade/read refuse below this share of documented fields
-
-harness:
-  kind: claude
-  model: null                # e.g. claude-opus-5-5; recorded in provenance when set
 
 ai_identity:
   name: margi-bot

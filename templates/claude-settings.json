@@ -5,7 +5,12 @@
       "Bash(uv run margi finalize:*)",
       "Bash(uv run margi outline:*)",
       "Bash(uv run margi status:*)",
-      "Bash(uv run margi extract-pdfs:*)"
+      "Bash(uv run margi extract-pdfs:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)"
     ],
     "deny": [
       "Edit(**/*.typ)",

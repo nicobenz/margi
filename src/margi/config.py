@@ -23,7 +23,6 @@ DEFAULTS: dict[str, Any] = {
     "literature": {"dir": "lit", "bib": None},
     "rubric": "default",
     "docs": {"min_completeness": 0.7},
-    "harness": {"kind": "claude", "model": None},
     "ai_identity": {"name": "margi-bot", "email": "margi-bot@users.noreply.github.com"},
     "github": {"label": "margi"},
 }
