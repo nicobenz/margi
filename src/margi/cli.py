@@ -44,7 +44,7 @@ def main() -> None:
     """margi: AI in the margins, never in the text.
 
     Run `uvx margi init` once in your thesis repository. After that, use margi from
-    your agent: /margi onboard, /margi grade 2.1, /margi read, /margi todos, ...
+    your agent: /margi propose, /margi grade 2.1, /margi read, /margi todos, ...
     """
 
 
@@ -64,7 +64,7 @@ def init(
     no_install: bool,
     spec: str | None,
 ) -> None:
-    """Set up margi in this thesis repository (once). Then use /margi in your agent."""
+    """Bootstrap a Typst thesis with margi, or add margi to an existing one."""
     from .init import InitError, init as run_init
 
     try:
@@ -81,8 +81,8 @@ def init(
         click.echo(f"  commit {c}")
     for s in report.skipped:
         click.echo(f"  skip  {s}")
-    click.echo("\nmargi is ready. Check `main` in thesis.config.yml, then open your agent in this "
-               "repository and run /margi onboard.")
+    click.echo("\nmargi is ready. Write your plan into PROPOSAL.md, commit it, then run /margi propose "
+               "in your agent.")
 
 
 # ----------------------------------------------------------------- plumbing (hidden, called by skills, hook and CI)
@@ -161,7 +161,7 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
         click.echo(f"ok: {tree}; project docs {report.completeness:.0%} complete")
         if report.completeness < threshold:
             click.echo(f"warning: project docs below {threshold:.0%} — grade/read results will be low-confidence; "
-                       "suggest /margi onboard")
+                       "suggest /margi propose")
         return
     try:
         result = run_finalize(cfg, command=subject, harness=harness, model=model,

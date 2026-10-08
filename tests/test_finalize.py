@@ -98,6 +98,6 @@ def test_anchor_relocated_and_unresolved():
 
 def test_docs_only_change_committed_with_subject(repo, cfg):
     (repo / "margi/docs/open-questions.md").write_text("# Open questions\n- scope?\n")
-    result = finalize(cfg, command="onboard")
+    result = finalize(cfg, command="propose")
     assert result.records == [] and result.commit
-    assert run_git(repo, "log", "-1", "--format=%s").stdout.strip() == "margi: onboard"
+    assert run_git(repo, "log", "-1", "--format=%s").stdout.strip() == "margi: propose"

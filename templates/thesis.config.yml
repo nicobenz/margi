@@ -8,12 +8,12 @@ sections: {}
 
 count: chars                 # chars | chars_no_spaces | words (used by `/margi outline`)
 
-onboard:
-  source: README.md          # where your exposé / idea notes live (override with --from)
+propose:
+  source: PROPOSAL.md        # your plan in your own words (override with --from)
 
 literature:
   dir: lit                   # PDFs rated by `/margi read`
-  bib: null                  # e.g. refs.bib
+  bib: {{bib}}
 
 rubric: default              # margi/rubrics/<id>/ overrides the bundled rubric
 

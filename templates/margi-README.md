@@ -5,7 +5,7 @@ AI feedback layer for this thesis. **No thesis text is ever written here or by m
 
 | Path | Content |
 |---|---|
-| `docs/` | Project documentation (research question, dataset, method, …) from `/margi onboard` / `/margi challenge`. Every statement cites its source or the interview date. |
+| `docs/` | Project documentation (research question, dataset, method, …) from `/margi propose` / `/margi challenge`. Every statement cites its source or the date the user said it. |
 | `feedback/` | Append-only JSON records. Provenance (HEAD SHA, file hashes, rubric version, model, timestamp) is injected by scripts, never by the AI. |
 | `todos/` | Proposed todos and issue closures awaiting human review, and those synced to GitHub. |
 

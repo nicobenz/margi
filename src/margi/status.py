@@ -26,7 +26,7 @@ def render(cfg: Config) -> str:
     lines: list[str] = []
     report = docs_check.check(cfg.root / MARGI_DIR / "docs")
     threshold = float(cfg["docs"]["min_completeness"])
-    flag = "ok" if report.completeness >= threshold else f"below {threshold:.0%} — run /margi onboard"
+    flag = "ok" if report.completeness >= threshold else f"below {threshold:.0%} — run /margi propose"
     lines.append(f"Project docs   {report.filled}/{report.required} fields ({report.completeness:.0%}, {flag})")
     for name, fields in report.missing.items():
         lines.append(f"  missing in {name}: {', '.join(fields)}")
