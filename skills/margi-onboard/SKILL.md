@@ -53,7 +53,7 @@ explicit questions. Ask **2–4 at a time**, grouped by topic, and keep each one
 - Contradictions between sources and answers: show both and ask which one holds.
 - The user may skip a question. Move it to `open-questions.md` with the date.
 - Stop when every field is filled or explicitly deferred, or when the user wants to stop.
-  Tell them that `uv run margi onboard` can be run again any time.
+  Tell them that `/margi onboard` can be run again any time.
 
 Update the docs after each round of answers, so progress is saved even if the session ends.
 

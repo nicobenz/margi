@@ -1,6 +1,6 @@
 [project]
 name = "margi"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI in the margins, never in the text. A feedback layer for human-written theses."
 readme = "README.md"
 requires-python = ">=3.10"

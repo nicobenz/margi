@@ -30,9 +30,6 @@ hand**. You give feedback in the margins. You never write the text.
 
 ## Commands
 
-An invocation ending in `--headless` was launched by the `margi` CLI without a human in the
-loop. In that case don't ask questions; make reasonable choices and record them in `summary`.
-
 | Invocation | What to do |
 |---|---|
 | `/margi grade <section>` | Follow `commands/grade.md` |

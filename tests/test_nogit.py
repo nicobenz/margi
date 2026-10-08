@@ -38,7 +38,7 @@ def test_finalize_without_git_writes_record_without_commit(plain):
     assert not cfg.has_git
     (plain / "main.typ").write_text("edited by the human, not committed anywhere\n")
     stage(plain, DRAFT)
-    result = finalize(cfg, model="claude-x", model_source="wrapper")
+    result = finalize(cfg, model="claude-x", model_source="self-reported")
     assert result.commit is None and len(result.records) == 1
     prov = json.loads(result.records[0].read_text())["provenance"]
     assert prov["head_sha"] is None

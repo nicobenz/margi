@@ -1,8 +1,11 @@
-"""margi command-line interface."""
+"""margi command-line interface.
+
+The only user-facing command is `init`. Everything else happens in the agent (`/margi ...`);
+the remaining commands are hidden plumbing that the skills, the commit hook and CI call.
+"""
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -35,24 +38,13 @@ def _report(result: FinalizeResult) -> None:
         click.echo("  nothing to finalize")
 
 
-def _ai(command: str, args: list[str], force: bool = False) -> None:
-    from .wrapper import WrapperError, run
-
-    cfg = _cfg()
-    try:
-        result = run(cfg, command, args, force=force)
-    except (WrapperError, FinalizeError, FileNotFoundError) as e:
-        raise click.ClickException(str(e)) from e
-    _report(result)
-
-
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(__version__, prog_name="margi")
 def main() -> None:
     """margi: AI in the margins, never in the text.
 
-    AI commands launch your agent harness with the margi skills; the agent may
-    only write inside margi/, and every result is committed separately as `margi: ...`.
+    Run `uvx margi init` once in your thesis repository. After that, use margi from
+    your agent: /margi onboard, /margi grade 2.1, /margi read, /margi todos, ...
     """
 
 
@@ -65,16 +57,14 @@ def main() -> None:
 @click.option("--force-config", is_flag=True, help="Overwrite an existing thesis.config.yml.")
 @click.option("--no-install", is_flag=True, help="Do not add margi to the repo's pyproject.toml (uv).")
 @click.option("--spec", help="Requirement passed to `uv add --dev` (default: margi==<this version>; a path works too).")
-@click.option("--onboard/--no-onboard", default=None, help="Start onboarding afterwards (default: ask).")
 def init(
     no_commit: bool,
     no_claude_settings: bool,
     force_config: bool,
     no_install: bool,
     spec: str | None,
-    onboard: bool | None,
 ) -> None:
-    """Scaffold margi into this thesis repository, then start onboarding."""
+    """Set up margi in this thesis repository (once). Then use /margi in your agent."""
     from .init import InitError, init as run_init
 
     try:
@@ -91,86 +81,17 @@ def init(
         click.echo(f"  commit {c}")
     for s in report.skipped:
         click.echo(f"  skip  {s}")
-    click.echo("\nCheck `main` in thesis.config.yml, then document your project with `uv run margi onboard`.")
-    if onboard is None:
-        onboard = sys.stdin.isatty() and click.confirm("Start onboarding now?", default=True)
-    if onboard:
-        _ai("onboard", [])
+    click.echo("\nmargi is ready. Check `main` in thesis.config.yml, then open your agent in this "
+               "repository and run /margi onboard.")
 
 
-# ----------------------------------------------------------------- AI commands
+# ----------------------------------------------------------------- plumbing (hidden, called by skills, hook and CI)
 
 
-@main.command()
-@click.option("--from", "source", type=click.Path(), help="Exposé or idea notes to read instead of README.md.")
-def onboard(source: str | None) -> None:
-    """Document research question, dataset, method, ... (interactive interview)."""
-    _ai("onboard", ["--from", source] if source else [])
-
-
-@main.command()
-@click.argument("aspect", nargs=-1, required=True)
-def challenge(aspect: tuple[str, ...]) -> None:
-    """Challenge assumptions about ASPECT and refine the project docs."""
-    _ai("challenge", [" ".join(aspect)])
-
-
-@main.command()
-@click.argument("section")
-@click.option("--force", is_flag=True, help="Run even if project docs are incomplete (low-confidence result).")
-def grade(section: str, force: bool) -> None:
-    """Grade SECTION (number like 2.1 or title) against the rubric and project docs."""
-    from .adapters import get_adapter
-
-    cfg = _cfg()
-    try:
-        found = get_adapter(cfg).resolve(section)
-    except FileNotFoundError as e:
-        raise click.ClickException(str(e)) from e
-    if not found:
-        raise click.ClickException(f"section {section!r} not found — see `margi outline --no-save` for ids")
-    _ai("grade", [found.id], force=force)
-
-
-@main.command()
-@click.argument("pdfs", nargs=-1)
-@click.option("--force", is_flag=True, help="Run even if project docs are incomplete (low-confidence result).")
-def read(pdfs: tuple[str, ...], force: bool) -> None:
-    """Rate literature PDFs (default: all in the literature dir) for relevance."""
-    _ai("read", list(pdfs), force=force)
-
-
-@main.command()
-@click.option("--sync-accepted", is_flag=True, help="Push accepted todos/closures to GitHub (no AI).")
-def todos(sync_accepted: bool) -> None:
-    """Propose todos and issue closures for review; sync accepted ones to GitHub."""
-    if not sync_accepted:
-        _ai("todos", [])
-        return
-    from .todos_sync import SyncError, sync_accepted as do_sync
-
-    cfg = _cfg()
-    try:
-        report = do_sync(cfg)
-    except SyncError as e:
-        raise click.ClickException(str(e)) from e
-    for tid, n in report.created:
-        click.echo(f"  created #{n}  {tid}")
-    for tid, n in report.reused:
-        click.echo(f"  exists  #{n}  {tid}")
-    for n in report.closed:
-        click.echo(f"  closed  #{n}")
-    if not (report.created or report.reused or report.closed):
-        click.echo("  no accepted todos or closures to sync")
-
-
-# ----------------------------------------------------------------- deterministic
-
-
-@main.command()
+@main.command(hidden=True)
 @click.option("--no-save", is_flag=True, help="Only print; do not commit a snapshot.")
 def outline(no_save: bool) -> None:
-    """Character distribution across sections and subsections."""
+    """[plumbing] Character distribution across sections and subsections."""
     cfg = _cfg()
     try:
         tree, rows = outline_mod.compute(cfg)
@@ -192,18 +113,35 @@ def outline(no_save: bool) -> None:
     _report(result)
 
 
-@main.command()
+@main.command(hidden=True)
 def status() -> None:
-    """Overview: docs completeness, latest grades, outline, todos, recent runs."""
+    """[plumbing] Overview: docs completeness, latest grades, outline, todos, recent runs."""
     click.echo(status_mod.render(_cfg()))
 
 
-# ----------------------------------------------------------------- plumbing
+@main.command(name="sync-todos", hidden=True)
+def sync_todos() -> None:
+    """[plumbing] Push accepted todos/closures to GitHub (no AI)."""
+    from .todos_sync import SyncError, sync_accepted
+
+    cfg = _cfg()
+    try:
+        report = sync_accepted(cfg)
+    except SyncError as e:
+        raise click.ClickException(str(e)) from e
+    for tid, n in report.created:
+        click.echo(f"  created #{n}  {tid}")
+    for tid, n in report.reused:
+        click.echo(f"  exists  #{n}  {tid}")
+    for n in report.closed:
+        click.echo(f"  closed  #{n}")
+    if not (report.created or report.reused or report.closed):
+        click.echo("  no accepted todos or closures to sync")
 
 
-@main.command()
+@main.command(hidden=True)
 @click.option("--check", is_flag=True, help="Only run the preflight check (use at the start of a run).")
-@click.option("--model", help="Self-reported model id (ignored when launched by the margi wrapper).")
+@click.option("--model", help="Self-reported model id.")
 @click.option("--harness", help="Self-reported harness name.")
 @click.option("--message", "subject", help="Commit subject when there is no draft (e.g. 'todos review').")
 def finalize(check: bool, model: str | None, harness: str | None, subject: str | None) -> None:
@@ -223,22 +161,17 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
         click.echo(f"ok: {tree}; project docs {report.completeness:.0%} complete")
         if report.completeness < threshold:
             click.echo(f"warning: project docs below {threshold:.0%} — grade/read results will be low-confidence; "
-                       "suggest `margi onboard`")
+                       "suggest /margi onboard")
         return
-    wrapped_model = os.environ.get("MARGI_MODEL")
     try:
-        if wrapped_model:
-            result = run_finalize(cfg, model=wrapped_model, harness=os.environ.get("MARGI_HARNESS"),
-                                  model_source="wrapper", command=subject)
-        else:
-            result = run_finalize(cfg, command=subject, harness=harness, model=model,
-                                  model_source="self-reported" if model else None)
+        result = run_finalize(cfg, command=subject, harness=harness, model=model,
+                              model_source="self-reported" if model else None)
     except FinalizeError as e:
         raise click.ClickException(str(e)) from e
     _report(result)
 
 
-@main.command()
+@main.command(hidden=True)
 @click.option("--staged", "msg_file", type=click.Path(exists=True), help="Check the staged commit; pass the commit-msg file.")
 @click.option("--range", "rev_range", help="Check every commit in a revision range (CI).")
 def guard(msg_file: str | None, rev_range: str | None) -> None:

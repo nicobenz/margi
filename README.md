@@ -2,8 +2,8 @@
 
 **AI in the margins, never in the text.**
 
-margi is a feedback layer for a thesis that you write 100% by hand. Short terminal commands
-launch an AI agent with a specific skill. The agent reads your thesis and writes documentation,
+margi is a feedback layer for a thesis that you write 100% by hand. You use it from your AI
+agent with `/margi` commands. The agent reads your thesis and writes documentation,
 grades, literature ratings and todos, but **only inside `margi/`**, and always in commits that
 are kept separate from yours. Git hooks and CI enforce this. You don't have to take it on trust.
 
@@ -13,6 +13,9 @@ are kept separate from yours. Git hooks and CI enforce this. You don't have to t
 cd my-thesis && uvx margi init
 ```
 
+This is the only command you run in the terminal. Then open your agent in the repository and
+run `/margi onboard`.
+
 margi is installed **per thesis repository**, not globally. `margi init` adds it as a dev
 dependency to the repo's `pyproject.toml` (creating a bare one if needed) and locks it in
 `uv.lock`, so you, your agent, the commit hook and CI all run the same pinned version from
@@ -21,23 +24,25 @@ machine, run `uv sync` once.
 
 It also vendors the skills to `.agents/skills/` and symlinks them from `.claude/skills/`, so
 Claude Code, Codex, Cursor and other agents that read `SKILL.md` can use them. Finally it
-writes `thesis.config.yml`, installs the commit guard and the CI workflow, creates `margi/`,
-and starts onboarding.
+writes `thesis.config.yml`, installs the commit guard and the CI workflow, and creates `margi/`.
 
 ## Commands
 
+All commands run inside your agent.
+
 | Command | |
 |---|---|
-| `margi onboard [--from expose.md]` | Reads your README or exposé, then **interviews you** to document the research question, dataset, method, field, structure and constraints in `margi/docs/`. Every other command grades against these docs. |
-| `margi challenge <aspect>` | A devil's-advocate dialogue about any aspect of the project. The refinements you confirm are written back into `margi/docs/`. |
-| `margi grade <section>` | Rubric-based scores per category with comments anchored to file, lines and a verbatim quote. Refuses to run while the docs are incomplete (override with `--force`). |
-| `margi outline` | Character counts and their distribution across sections and subsections, compared against targets from `structure.md`. No AI involved. |
-| `margi read [pdf…]` | Rates literature PDFs for relevance to your research question and outline. |
-| `margi todos` | Proposes todos as Markdown files and suggests closing issues that look done. You accept, reject or request changes, and only accepted items go to GitHub. |
-| `margi status` | Shows docs completeness, latest grades, outline, todos and recent runs. |
+| `/margi onboard [--from expose.md]` | Reads your README or exposé, then **interviews you** to document the research question, dataset, method, field, structure and constraints in `margi/docs/`. Every other command grades against these docs. |
+| `/margi challenge <aspect>` | A devil's-advocate dialogue about any aspect of the project. The refinements you confirm are written back into `margi/docs/`. |
+| `/margi grade <section>` | Rubric-based scores per category with comments anchored to file, lines and a verbatim quote. If the docs are incomplete, it asks before grading and marks the result low-confidence. |
+| `/margi outline` | Character counts and their distribution across sections and subsections, compared against targets from `structure.md`. No AI involved. |
+| `/margi read [pdf…]` | Rates literature PDFs for relevance to your research question and outline. |
+| `/margi todos` | Proposes todos as Markdown files and suggests closing issues that look done. You accept, reject or request changes, and only accepted items go to GitHub. |
+| `/margi status` | Shows docs completeness, latest grades, outline, todos and recent runs. |
 
-Run each command as `uv run margi <command>`. Inside an agent session you can use the same
-commands as `/margi grade 2.1`, `/margi-onboard` and `/margi-challenge research question`.
+`/margi-onboard` and `/margi-challenge <aspect>` work as shortcuts too. In the background,
+the skills call a few hidden `uv run margi …` helpers (`finalize`, `outline`, `status`,
+`extract-pdfs`, `sync-todos`); you never need to run them yourself.
 
 ## How the separation works
 
@@ -57,8 +62,9 @@ margi commits  → only margi/                   ("margi: grade 2.1", author mar
   commits outside `margi/`, unprefixed commits inside it, and any change to an existing
   record in `margi/feedback/` (which is append-only).
 - **CI** (`margi guard --range`) repeats the hook's checks, so `--no-verify` doesn't bypass them.
-- **Agent permissions**: the wrapper only allows reads, `Edit(margi/**)` and a handful of
-  `margi`/`git status` commands, and `.claude/settings.json` denies edits to thesis sources.
+- **Agent permissions**: `.claude/settings.json` allows `Edit(margi/**)`, the margi helpers and
+  read-only `git`/`gh` commands, and denies edits to thesis sources and git commits.
+  `sync-todos` (creates GitHub issues) still asks for your permission.
 
 `git log -- margi/` is the complete AI audit trail for your advisors.
 
@@ -84,7 +90,7 @@ skills/margi-onboard/    SKILL.md, interview.md, templates/ (the margi/docs file
 skills/margi-challenge/  SKILL.md, lenses.md
 AGENTS.md                hard rules, merged into the thesis repo's AGENTS.md
 templates/               config, commit-msg hook, CI workflow, Claude settings
-src/margi/               CLI (finalize, guard, outline, adapters/typst, wrapper, init, …)
+src/margi/               init + hidden helpers (finalize, guard, outline, adapters/typst, …)
 ```
 
 The only supported format is Typst; the adapters in `src/margi/adapters/` are the extension

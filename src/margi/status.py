@@ -26,7 +26,7 @@ def render(cfg: Config) -> str:
     lines: list[str] = []
     report = docs_check.check(cfg.root / MARGI_DIR / "docs")
     threshold = float(cfg["docs"]["min_completeness"])
-    flag = "ok" if report.completeness >= threshold else f"below {threshold:.0%} — run `margi onboard`"
+    flag = "ok" if report.completeness >= threshold else f"below {threshold:.0%} — run /margi onboard"
     lines.append(f"Project docs   {report.filled}/{report.required} fields ({report.completeness:.0%}, {flag})")
     for name, fields in report.missing.items():
         lines.append(f"  missing in {name}: {', '.join(fields)}")
@@ -37,7 +37,7 @@ def render(cfg: Config) -> str:
         if r.get("command") == "grade":
             grades[r["scope"]] = r
     lines.append("")
-    lines.append("Latest grades" if grades else "Latest grades  none yet — `margi grade <section>`")
+    lines.append("Latest grades" if grades else "Latest grades  none yet — /margi grade <section>")
     for scope, r in sorted(grades.items()):
         scores = r.get("scores", {})
         parts = [f"{k} {v['score']:g}/{v['max']:g}" for k, v in scores.items()]
@@ -56,7 +56,7 @@ def render(cfg: Config) -> str:
         lines.append(f"Outline        {o['total']} {o['unit']}{delta}")
         lines.append(f"  {top}")
     else:
-        lines.append("Outline        no snapshot yet — `margi outline`")
+        lines.append("Outline        no snapshot yet — /margi outline")
 
     lines.append("")
     proposed = list_items(cfg, "proposed")

@@ -59,7 +59,7 @@ Repeat until every item is accepted or rejected. Never mark anything accepted on
 
 ## 5. Sync and record
 
-1. If anything is accepted, run `uv run margi todos --sync-accepted`. It creates issues and closes
+1. If anything is accepted, run `uv run margi sync-todos`. It creates issues and closes
    issues through `gh`, then moves the files to `margi/todos/synced/`.
 2. Write `margi/.staging/todos.json` with `command: todos`, `scope: review`, a `summary`, and
    `payload: {"accepted": [...ids], "rejected": [...ids], "closed": [...issue numbers]}`.

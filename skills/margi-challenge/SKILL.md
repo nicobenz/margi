@@ -24,7 +24,7 @@ Run `uv run margi finalize --check`. Stop if it fails.
 - The thesis text only where it shows how the aspect is actually handled.
 - `lenses.md` in this skill: pick the 2–4 lenses that fit the aspect.
 
-If the docs say nothing about the aspect, say so and suggest `uv run margi onboard` first, or
+If the docs say nothing about the aspect, say so and suggest `/margi onboard` first, or
 gather the basics in this session.
 
 ## 2. Dialogue
