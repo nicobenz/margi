@@ -12,7 +12,7 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v6
       - name: Install margi
-        run: uv tool install "margi==$(cat .agents/skills/margi/VERSION)"
+        run: uv sync --frozen
       - name: Check commits
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -22,4 +22,4 @@ jobs:
           else
             RANGE="${{ github.event.before }}..HEAD"
           fi
-          margi guard --range "$RANGE"
+          uv run --frozen margi guard --range "$RANGE"

@@ -5,14 +5,14 @@ Grade one section against the rubric **and** against the documented project goal
 ## Inputs
 
 1. `margi/docs/*.md`: research question, dataset, method, field, structure, constraints.
-   If `margi finalize --check` warns that the docs are below the threshold:
+   If `uv run margi finalize --check` warns that the docs are below the threshold:
    - **Headless** (the invocation ends in `--headless`): the `margi` CLI already applied the
      gate and the user chose `--force`. Grade, and say in `summary` which docs are missing.
    - **Interactive**: tell the user and recommend `/margi onboard` first. Grade only if
      they confirm, and say in `summary` that the result is low-confidence.
 2. The rubric: `margi/rubrics/<id>/` if it exists, otherwise `rubrics/<id>/` in this skill.
    `<id>` is `rubric` in `thesis.config.yml`. Read `rubric.yml` and every category file.
-3. The section text. Run `margi outline --no-save` to see section ids, then read the
+3. The section text. Run `uv run margi outline --no-save` to see section ids, then read the
    section's file(s) **with line numbers**. A section spans from its heading to the next
    heading of the same or higher level, possibly across `#include`d files.
 4. Recent records for this section in `margi/feedback/*_grade_<section>*.json`, if any.
@@ -54,5 +54,5 @@ Grade one section against the rubric **and** against the documented project goal
 }
 ```
 
-Then run `margi finalize` and show the user a compact table of the scores plus the major
+Then run `uv run margi finalize` and show the user a compact table of the scores plus the major
 comments with their line numbers.

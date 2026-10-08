@@ -40,11 +40,11 @@ ALLOWED_TOOLS = [
     "Glob",
     "Grep",
     f"Edit({MARGI_DIR}/**)",
-    "Bash(margi finalize:*)",
-    "Bash(margi outline:*)",
-    "Bash(margi status:*)",
-    "Bash(margi extract-pdfs:*)",
-    "Bash(margi todos --sync-accepted:*)",
+    "Bash(uv run margi finalize:*)",
+    "Bash(uv run margi outline:*)",
+    "Bash(uv run margi status:*)",
+    "Bash(uv run margi extract-pdfs:*)",
+    "Bash(uv run margi todos --sync-accepted:*)",
     "Bash(git status:*)",
     "Bash(git log:*)",
     "Bash(git diff:*)",
@@ -90,7 +90,7 @@ def run(cfg: Config, command: str, args: list[str], *, force: bool = False) -> F
                 f"project docs are {report.completeness:.0%} complete (need {threshold:.0%}). "
                 f"Scores are only meaningful against documented goals.\n"
                 f"  Missing: {missing}\n"
-                f"  Run `margi onboard` (or pass --force to get a low-confidence result)."
+                f"  Run `uv run margi onboard` (or pass --force to get a low-confidence result)."
             )
 
     if command == "read":
