@@ -10,11 +10,24 @@ are kept separate from yours. Git hooks and CI enforce this. You don't have to t
 ## Install
 
 ```sh
-cd my-thesis && uvx margi init
+mkdir my-thesis && cd my-thesis && git init && uvx margi init
 ```
 
-This is the only command you run in the terminal. Then open your agent in the repository and
-run `/margi onboard`.
+This is the only command you run in the terminal. In an empty folder it bootstraps a Typst
+thesis: `main.typ` with a chapter skeleton in `chapters/`, an empty `refs.bib`, `lit/` for
+PDFs, and `PROPOSAL.md`. In an existing Typst project it only adds what is missing
+(`PROPOSAL.md` and margi itself) and leaves your files alone.
+
+Then:
+
+1. Write your plan into `PROPOSAL.md`: title ideas, research question, data, method, outline,
+   constraints. Fragments and loose thoughts are fine.
+2. Commit it.
+3. Open your agent in the repository and run `/margi propose`. margi turns the proposal into
+   structured docs in `margi/docs/` and lists what is still unclear in
+   `margi/docs/open-questions.md`.
+4. Add to `PROPOSAL.md`, commit, and run `/margi propose` again until the docs are complete
+   enough.
 
 margi is installed **per thesis repository**, not globally. `margi init` adds it as a dev
 dependency to the repo's `pyproject.toml` (creating a bare one if needed) and locks it in
@@ -22,7 +35,7 @@ dependency to the repo's `pyproject.toml` (creating a bare one if needed) and lo
 `.venv/`. Run commands with `uv run margi …` (or activate `.venv`). After cloning on another
 machine, run `uv sync` once.
 
-It also vendors the skills to `.agents/skills/` and symlinks them from `.claude/skills/`, so
+`margi init` also vendors the skills to `.agents/skills/` and symlinks them from `.claude/skills/`, so
 Claude Code, Codex, Cursor and other agents that read `SKILL.md` can use them. Finally it
 writes `thesis.config.yml`, installs the commit guard and the CI workflow, and creates `margi/`.
 
@@ -32,7 +45,7 @@ All commands run inside your agent.
 
 | Command | |
 |---|---|
-| `/margi onboard [--from expose.md]` | Reads your README or exposé, then **interviews you** to document the research question, dataset, method, field, structure and constraints in `margi/docs/`. Every other command grades against these docs. |
+| `/margi propose [--from expose.md]` | Reads your `PROPOSAL.md` (or another file) and documents the research question, dataset, method, field, structure and constraints in `margi/docs/`, with gaps listed in `open-questions.md`. Every other command grades against these docs. |
 | `/margi challenge <aspect>` | A devil's-advocate dialogue about any aspect of the project. The refinements you confirm are written back into `margi/docs/`. |
 | `/margi grade <section>` | Rubric-based scores per category with comments anchored to file, lines and a verbatim quote. If the docs are incomplete, it asks before grading and marks the result low-confidence. |
 | `/margi outline` | Character counts and their distribution across sections and subsections, compared against targets from `structure.md`. No AI involved. |
@@ -40,7 +53,7 @@ All commands run inside your agent.
 | `/margi todos` | Proposes todos as Markdown files and suggests closing issues that look done. You accept, reject or request changes, and only accepted items go to GitHub. |
 | `/margi status` | Shows docs completeness, latest grades, outline, todos and recent runs. |
 
-`/margi-onboard` and `/margi-challenge <aspect>` work as shortcuts too. In the background,
+`/margi-propose` and `/margi-challenge <aspect>` work as shortcuts too. In the background,
 the skills call a few hidden `uv run margi …` helpers (`finalize`, `outline`, `status`,
 `extract-pdfs`, `sync-todos`); you never need to run them yourself.
 
@@ -86,10 +99,10 @@ everything is enforced.
 
 ```
 skills/margi/            SKILL.md, commands/{grade,read,todos}.md, rubrics/default/, schema/
-skills/margi-onboard/    SKILL.md, interview.md, templates/ (the margi/docs files)
+skills/margi-propose/    SKILL.md, templates/ (the margi/docs files)
 skills/margi-challenge/  SKILL.md, lenses.md
 AGENTS.md                hard rules, merged into the thesis repo's AGENTS.md
-templates/               config, commit-msg hook, CI workflow, Claude settings
+templates/               config, PROPOSAL.md, Typst skeleton, commit-msg hook, CI workflow, Claude settings
 src/margi/               init + hidden helpers (finalize, guard, outline, adapters/typst, …)
 ```
 

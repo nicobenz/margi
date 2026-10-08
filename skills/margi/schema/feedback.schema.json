@@ -5,7 +5,7 @@
   "description": "Draft = what the agent writes to margi/.staging/. Record = draft + run + provenance, written only by `margi finalize`.",
   "$defs": {
     "command": {
-      "enum": ["onboard", "challenge", "grade", "outline", "read", "todos"]
+      "enum": ["propose", "challenge", "grade", "outline", "read", "todos"]
     },
     "anchor": {
       "type": "object",
@@ -68,7 +68,7 @@
         "items": { "$ref": "#/$defs/comment" }
       },
       "payload": {
-        "description": "Command-specific data (outline counts, read ratings, onboard sources, challenge log, todo ids).",
+        "description": "Command-specific data (outline counts, read ratings, propose sources, challenge log, todo ids).",
         "type": "object"
       },
       "agent": {

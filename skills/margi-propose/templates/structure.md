@@ -1,6 +1,6 @@
 # Structure
 
-<!-- Written by `/margi onboard` / `/margi challenge`. Every statement cites (src: file:lines) or (user, date). -->
+<!-- Written by `/margi propose` / `/margi challenge`. Every statement cites (src: file:lines) or (user, date). -->
 
 ## Planned outline
 _not yet documented_

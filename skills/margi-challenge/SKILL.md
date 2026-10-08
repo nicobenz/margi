@@ -11,6 +11,9 @@ you probe, record and refine the documentation.
 
 Write only to `margi/docs/` and `margi/.staging/`. Never touch thesis text.
 
+Talk to the user as described in "Talking to the user" in `../margi/SKILL.md`: no process
+narration, questions only through the structured question tool, a short final report.
+
 ## 0. Preflight
 
 Run `uv run margi finalize --check`. Stop if it fails.
@@ -24,21 +27,22 @@ Run `uv run margi finalize --check`. Stop if it fails.
 - The thesis text only where it shows how the aspect is actually handled.
 - `lenses.md` in this skill: pick the 2–4 lenses that fit the aspect.
 
-If the docs say nothing about the aspect, say so and suggest `/margi onboard` first, or
+If the docs say nothing about the aspect, say so and suggest `/margi propose` first, or
 gather the basics in this session.
 
 ## 2. Dialogue
 
 - Start with a 2–3 sentence restatement of the user's current position on the aspect, with
-  citations to the docs, and ask whether it is accurate.
-- Then pose **numbered challenges**, 1–3 at a time. Each one is a concrete question that
-  names the assumption being tested and why it matters for the thesis. Examples: "C3: your
-  RQ asks *why* X changed, but the method only measures *that* it changed. What licenses the
-  causal reading?"
+  citations to the docs, as a question-tool question ("Accurate" / "Needs correction").
+- Then pose **numbered challenges**, 1–3 per question-tool call. Each one is a concrete
+  question that names the assumption being tested and why it matters for the thesis.
+  Example: "C3: your RQ asks *why* X changed, but the method only measures *that* it
+  changed. What licenses the causal reading?" Options: "Defend", "Concede", "Leave open";
+  the user gives reasoning in the free-text answer or notes.
 - The user answers, concedes or defends. Follow up on weak answers once, then move on.
   A defended position is a valid outcome.
 - When a challenge leads to a refinement, restate it precisely and **ask for confirmation**
-  before writing it down.
+  through the question tool ("Confirm" / "Adjust" / "Drop") before writing it down.
 - Stop after about 5–10 challenges, or when the user wants to stop.
 
 ## 3. Write back
@@ -55,4 +59,5 @@ gather the basics in this session.
    - `summary`: 3–6 sentences on what was tested and what changed
    - `files_read`: the docs and thesis files you used
    - `payload`: `{"challenges": [{"id": "C1", "lens": "...", "question": "...", "outcome": "refined|defended|open|conceded", "note": "..."}], "docs_changed": [...]}`
-5. Run `uv run margi finalize`.
+5. Run `uv run margi finalize`, then report in at most ~4 lines: refinements written (with
+   links), challenges left open.
