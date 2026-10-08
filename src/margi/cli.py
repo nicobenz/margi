@@ -61,14 +61,24 @@ def main() -> None:
 @click.option("--no-commit", is_flag=True, help="Scaffold files without committing.")
 @click.option("--no-claude-settings", is_flag=True, help="Do not write .claude/settings.json permissions.")
 @click.option("--force-config", is_flag=True, help="Overwrite an existing thesis.config.yml.")
+@click.option("--no-install", is_flag=True, help="Do not add margi to the repo's pyproject.toml (uv).")
+@click.option("--spec", help="Requirement passed to `uv add --dev` (default: margi==<this version>; a path works too).")
 @click.option("--onboard/--no-onboard", default=None, help="Start onboarding afterwards (default: ask).")
-def init(no_commit: bool, no_claude_settings: bool, force_config: bool, onboard: bool | None) -> None:
+def init(
+    no_commit: bool,
+    no_claude_settings: bool,
+    force_config: bool,
+    no_install: bool,
+    spec: str | None,
+    onboard: bool | None,
+) -> None:
     """Scaffold margi into this thesis repository, then start onboarding."""
     from .init import InitError, init as run_init
 
     try:
         root = repo_root(Path.cwd())
-        report = run_init(root, commit=not no_commit, claude_settings=not no_claude_settings, force_config=force_config)
+        report = run_init(root, commit=not no_commit, claude_settings=not no_claude_settings, force_config=force_config,
+                         install=not no_install, spec=spec)
     except (InitError, GitError) as e:
         raise click.ClickException(str(e)) from e
     for w in report.written:
@@ -77,7 +87,7 @@ def init(no_commit: bool, no_claude_settings: bool, force_config: bool, onboard:
         click.echo(f"  kept  {k}")
     for c in report.commits:
         click.echo(f"  commit {c}")
-    click.echo("\nCheck `main` in thesis.config.yml, then document your project with `margi onboard`.")
+    click.echo("\nCheck `main` in thesis.config.yml, then document your project with `uv run margi onboard`.")
     if onboard is None:
         onboard = sys.stdin.isatty() and click.confirm("Start onboarding now?", default=True)
     if onboard:

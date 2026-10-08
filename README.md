@@ -10,14 +10,19 @@ are kept separate from yours. Git hooks and CI enforce this. You don't have to t
 ## Install
 
 ```sh
-uv tool install margi   # or: pipx install margi
-cd my-thesis && margi init
+cd my-thesis && uvx margi init
 ```
 
-`margi init` vendors the skills to `.agents/skills/` and symlinks them from `.claude/skills/`,
-so Claude Code, Codex, Cursor and other agents that read `SKILL.md` can use them. It also
+margi is installed **per thesis repository**, not globally. `margi init` adds it as a dev
+dependency to the repo's `pyproject.toml` (creating a bare one if needed) and locks it in
+`uv.lock`, so you, your agent, the commit hook and CI all run the same pinned version from
+`.venv/`. Run commands with `uv run margi …` (or activate `.venv`). After cloning on another
+machine, run `uv sync` once.
+
+It also vendors the skills to `.agents/skills/` and symlinks them from `.claude/skills/`, so
+Claude Code, Codex, Cursor and other agents that read `SKILL.md` can use them. Finally it
 writes `thesis.config.yml`, installs the commit guard and the CI workflow, creates `margi/`,
-and then starts onboarding.
+and starts onboarding.
 
 ## Commands
 
@@ -31,8 +36,8 @@ and then starts onboarding.
 | `margi todos` | Proposes todos as Markdown files and suggests closing issues that look done. You accept, reject or request changes, and only accepted items go to GitHub. |
 | `margi status` | Shows docs completeness, latest grades, outline, todos and recent runs. |
 
-Inside an agent session you can use the same commands as `/margi grade 2.1`,
-`/margi-onboard` and `/margi-challenge research question`.
+Run each command as `uv run margi <command>`. Inside an agent session you can use the same
+commands as `/margi grade 2.1`, `/margi-onboard` and `/margi-challenge research question`.
 
 ## How the separation works
 

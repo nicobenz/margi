@@ -3,12 +3,18 @@
 #   - a commit touches either only margi/ (message "margi: ...") or nothing in margi/
 #   - margi/feedback/ is append-only
 # Installed by `margi init`. CI repeats this check, so --no-verify does not bypass it.
-if ! command -v margi >/dev/null 2>&1; then
-  echo "margi guard: \`margi\` is not on PATH; install it (uv tool install margi) or commit with --no-verify (CI will still check)." >&2
+# Uses the repo-local margi (.venv, installed by `uv sync`), falling back to one on PATH.
+root=$(git rev-parse --show-toplevel)
+if [ -x "$root/.venv/bin/margi" ]; then
+  margi="$root/.venv/bin/margi"
+elif command -v margi >/dev/null 2>&1; then
+  margi=$(command -v margi)
+else
+  echo "margi guard: margi is not installed in this repo; run \`uv sync\` or commit with --no-verify (CI will still check)." >&2
   exit 1
 fi
 # An x86_64 git on Apple Silicon runs hooks under Rosetta; run margi natively instead.
 if [ "$(sysctl -n sysctl.proc_translated 2>/dev/null)" = "1" ]; then
-  exec arch -arm64 "$(command -v margi)" guard --staged "$1"
+  exec arch -arm64 "$margi" guard --staged "$1"
 fi
-exec margi guard --staged "$1"
+exec "$margi" guard --staged "$1"

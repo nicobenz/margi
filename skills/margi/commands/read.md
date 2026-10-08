@@ -6,7 +6,7 @@ Rate literature PDFs for their relevance to **this** thesis.
 
 1. `margi/docs/*.md`, especially `research-question.md`, `field.md`, `method.md` and `structure.md`.
    Below the docs threshold, apply the same rule as in `grade.md`.
-2. Extracted text: run `margi extract-pdfs [pdf…]`. It prints `pdf<TAB>text-file`. Read the
+2. Extracted text: run `uv run margi extract-pdfs [pdf…]`. It prints `pdf<TAB>text-file`. Read the
    text files, which contain `--- page N ---` markers. With no arguments, all PDFs in the
    configured literature directory are processed.
 3. The bibliography (`literature.bib` in the config), if any, to match PDFs to cite keys.
@@ -35,4 +35,4 @@ High-relevance PDFs that are not yet cited should appear first in `summary`.
 - `comments`: optional. Use them only to point at places in the thesis where a rated source
   should be engaged with, anchored as usual.
 
-Then run `margi finalize`.
+Then run `uv run margi finalize`.

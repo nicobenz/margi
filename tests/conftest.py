@@ -44,7 +44,7 @@ def bare_repo(tmp_path) -> Path:
 
 @pytest.fixture
 def repo(bare_repo) -> Path:
-    init(bare_repo)
+    init(bare_repo, install=False)
     return bare_repo
 
 
