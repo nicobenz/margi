@@ -51,10 +51,15 @@ questions**, grouped by topic and most important gaps first. Keep each question 
 short. Use `interview.md` in this skill as the question bank. Go straight into the first
 round after drafting; don't announce it or summarise the draft first. Rules:
 
-- Ask; don't suggest answers. Options are neutral only (see the main skill): alternatives
-  already in the sources, neutral states, "Skip for now". The substance comes through the
-  free-text answer. If the user asks for suggestions, offer a few neutrally and record which
+- Ask; don't suggest answers. Most interview questions are open: give them exactly the
+  options "Not decided yet" and "Skip for now"; the answer comes through "Other". Closed
+  questions (confirm a quoted research question, done vs. planned, which of two sources
+  holds) get the real alternatives plus "Skip for now". Never add options like
+  "Answer below". If the user asks for suggestions, offer a few neutrally and record which
   one they chose and why.
+- "Not decided yet" → note it as undecided in the matching doc. If an option was picked on a
+  closed question but the substance is still missing (e.g. "different" without the new
+  wording), follow up in the next round.
 - Push for precision on: the research question (one sentence, answerable, scoped), the corpus
   (what, how much, from where, access/licensing), the method (what exactly, why that one,
   how it will be evaluated) and the expected contribution.

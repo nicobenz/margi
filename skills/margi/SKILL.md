@@ -45,10 +45,15 @@ Work quietly and confidently; report results, not process.
 - **Ask questions with your harness's structured question tool** (in Claude Code:
   `AskUserQuestion`), never as a numbered list in chat. Only if no such tool exists, ask in
   chat and end your turn. With `AskUserQuestion`: up to 4 questions per call, 2–4 options
-  each, header ≤ 12 chars; the user can always type a free answer via "Other". Options must
-  be neutral: alternatives that already appear in the sources (e.g. "as in abstract" vs.
-  "different"), neutral states (done / planned / partly), or "Skip for now". Never invent
-  plausible project content as an option. Keep question text to one or two sentences.
+  each, header ≤ 12 chars. The tool always adds "Other", which is the free-text field.
+  Keep question text to one or two sentences. Options depend on the question type:
+  - **Closed questions** (confirm, choose, resolve a contradiction): the real alternatives,
+    taken from the sources or neutral states (done / planned / partly), plus "Skip for now".
+  - **Open questions** (what, which, why, how): exactly the two options "Not decided yet"
+    (record the gap as undecided) and "Skip for now" (defer to `open-questions.md`). The
+    answer comes through "Other"; say so in the question, e.g. "… (answer via Other)".
+  - Never invent an option that points elsewhere ("Answer below", "See chat") or that
+    proposes plausible project content.
 - No hedging, no apologies, no justifying that you followed the skill.
 
 ## Commands
