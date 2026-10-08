@@ -5,8 +5,9 @@ Grade one section against the rubric **and** against the documented project goal
 ## Inputs
 
 1. `margi/docs/*.md`: research question, dataset, method, field, structure, constraints.
-   If `uv run margi finalize --check` warns that the docs are below the threshold, tell the
-   user and recommend `/margi onboard` first. Grade only if they confirm, and say in
+   If `uv run margi finalize --check` warns that the docs are below the threshold, ask
+   through the question tool whether to run `/margi onboard` first or grade anyway. Grade
+   only if they choose to, and say in
    `summary` that the result is low-confidence and which docs are missing.
 2. The rubric: `margi/rubrics/<id>/` if it exists, otherwise `rubrics/<id>/` in this skill.
    `<id>` is `rubric` in `thesis.config.yml`. Read `rubric.yml` and every category file.
@@ -53,4 +54,4 @@ Grade one section against the rubric **and** against the documented project goal
 ```
 
 Then run `uv run margi finalize` and show the user a compact table of the scores plus the major
-comments with their line numbers.
+comments as one line each with a file:line link. Nothing else.

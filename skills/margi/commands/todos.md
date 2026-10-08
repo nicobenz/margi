@@ -48,12 +48,13 @@ Evidence: ... (file:lines, record names)
 
 ## 4. Review with the human
 
-Show both lists compactly: new todos, then proposed closures. Ask the human for each item
-(they may answer in bulk):
+Ask about each item through the structured question tool, up to 4 items per call: new todos
+first, then proposed closures. Question text: the title plus one line of why (or the
+evidence, for closures). Options:
 
-- **accept** → set `status: accepted` in the file
-- **reject** → delete the file
-- **change** → revise the file as instructed, then show it again
+- **Accept** → set `status: accepted` in the file
+- **Reject** → delete the file
+- **Change** → revise the file as instructed (free-text/notes), then ask about it again
 
 Repeat until every item is accepted or rejected. Never mark anything accepted on your own.
 
