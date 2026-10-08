@@ -4,6 +4,9 @@ Produces two commits so human and margi files never mix:
   1. "chore: install margi"  (your identity)  — skills, config, hooks, CI, agent settings,
                                                 and margi pinned as a dev dependency (pyproject.toml, uv.lock)
   2. "margi: init"           (margi bot)      — the margi/ directory with doc templates
+
+Without git, the files are scaffolded but the hook setup and both commits are skipped;
+run `git init` and `margi init` again to enable them.
 """
 
 from __future__ import annotations
@@ -20,7 +23,7 @@ from . import __version__
 from .config import CONFIG_NAME, MARGI_DIR, load
 from .docs_check import ALL_DOCS, templates_dir
 from .finalize import bot_commit
-from .gitutil import git, staged_changes
+from .gitutil import git, is_repo, staged_changes
 from .resources import agents_md, skills_dir, templates_dir as tool_templates
 
 SKILLS = ["margi", "margi-onboard", "margi-challenge"]
@@ -36,6 +39,7 @@ class InitReport:
     written: list[str] = field(default_factory=list)
     kept: list[str] = field(default_factory=list)
     commits: list[str] = field(default_factory=list)
+    skipped: list[str] = field(default_factory=list)
 
 
 def detect_main(root: Path) -> str:
@@ -103,12 +107,15 @@ def _claude_settings(root: Path, report: InitReport) -> None:
     report.written.append(".claude/settings.json")
 
 
-def _hook(root: Path, report: InitReport) -> None:
+def _hook(root: Path, report: InitReport, *, has_git: bool) -> None:
     hook = root / ".githooks" / "commit-msg"
     hook.parent.mkdir(parents=True, exist_ok=True)
     hook.write_text((tool_templates() / "commit-msg").read_text(encoding="utf-8"), encoding="utf-8")
     hook.chmod(hook.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     report.written.append(".githooks/commit-msg")
+    if not has_git:
+        report.skipped.append("core.hooksPath (no git repository; run `git init` and `margi init` again)")
+        return
     current = git("config", "--get", "core.hooksPath", cwd=root, check=False).strip()
     if current and current != ".githooks":
         raise InitError(f"core.hooksPath is already set to {current!r}; add .githooks/commit-msg there manually")
@@ -158,7 +165,8 @@ def init(
     install: bool = True,
     spec: str | None = None,
 ) -> InitReport:
-    if staged_changes(root):
+    has_git = is_repo(root)
+    if has_git and staged_changes(root):
         raise InitError("you have staged changes; commit or unstage them before running `margi init`")
     report = InitReport()
 
@@ -166,7 +174,7 @@ def init(
     _write(root, CONFIG_NAME, config, report, overwrite=force_config)
     _vendor_skills(root, report)
     _agents_md(root, report)
-    _hook(root, report)
+    _hook(root, report, has_git=has_git)
     _write(root, ".github/workflows/margi-guard.yml", (tool_templates() / "margi-guard.yml").read_text(encoding="utf-8"),
            report, overwrite=True)
     if claude_settings:
@@ -176,6 +184,9 @@ def init(
     _margi_dir(root, report)
 
     if not commit:
+        return report
+    if not has_git:
+        report.skipped.append("commits (no git repository)")
         return report
 
     human_paths = [CONFIG_NAME, ".agents/skills", ".claude", "AGENTS.md", ".githooks", ".github/workflows/margi-guard.yml",

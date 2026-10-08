@@ -33,6 +33,26 @@ def repo_root(start: Path | str | None = None) -> Path:
         raise GitError("not inside a git repository") from e
 
 
+def is_repo(path: Path | str) -> bool:
+    """True if ``path`` is the top level of a git work tree (and git is installed)."""
+    try:
+        return repo_root(path).resolve() == Path(path).resolve()
+    except GitError:
+        return False
+
+
+def project_root(start: Path, marker: str) -> Path:
+    """The git top level; without git, the nearest directory containing ``marker``, else ``start``."""
+    try:
+        return repo_root(start)
+    except GitError:
+        pass
+    for d in (start, *start.parents):
+        if (d / marker).exists():
+            return d
+    return start
+
+
 def head_sha(root: Path) -> str | None:
     out = git("rev-parse", "--verify", "-q", "HEAD", cwd=root, check=False).strip()
     return out or None

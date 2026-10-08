@@ -11,23 +11,25 @@ import click
 from . import __version__
 from . import outline as outline_mod
 from . import status as status_mod
-from .config import Config, load
+from .config import CONFIG_NAME, Config, load
 from .finalize import FinalizeError, FinalizeResult, ensure_clean, finalize as run_finalize, preflight
-from .gitutil import GitError, repo_root
+from .gitutil import project_root
 from .guard import check_range, check_staged, commit_msg_from_file
 
 
+NO_GIT = "no git repository: margi works, but commits, the clean-tree check and the guard are skipped"
+
+
 def _cfg() -> Config:
-    try:
-        return load(repo_root(Path.cwd()))
-    except GitError as e:
-        raise click.ClickException(str(e)) from e
+    return load(project_root(Path.cwd(), CONFIG_NAME))
 
 
 def _report(result: FinalizeResult) -> None:
     for rec in result.records:
         click.echo(f"  wrote {rec.relative_to(rec.parents[2]).as_posix()}")
-    if result.commit:
+    if not result.has_git:
+        click.echo(f"  not committed ({NO_GIT})")
+    elif result.commit:
         click.echo(f"  committed {result.commit[:7]}  {result.message}")
     elif not result.records:
         click.echo("  nothing to finalize")
@@ -76,10 +78,10 @@ def init(
     from .init import InitError, init as run_init
 
     try:
-        root = repo_root(Path.cwd())
+        root = project_root(Path.cwd(), CONFIG_NAME)
         report = run_init(root, commit=not no_commit, claude_settings=not no_claude_settings, force_config=force_config,
                          install=not no_install, spec=spec)
-    except (InitError, GitError) as e:
+    except InitError as e:
         raise click.ClickException(str(e)) from e
     for w in report.written:
         click.echo(f"  wrote {w}")
@@ -87,6 +89,8 @@ def init(
         click.echo(f"  kept  {k}")
     for c in report.commits:
         click.echo(f"  commit {c}")
+    for s in report.skipped:
+        click.echo(f"  skip  {s}")
     click.echo("\nCheck `main` in thesis.config.yml, then document your project with `uv run margi onboard`.")
     if onboard is None:
         onboard = sys.stdin.isatty() and click.confirm("Start onboarding now?", default=True)
@@ -215,7 +219,8 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
             raise click.ClickException(str(e)) from e
         report = docs_check.check(cfg.root / MARGI_DIR / "docs")
         threshold = float(cfg["docs"]["min_completeness"])
-        click.echo(f"ok: tree clean outside margi/; project docs {report.completeness:.0%} complete")
+        tree = "tree clean outside margi/" if cfg.has_git else NO_GIT
+        click.echo(f"ok: {tree}; project docs {report.completeness:.0%} complete")
         if report.completeness < threshold:
             click.echo(f"warning: project docs below {threshold:.0%} — grade/read results will be low-confidence; "
                        "suggest `margi onboard`")
@@ -239,6 +244,8 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
 def guard(msg_file: str | None, rev_range: str | None) -> None:
     """[plumbing] Enforce separation of human and margi commits."""
     cfg = _cfg()
+    if not cfg.has_git:
+        raise click.ClickException("margi guard needs a git repository")
     if msg_file:
         problems = check_staged(cfg.root, cfg, commit_msg_from_file(msg_file))
         if problems:
