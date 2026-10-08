@@ -19,7 +19,7 @@ DEFAULTS: dict[str, Any] = {
     "main": "main.typ",
     "sections": {},
     "count": "chars",  # chars | chars_no_spaces | words
-    "onboard": {"source": "README.md"},
+    "propose": {"source": "PROPOSAL.md"},
     "literature": {"dir": "lit", "bib": None},
     "rubric": "default",
     "docs": {"min_completeness": 0.7},
@@ -69,4 +69,6 @@ def load(root: Path) -> Config:
     raw: dict = {}
     if path.exists():
         raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if "onboard" in raw and "propose" not in raw:  # configs written before the rename
+        raw["propose"] = raw.pop("onboard")
     return Config(root=root, data=_merge(DEFAULTS, raw), has_git=is_repo(root))

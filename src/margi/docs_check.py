@@ -1,6 +1,6 @@
 """Completeness of the project documentation in margi/docs/.
 
-Required fields are the ``## `` headings of the onboarding templates. A field counts as
+Required fields are the ``## `` headings of the docs templates. A field counts as
 filled when its body contains real text (not just the placeholder or HTML comments).
 """
 
@@ -21,7 +21,7 @@ _COMMENT = re.compile(r"<!--.*?-->", re.S)
 
 
 def templates_dir() -> Path:
-    return skills_dir() / "margi-onboard" / "templates"
+    return skills_dir() / "margi-propose" / "templates"
 
 
 def split_sections(text: str) -> dict[str, str]:

@@ -1,8 +1,12 @@
-"""`margi init`: scaffold margi into a thesis repository.
+"""`margi init`: bootstrap a Typst thesis with margi, or add margi to an existing one.
+
+Only missing files are created: PROPOSAL.md always, the Typst skeleton (main.typ, chapters/,
+refs.bib, lit/) only when there is no main file yet.
 
 Produces two commits so human and margi files never mix:
-  1. "chore: install margi"  (your identity)  — skills, config, hooks, CI, agent settings,
-                                                and margi pinned as a dev dependency (pyproject.toml, uv.lock)
+  1. "chore: install margi"  (your identity)  — PROPOSAL.md, Typst skeleton, skills, config, hooks,
+                                                CI, agent settings, and margi pinned as a dev
+                                                dependency (pyproject.toml, uv.lock)
   2. "margi: init"           (margi bot)      — the margi/ directory with doc templates
 
 Without git, the files are scaffolded but the hook setup and both commits are skipped;
@@ -26,7 +30,8 @@ from .finalize import bot_commit
 from .gitutil import git, is_repo, staged_changes
 from .resources import agents_md, skills_dir, templates_dir as tool_templates
 
-SKILLS = ["margi", "margi-onboard", "margi-challenge"]
+SKILLS = ["margi", "margi-propose", "margi-challenge"]
+RETIRED_SKILLS = ["margi-onboard"]  # removed on re-init
 BEGIN, END = "<!-- margi:begin -->", "<!-- margi:end -->"
 
 
@@ -61,6 +66,12 @@ def _write(root: Path, rel: str, content: str, report: InitReport, *, overwrite:
 
 
 def _vendor_skills(root: Path, report: InitReport) -> None:
+    for name in RETIRED_SKILLS:
+        for old in (root / ".agents" / "skills" / name, root / ".claude" / "skills" / name):
+            if old.is_symlink() or old.is_file():
+                old.unlink()
+            elif old.is_dir():
+                shutil.rmtree(old)
     for name in SKILLS:
         dest = root / ".agents" / "skills" / name
         if dest.exists():
@@ -142,6 +153,27 @@ def _install(root: Path, spec: str, report: InitReport) -> None:
     report.written.append("uv.lock")
 
 
+def _bootstrap(root: Path, main: str, report: InitReport) -> list[str]:
+    """Create PROPOSAL.md and, for a new project, the Typst skeleton. Returns the paths created."""
+    created: list[str] = []
+
+    def add(rel: str, content: str) -> None:
+        if (root / rel).exists():
+            report.kept.append(rel)
+            return
+        _write(root, rel, content, report, overwrite=False)
+        created.append(rel)
+
+    add("PROPOSAL.md", (tool_templates() / "PROPOSAL.md").read_text(encoding="utf-8"))
+    if (root / main).exists() or any(root.glob("*.typ")) or any(root.glob("*/*.typ")):
+        return created
+    skeleton = tool_templates() / "typst"
+    for src in sorted(p for p in skeleton.rglob("*") if p.is_file()):
+        add(src.relative_to(skeleton).as_posix(), src.read_text(encoding="utf-8"))
+    add("lit/.gitkeep", "")
+    return created
+
+
 def _margi_dir(root: Path, report: InitReport) -> None:
     m = root / MARGI_DIR
     for sub in ("feedback", "todos/proposed", "todos/close", "todos/synced", "docs"):
@@ -170,7 +202,11 @@ def init(
         raise InitError("you have staged changes; commit or unstage them before running `margi init`")
     report = InitReport()
 
-    config = (tool_templates() / "thesis.config.yml").read_text(encoding="utf-8").replace("{{main}}", detect_main(root))
+    main = load(root)["main"] if (root / CONFIG_NAME).exists() else detect_main(root)
+    created = _bootstrap(root, main, report)
+    bib = "refs.bib" if (root / "refs.bib").exists() else "null"
+    config = (tool_templates() / "thesis.config.yml").read_text(encoding="utf-8")
+    config = config.replace("{{main}}", main).replace("{{bib}}", bib)
     _write(root, CONFIG_NAME, config, report, overwrite=force_config)
     _vendor_skills(root, report)
     _agents_md(root, report)
@@ -190,7 +226,7 @@ def init(
         return report
 
     human_paths = [CONFIG_NAME, ".agents/skills", ".claude", "AGENTS.md", ".githooks", ".github/workflows/margi-guard.yml",
-                   "pyproject.toml", "uv.lock"]
+                   "pyproject.toml", "uv.lock", *created]
     git("add", "-A", "--", *[p for p in human_paths if (root / p).exists() or (root / p).is_symlink()], cwd=root)
     if git("diff", "--cached", "--name-only", cwd=root).split():
         git("commit", "-q", "-m", f"chore: install margi {__version__}", cwd=root)
