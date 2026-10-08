@@ -1,12 +1,12 @@
 # Structure
 
-<!-- Written by `margi onboard` / `margi challenge`. Every statement cites (src: file:lines) or (user, date). -->
+<!-- Written by `/margi onboard` / `/margi challenge`. Every statement cites (src: file:lines) or (user, date). -->
 
 ## Planned outline
 _not yet documented_
 
 <!--
-Machine-readable outline for `margi outline` (titles must match the thesis headings).
+Machine-readable outline for `/margi outline` (titles must match the thesis headings).
 Targets are a share of the total ("15%") or an absolute count (6000).
 
 ```yaml

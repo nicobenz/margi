@@ -1,8 +1,12 @@
 """`margi init`: scaffold margi into a thesis repository.
 
 Produces two commits so human and margi files never mix:
-  1. "chore: install margi"  (your identity)  — skills, config, hooks, CI, agent settings
+  1. "chore: install margi"  (your identity)  — skills, config, hooks, CI, agent settings,
+                                                and margi pinned as a dev dependency (pyproject.toml, uv.lock)
   2. "margi: init"           (margi bot)      — the margi/ directory with doc templates
+
+Without git, the files are scaffolded but the hook setup and both commits are skipped;
+run `git init` and `margi init` again to enable them.
 """
 
 from __future__ import annotations
@@ -11,6 +15,7 @@ import json
 import os
 import shutil
 import stat
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -18,7 +23,7 @@ from . import __version__
 from .config import CONFIG_NAME, MARGI_DIR, load
 from .docs_check import ALL_DOCS, templates_dir
 from .finalize import bot_commit
-from .gitutil import git, staged_changes
+from .gitutil import git, is_repo, staged_changes
 from .resources import agents_md, skills_dir, templates_dir as tool_templates
 
 SKILLS = ["margi", "margi-onboard", "margi-challenge"]
@@ -34,6 +39,7 @@ class InitReport:
     written: list[str] = field(default_factory=list)
     kept: list[str] = field(default_factory=list)
     commits: list[str] = field(default_factory=list)
+    skipped: list[str] = field(default_factory=list)
 
 
 def detect_main(root: Path) -> str:
@@ -101,16 +107,39 @@ def _claude_settings(root: Path, report: InitReport) -> None:
     report.written.append(".claude/settings.json")
 
 
-def _hook(root: Path, report: InitReport) -> None:
+def _hook(root: Path, report: InitReport, *, has_git: bool) -> None:
     hook = root / ".githooks" / "commit-msg"
     hook.parent.mkdir(parents=True, exist_ok=True)
     hook.write_text((tool_templates() / "commit-msg").read_text(encoding="utf-8"), encoding="utf-8")
     hook.chmod(hook.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     report.written.append(".githooks/commit-msg")
+    if not has_git:
+        report.skipped.append("core.hooksPath (no git repository; run `git init` and `margi init` again)")
+        return
     current = git("config", "--get", "core.hooksPath", cwd=root, check=False).strip()
     if current and current != ".githooks":
         raise InitError(f"core.hooksPath is already set to {current!r}; add .githooks/commit-msg there manually")
     git("config", "core.hooksPath", ".githooks", cwd=root)
+
+
+def _install(root: Path, spec: str, report: InitReport) -> None:
+    """Pin margi in the thesis repo's own uv project so `uv run margi` and the hook use a local copy."""
+    uv = shutil.which("uv")
+    if not uv:
+        raise InitError("`uv` not found on PATH; margi is installed per repository with uv (https://docs.astral.sh/uv/)")
+    env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
+
+    def run(*args: str) -> None:
+        proc = subprocess.run([uv, *args], cwd=root, env=env, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise InitError(f"`uv {' '.join(args)}` failed:\n{proc.stderr.strip()}")
+
+    if not (root / "pyproject.toml").exists():
+        run("init", "--bare", "--no-workspace")
+        report.written.append("pyproject.toml")
+    run("add", "--dev", spec)
+    report.written.append(f"pyproject.toml: dev dependency {spec}")
+    report.written.append("uv.lock")
 
 
 def _margi_dir(root: Path, report: InitReport) -> None:
@@ -127,8 +156,17 @@ def _margi_dir(root: Path, report: InitReport) -> None:
     _write(root, f"{MARGI_DIR}/README.md", (tool_templates() / "margi-README.md").read_text(encoding="utf-8"), report, overwrite=True)
 
 
-def init(root: Path, *, commit: bool = True, claude_settings: bool = True, force_config: bool = False) -> InitReport:
-    if staged_changes(root):
+def init(
+    root: Path,
+    *,
+    commit: bool = True,
+    claude_settings: bool = True,
+    force_config: bool = False,
+    install: bool = True,
+    spec: str | None = None,
+) -> InitReport:
+    has_git = is_repo(root)
+    if has_git and staged_changes(root):
         raise InitError("you have staged changes; commit or unstage them before running `margi init`")
     report = InitReport()
 
@@ -136,17 +174,23 @@ def init(root: Path, *, commit: bool = True, claude_settings: bool = True, force
     _write(root, CONFIG_NAME, config, report, overwrite=force_config)
     _vendor_skills(root, report)
     _agents_md(root, report)
-    _hook(root, report)
+    _hook(root, report, has_git=has_git)
     _write(root, ".github/workflows/margi-guard.yml", (tool_templates() / "margi-guard.yml").read_text(encoding="utf-8"),
            report, overwrite=True)
     if claude_settings:
         _claude_settings(root, report)
+    if install:
+        _install(root, spec or f"margi=={__version__}", report)
     _margi_dir(root, report)
 
     if not commit:
         return report
+    if not has_git:
+        report.skipped.append("commits (no git repository)")
+        return report
 
-    human_paths = [CONFIG_NAME, ".agents/skills", ".claude", "AGENTS.md", ".githooks", ".github/workflows/margi-guard.yml"]
+    human_paths = [CONFIG_NAME, ".agents/skills", ".claude", "AGENTS.md", ".githooks", ".github/workflows/margi-guard.yml",
+                   "pyproject.toml", "uv.lock"]
     git("add", "-A", "--", *[p for p in human_paths if (root / p).exists() or (root / p).is_symlink()], cwd=root)
     if git("diff", "--cached", "--name-only", cwd=root).split():
         git("commit", "-q", "-m", f"chore: install margi {__version__}", cwd=root)

@@ -32,11 +32,11 @@ def stage(repo, draft, name="grade.json"):
 
 def test_finalize_writes_record_and_bot_commit(repo, cfg):
     stage(repo, DRAFT)
-    result = finalize(cfg, model="claude-x", harness="claude", model_source="wrapper")
+    result = finalize(cfg, model="claude-x", harness="claude", model_source="self-reported")
     assert len(result.records) == 1
     rec = json.loads(result.records[0].read_text())
     prov = rec["provenance"]
-    assert prov["head_sha"] and prov["model"] == "claude-x" and prov["model_source"] == "wrapper"
+    assert prov["head_sha"] and prov["model"] == "claude-x" and prov["model_source"] == "self-reported"
     assert prov["files"][0]["source"] == "HEAD" and len(prov["files"][0]["sha256"]) == 64
     assert prov["rubric"]["id"] == "default" and prov["rubric"]["version"] == "1.0"
     assert prov["docs"]["low_confidence"] is True

@@ -2,10 +2,15 @@
   "permissions": {
     "allow": [
       "Edit(margi/**)",
-      "Bash(margi finalize:*)",
-      "Bash(margi outline:*)",
-      "Bash(margi status:*)",
-      "Bash(margi extract-pdfs:*)"
+      "Bash(uv run margi finalize:*)",
+      "Bash(uv run margi outline:*)",
+      "Bash(uv run margi status:*)",
+      "Bash(uv run margi extract-pdfs:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)"
     ],
     "deny": [
       "Edit(**/*.typ)",
@@ -13,6 +18,8 @@
       "Edit(**/*.tex)",
       "Edit(**/*.qmd)",
       "Edit(thesis.config.yml)",
+      "Edit(pyproject.toml)",
+      "Edit(uv.lock)",
       "Edit(AGENTS.md)",
       "Edit(.agents/**)",
       "Edit(.githooks/**)",

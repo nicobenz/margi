@@ -13,7 +13,7 @@ Write only to `margi/docs/` and `margi/.staging/`. Never touch thesis text.
 
 ## 0. Preflight
 
-Run `margi finalize --check`. Stop if it fails.
+Run `uv run margi finalize --check`. Stop if it fails.
 
 ## 1. Load context
 
@@ -24,7 +24,7 @@ Run `margi finalize --check`. Stop if it fails.
 - The thesis text only where it shows how the aspect is actually handled.
 - `lenses.md` in this skill: pick the 2–4 lenses that fit the aspect.
 
-If the docs say nothing about the aspect, say so and suggest `margi onboard` first, or
+If the docs say nothing about the aspect, say so and suggest `/margi onboard` first, or
 gather the basics in this session.
 
 ## 2. Dialogue
@@ -55,4 +55,4 @@ gather the basics in this session.
    - `summary`: 3–6 sentences on what was tested and what changed
    - `files_read`: the docs and thesis files you used
    - `payload`: `{"challenges": [{"id": "C1", "lens": "...", "question": "...", "outcome": "refined|defended|open|conceded", "note": "..."}], "docs_changed": [...]}`
-5. Run `margi finalize`.
+5. Run `uv run margi finalize`.

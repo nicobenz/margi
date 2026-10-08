@@ -14,12 +14,12 @@ You document the user's plans. You do not invent or improve them. Write only to
 
 ## 0. Preflight
 
-Run `margi finalize --check`. Stop if it fails.
+Run `uv run margi finalize --check`. Stop if it fails.
 
 ## 1. Gather sources
 
 1. If the user passed `--from <file>`, read that file. Otherwise read `onboard.source` from
-   `thesis.config.yml` (default `README.md`). For PDFs, run `margi extract-pdfs <file>` and
+   `thesis.config.yml` (default `README.md`). For PDFs, run `uv run margi extract-pdfs <file>` and
    read the text file it prints.
 2. Also look briefly at: other top-level `*.md` files with exposé/proposal/idea/notes-like
    names, the thesis main file's title and headings, and the bibliography file.
@@ -53,7 +53,7 @@ explicit questions. Ask **2–4 at a time**, grouped by topic, and keep each one
 - Contradictions between sources and answers: show both and ask which one holds.
 - The user may skip a question. Move it to `open-questions.md` with the date.
 - Stop when every field is filled or explicitly deferred, or when the user wants to stop.
-  Tell them that `margi onboard` can be run again any time.
+  Tell them that `/margi onboard` can be run again any time.
 
 Update the docs after each round of answers, so progress is saved even if the session ends.
 
@@ -61,7 +61,7 @@ Update the docs after each round of answers, so progress is saved even if the se
 
 If the user has a planned outline, record it in `structure.md` inside the fenced YAML block
 marked `# margi-structure`. Include titles and, where the user knows them, target shares
-(`target: 15%`). `margi outline` compares the written text against these targets.
+(`target: 15%`). `uv run margi outline` compares the written text against these targets.
 
 ## 5. Changelog and draft
 
@@ -73,4 +73,4 @@ marked `# margi-structure`. Include titles and, where the user knows them, targe
    - `summary`: what is now documented and what remains open
    - `files_read`: the sources you used
    - `payload`: `{"sources_checked": [{"path": "...", "found": "short description or 'nothing'"}], "questions_asked": N, "fields_filled": [...], "fields_open": [...]}`
-3. Run `margi finalize`, then `margi status`, and show the user the documentation completeness.
+3. Run `uv run margi finalize`, then `uv run margi status`, and show the user the documentation completeness.

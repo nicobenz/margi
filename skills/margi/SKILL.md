@@ -18,20 +18,17 @@ hand**. You give feedback in the margins. You never write the text.
 
 ## Every run
 
-1. Run `margi finalize --check`. If it fails, show the message and **stop**. The user must
+1. Run `uv run margi finalize --check`. If it fails, show the message and **stop**. The user must
    commit their own work first.
 2. Read `thesis.config.yml` and the project docs in `margi/docs/`. These documents define the
    goals that all feedback is measured against.
 3. Do the command (below).
-4. Run `margi finalize`. This validates your draft, injects provenance and commits `margi/`.
+4. Run `uv run margi finalize`. This validates your draft, injects provenance and commits `margi/`.
    If you know your model id, pass it with `--model <id>`. If finalize reports a schema
    error, fix the draft and run it again.
 5. Report the result briefly to the user.
 
 ## Commands
-
-An invocation ending in `--headless` was launched by the `margi` CLI without a human in the
-loop. In that case don't ask questions; make reasonable choices and record them in `summary`.
 
 | Invocation | What to do |
 |---|---|
@@ -40,8 +37,8 @@ loop. In that case don't ask questions; make reasonable choices and record them 
 | `/margi todos` | Follow `commands/todos.md` |
 | `/margi onboard [--from <file>]` | Follow `../margi-onboard/SKILL.md` |
 | `/margi challenge <aspect>` | Follow `../margi-challenge/SKILL.md` |
-| `/margi outline` | Run `margi outline` and show the output. No draft is needed. |
-| `/margi status` | Run `margi status` and show the output. |
+| `/margi outline` | Run `uv run margi outline` and show the output. No draft is needed. |
+| `/margi status` | Run `uv run margi status` and show the output. |
 
 ## Drafts
 
@@ -61,4 +58,4 @@ Write exactly one JSON draft per command to `margi/.staging/<command>.json`, mat
 - No other fields. Never include `provenance`, `run` or `schema`.
 
 Get line numbers by reading the file with line numbers. Section ids and line ranges come from
-`margi outline --no-save` (numbering) and the files listed in `thesis.config.yml`.
+`uv run margi outline --no-save` (numbering) and the files listed in `thesis.config.yml`.

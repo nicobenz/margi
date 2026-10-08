@@ -16,5 +16,5 @@ through margi skills give feedback in the margins; they never write the text.
    bot. Human work and margi work are never mixed in one commit.
 6. **Don't invent facts about the project.** Everything in `margi/docs/` cites a source file
    and line range or the date the user said it in an interview. Unknown → `open-questions.md`.
-7. **Start every run with `margi finalize --check`** and stop if it fails. End every run with
-   `margi finalize`.
+7. **Start every run with `uv run margi finalize --check`** and stop if it fails. End every run with
+   `uv run margi finalize`.

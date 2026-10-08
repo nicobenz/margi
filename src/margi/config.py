@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from .gitutil import is_repo
+
 CONFIG_NAME = "thesis.config.yml"
 MARGI_DIR = "margi"
 
@@ -21,7 +23,6 @@ DEFAULTS: dict[str, Any] = {
     "literature": {"dir": "lit", "bib": None},
     "rubric": "default",
     "docs": {"min_completeness": 0.7},
-    "harness": {"kind": "claude", "model": None},
     "ai_identity": {"name": "margi-bot", "email": "margi-bot@users.noreply.github.com"},
     "github": {"label": "margi"},
 }
@@ -41,6 +42,8 @@ def _merge(base: dict, override: dict) -> dict:
 class Config:
     root: Path
     data: dict = field(default_factory=dict)
+    # Without git, margi still works but skips commits, the clean-tree check and the guard.
+    has_git: bool = True
 
     def __getitem__(self, key: str) -> Any:
         return self.data[key]
@@ -66,4 +69,4 @@ def load(root: Path) -> Config:
     raw: dict = {}
     if path.exists():
         raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    return Config(root=root, data=_merge(DEFAULTS, raw))
+    return Config(root=root, data=_merge(DEFAULTS, raw), has_git=is_repo(root))

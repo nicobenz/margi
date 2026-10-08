@@ -27,8 +27,6 @@ def _env(monkeypatch, tmp_path):
     monkeypatch.setenv("GIT_COMMITTER_NAME", "Human Writer")
     monkeypatch.setenv("GIT_COMMITTER_EMAIL", "human@example.org")
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
-    monkeypatch.delenv("MARGI_MODEL", raising=False)
-    monkeypatch.delenv("MARGI_HARNESS", raising=False)
     (tmp_path / "home").mkdir()
 
 
@@ -44,7 +42,7 @@ def bare_repo(tmp_path) -> Path:
 
 @pytest.fixture
 def repo(bare_repo) -> Path:
-    init(bare_repo)
+    init(bare_repo, install=False)
     return bare_repo
 
 
