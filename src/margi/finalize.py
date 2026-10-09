@@ -258,6 +258,10 @@ def finalize(
         result.records.append(out)
         path.unlink()
 
+    from .dashboard import refresh
+
+    refresh(cfg)
+
     if not commit:
         return result
 

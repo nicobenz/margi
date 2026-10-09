@@ -1,6 +1,6 @@
 """margi command-line interface.
 
-The only user-facing command is `init`. Everything else happens in the agent (`/margi ...`);
+The user-facing commands are `init` and `export`. Everything else happens in the agent (`/margi ...`);
 the remaining commands are hidden plumbing that the skills, the commit hook and CI call.
 """
 
@@ -83,6 +83,22 @@ def init(
         click.echo(f"  skip  {s}")
     click.echo("\nmargi is ready. Write your plan into PROPOSAL.md, commit it, then run /margi propose "
                "in your agent.")
+
+
+@main.command()
+@click.option("--out", type=click.Path(dir_okay=False, path_type=Path),
+              help="Where to write the file (default: margi/dash/export.html).")
+def export(out: Path | None) -> None:
+    """Write the dashboard as one self-contained HTML file that works offline."""
+    from .dashboard import export as run_export
+
+    cfg = _cfg()
+    path = run_export(cfg, out.resolve() if out else None)
+    try:
+        shown = path.relative_to(Path.cwd()).as_posix()
+    except ValueError:
+        shown = str(path)
+    click.echo(f"  wrote {shown}")
 
 
 # ----------------------------------------------------------------- plumbing (hidden, called by skills, hook and CI)

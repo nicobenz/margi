@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>margi</title>
+<style>
+/*@margi-fonts@*/
+
+:root {
+  --ground: #e6e3dd;
+  --page: #f7f6f2;
+  --sel: #ebe7df;
+  --ink: #1c1a18;
+  --ink-2: #47423d;
+  --ink-3: #6a645d;
+  --rule: #d2cdc4;
+  --rule-soft: #e3dfd8;
+  --red: #a3301b;
+  --red-tint: #f2dcd4;
+  --red-ink: #8e2716;
+  --chart: #1c1a18;
+  --chart-grid: #ddd8cf;
+
+  --serif: "Libertinus Serif", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: "Libertinus Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "Libertinus Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+  --head-h: 44px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #191816;
+    --page: #22201d;
+    --sel: #2d2a26;
+    --ink: #ece7df;
+    --ink-2: #c3bcb1;
+    --ink-3: #9b948a;
+    --rule: #3d3934;
+    --rule-soft: #2f2c28;
+    --red: #e3745c;
+    --red-tint: #4a251d;
+    --red-ink: #f0a18f;
+    --chart: #ece7df;
+    --chart-grid: #3a3631;
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: var(--rule) var(--ground); }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 17px/1.45 var(--serif);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-kerning: normal;
+  caret-color: var(--red);
+}
+::selection { background: var(--red-tint); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+a { color: inherit; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--red); }
+button, select { font: inherit; color: inherit; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+.caps { font-family: var(--sans); font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); font-weight: 400; }
+.muted { color: var(--ink-3); }
+.red { color: var(--red); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* running head ------------------------------------------------------------------- */
+.head {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: var(--s5);
+  min-height: var(--head-h);
+  padding: 0 var(--s5);
+  background: var(--ground);
+  border-bottom: 1px solid var(--ink);
+}
+.head::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; border-bottom: 1px solid var(--ink); }
+.wordmark { font-family: var(--sans); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
+.wordmark span { color: var(--ink-3); }
+.title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.head .spacer { flex: 1 1 auto; }
+.next { display: flex; align-items: center; gap: var(--s3); min-width: 0; font-family: var(--sans); font-size: 14px; }
+.next .lead { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+.next .reason { color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34ch; }
+.cmd {
+  display: inline-flex; align-items: center; gap: 2px;
+  border: 1px solid var(--rule); background: var(--page);
+  border-radius: 2px; white-space: nowrap;
+}
+.cmd code { padding: 2px 4px 2px 8px; font-size: 13px; }
+.copy {
+  display: inline-grid; place-items: center; width: 28px; height: 26px;
+  border: 0; background: none; cursor: pointer; color: var(--ink-3); border-radius: 2px;
+}
+.copy:hover { color: var(--ink); background: var(--sel); }
+.copy svg { width: 14px; height: 14px; }
+.copy.done { color: var(--red); }
+.steps { position: relative; }
+.steps > summary {
+  list-style: none; cursor: pointer; padding: 4px 8px; border-radius: 2px; color: var(--ink-2);
+  font-family: var(--sans); font-size: 14px; white-space: nowrap;
+}
+.steps > summary::-webkit-details-marker { display: none; }
+.steps > summary:hover { background: var(--sel); color: var(--ink); }
+.steps[open] > summary { background: var(--sel); color: var(--ink); }
+.steps .panel {
+  position: absolute; right: 0; top: calc(100% + 10px); width: min(560px, calc(100vw - 32px));
+  background: var(--page); border: 1px solid var(--ink);
+  box-shadow: 0 10px 28px -12px rgb(0 0 0 / 0.35);
+  padding: var(--s2) 0;
+}
+.step { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--s3); padding: var(--s3) var(--s4); }
+.step + .step { border-top: 1px solid var(--rule-soft); }
+.step .why { grid-column: 1 / -1; font-family: var(--serif); font-size: 15px; color: var(--ink-2); }
+.step .src { justify-self: end; align-self: center; }
+.updated { font-family: var(--sans); font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+
+/* status line + tabs ---------------------------------------------------------------- */
+.frame { max-width: 1520px; margin: 0 auto; padding: 0 var(--s5) var(--s7); }
+.statusline {
+  display: flex; flex-wrap: wrap; gap: var(--s1) var(--s5);
+  padding: var(--s4) 0 var(--s3);
+  font-size: 16px; color: var(--ink-2);
+}
+.statusline b { font-weight: 600; color: var(--ink); }
+.tabs { display: flex; gap: var(--s5); border-bottom: 1px solid var(--rule); margin-bottom: var(--s5); overflow-x: auto; }
+.tab {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  font-family: var(--sans); font-size: 15px; color: var(--ink-3);
+  padding: var(--s2) 0 var(--s2); margin-bottom: -1px; border-bottom: 2px solid transparent; white-space: nowrap;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.tab .n { color: var(--ink-3); margin-left: 4px; }
+
+/* sections ------------------------------------------------------------------------- */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 0.62fr); gap: var(--s5); align-items: start; }
+.sheet { background: var(--page); border: 1px solid var(--rule); }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-weight: 400; }
+.grid th { padding: var(--s3) var(--s2) var(--s2); border-bottom: 1px solid var(--ink); vertical-align: bottom; position: sticky; top: var(--head-h); background: var(--page); z-index: 1; }
+.grid td { padding: 7px var(--s2); border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+.grid tr:last-child td { border-bottom: 0; }
+.grid th:first-child, .grid td:first-child { padding-left: var(--s4); }
+.grid th:last-child, .grid td:last-child { padding-right: var(--s4); }
+.grid .num { text-align: right; }
+.grid .c { text-align: center; }
+.grid tbody tr { cursor: pointer; }
+.grid tbody tr:hover td { background: color-mix(in srgb, var(--sel) 60%, transparent); }
+.grid tbody tr[aria-selected="true"] td { background: var(--sel); }
+.grid tbody tr[aria-selected="true"] .sid { color: var(--red); }
+.sid { color: var(--ink-3); white-space: nowrap; }
+.grid td.date { white-space: nowrap; }
+.grid .stitle { min-width: 10ch; }
+.grid .flag { margin-left: 6px; white-space: nowrap; }
+.stitle { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.stitle:focus-visible { outline-offset: 3px; }
+tr.l1 .stitle { font-weight: 600; }
+tr.l2 .stitle { padding-left: 14px; }
+tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
+.cat-h { font-family: var(--sans); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); text-align: center; width: 36px; }
+.score { display: inline-block; min-width: 22px; text-align: center; }
+.score.low { color: var(--red); font-weight: 600; }
+.score.none { color: var(--rule); }
+.lc .score { font-style: italic; }
+.len { white-space: nowrap; }
+.len .bar { display: block; position: relative; height: 3px; margin-top: 3px; background: var(--rule-soft); }
+.len .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink-2); }
+.len .bar b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--ink); }
+.delta.up { color: var(--ink); }
+.delta.down { color: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 2px var(--s4); margin: 0; padding: var(--s3) var(--s4); border-top: 1px solid var(--ink); font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
+.legend b { color: var(--ink-2); font-weight: 700; }
+.flag { font-family: var(--sans); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.flag.red { color: var(--red); }
+
+/* apparatus panel -------------------------------------------------------------------- */
+.apparatus {
+  position: sticky; top: calc(var(--head-h) + var(--s4));
+  max-height: calc(100vh - var(--head-h) - var(--s5));
+  overflow: auto; overscroll-behavior: contain;
+  padding: var(--s5) var(--s5) var(--s6);
+  scrollbar-width: thin;
+}
+.apparatus.enter > * { animation: enter 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.apparatus.enter > *:nth-child(2) { animation-delay: 30ms; }
+.apparatus.enter > *:nth-child(3) { animation-delay: 60ms; }
+.apparatus.enter > *:nth-child(n+4) { animation-delay: 90ms; }
+@keyframes enter { from { opacity: 0.001; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .apparatus.enter > * { animation: none; } }
+.apparatus h2 { font-size: 26px; line-height: 1.15; font-weight: 600; margin: 0 0 var(--s2); text-wrap: balance; }
+.apparatus h2 .sid { font-weight: 400; margin-right: 8px; }
+.meta { font-family: var(--sans); font-size: 13px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 2px var(--s3); align-items: center; }
+.meta select { font-size: 13px; border: 1px solid var(--rule); background: var(--page); border-radius: 2px; padding: 1px 4px; }
+.warn { margin: var(--s3) 0 0; font-size: 15px; color: var(--red-ink); }
+.summary { margin: var(--s4) 0 0; font-size: 17px; max-width: 68ch; }
+.block { margin-top: var(--s6); }
+.block > h3 { margin: 0 0 var(--s3); padding-bottom: var(--s2); border-bottom: 1px solid var(--ink); display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
+.block > h3 .caps { color: var(--ink); }
+
+.cats { margin: 0; padding: 0; list-style: none; }
+.cats li { border-bottom: 1px solid var(--rule-soft); }
+.cats details > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto 52px; gap: var(--s3); align-items: baseline; padding: 7px 0; }
+.cats details > summary::-webkit-details-marker { display: none; }
+.cats details > summary:hover .cname { text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.cats .cname { font-size: 16px; }
+.cats .rat { margin: 0 0 var(--s3); font-size: 15px; color: var(--ink-2); max-width: 66ch; }
+.cats .rat .refs { font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
+
+.multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s4) var(--s4); }
+.mult figcaption { font-family: var(--sans); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); display: flex; justify-content: space-between; }
+.mult figcaption b { font-family: var(--serif); font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--ink); font-weight: 600; }
+.mult { margin: 0; position: relative; }
+.mult svg { display: block; width: 100%; height: auto; overflow: visible; }
+.mult .axis { display: flex; justify-content: space-between; padding-left: 7%; font-family: var(--sans); font-size: 11px; color: var(--ink-3); }
+.mult .tip {
+  position: absolute; pointer-events: none; transform: translate(-50%, -100%);
+  background: var(--ink); color: var(--page); font-family: var(--sans); font-size: 12px; white-space: nowrap;
+  padding: 3px 6px; border-radius: 2px; margin-top: -8px; opacity: 0; transition: opacity 80ms;
+}
+.mult .tip.on { opacity: 1; }
+
+.filters { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin-bottom: var(--s3); font-family: var(--sans); font-size: 13px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 2px; overflow: hidden; }
+.seg button { border: 0; background: var(--page); padding: 3px 9px; cursor: pointer; color: var(--ink-2); font-size: 13px; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--page); }
+.filters select { border: 1px solid var(--rule); background: var(--page); border-radius: 2px; padding: 3px 6px; font-size: 13px; }
+
+.entries { list-style: none; margin: 0; padding: 0; }
+.entry { display: grid; grid-template-columns: 10.5em minmax(0, 1fr); gap: var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--rule-soft); }
+.entry:last-child { border-bottom: 0; }
+.lemma-line { font-size: 15px; line-height: 1.4; }
+.loc { font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--ink-2); overflow-wrap: break-word; padding-top: 2px; }
+.loc .ln { display: block; }
+.br { color: var(--ink-3); margin: 0 6px; }
+.lemma { font-style: italic; }
+.lemma::before { content: "\201C"; font-style: normal; }
+.lemma::after { content: "\201D"; font-style: normal; }
+.note { margin-top: 4px; font-size: 16px; max-width: 66ch; }
+.sev { font-family: var(--sans); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.sev.major { color: var(--red); font-weight: 700; }
+.sev.minor { color: var(--ink-2); }
+.sev.note { color: var(--ink-3); }
+.anchor-state { font-family: var(--sans); font-size: 12px; color: var(--red-ink); margin-left: 6px; }
+
+.empty { padding: var(--s6) var(--s5); }
+.empty h2, .empty h3 { font-weight: 600; margin: 0 0 var(--s2); }
+.empty p { margin: 0 0 var(--s3); color: var(--ink-2); max-width: 60ch; }
+.empty ol { margin: var(--s3) 0 0; padding-left: 1.3em; color: var(--ink-2); max-width: 64ch; }
+.empty ol li { margin-bottom: var(--s2); }
+
+/* secondary views -------------------------------------------------------------------- */
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s5); align-items: start; }
+.sheet.pad { padding: var(--s5); }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { padding: 7px 0; border-bottom: 1px solid var(--rule-soft); }
+.list li:last-child { border-bottom: 0; }
+.doclist dt { font-family: var(--mono); font-size: 13px; color: var(--ink-2); margin-top: var(--s3); }
+.doclist dd { margin: 2px 0 0; }
+.plain td, .plain th { padding: 8px var(--s2); border-bottom: 1px solid var(--rule-soft); vertical-align: baseline; }
+.plain th { border-bottom: 1px solid var(--ink); }
+.plain td:first-child, .plain th:first-child { padding-left: var(--s4); }
+.plain td:last-child, .plain th:last-child { padding-right: var(--s4); }
+.why { color: var(--ink-2); font-size: 15px; }
+.rel { font-weight: 600; }
+.rel.high { color: var(--ink); }
+.rel.low { color: var(--ink-3); font-weight: 400; }
+.group + .group { margin-top: var(--s5); }
+
+.banner { margin: var(--s5) 0; padding: var(--s4) var(--s5); background: var(--page); border: 1px solid var(--red); }
+.banner p { margin: 0; }
+.banner p + p { margin-top: var(--s2); color: var(--ink-2); }
+
+.grid td.catsum, .grid th.catsum { display: none; }
+
+/* small screens ------------------------------------------------------------------------ */
+@media (max-width: 1360px) { .grid .date { display: none; } }
+@media (max-width: 1080px) {
+  .split { grid-template-columns: 1fr; }
+  .apparatus { position: static; max-height: none; overflow: visible; }
+  .next .reason { display: none; }
+}
+@media (max-width: 720px) {
+  :root { --head-h: auto; }
+  body { font-size: 16px; }
+  .head { flex-wrap: wrap; gap: var(--s2) var(--s3); padding: var(--s2) var(--s4); }
+  .title { flex: 1 1 60%; }
+  .head .spacer, .updated { display: none; }
+  .next { width: 100%; justify-content: space-between; }
+  .frame { padding: 0 var(--s4) var(--s6); }
+  .grid th { position: static; }
+  .tabs { flex-wrap: wrap; gap: 0 var(--s4); overflow: visible; }
+  .hide-s { display: none; }
+  .grid .catcol { display: none; }
+  .grid td.catsum, .grid th.catsum { display: table-cell; }
+  .apparatus { padding: var(--s4); }
+  .entry { grid-template-columns: 1fr; gap: 2px; }
+  .loc .ln { display: inline; }
+  .legend { display: none; }
+}
+
+@media print {
+  .head { position: static; }
+  .tabs, .filters, .copy, .steps { display: none; }
+  .split { grid-template-columns: 1fr; }
+  .apparatus { position: static; max-height: none; overflow: visible; }
+  body { background: #fff; }
+}
+@media (forced-colors: active) {
+  .score.low { text-decoration: underline; }
+  .len .bar i { background: CanvasText; }
+}
+</style>
+</head>
+<body>
+<header class="head" id="head">
+  <div class="wordmark" aria-label="margi">marg<span>i</span></div>
+  <div class="title" id="title"></div>
+  <div class="spacer"></div>
+  <div class="next" id="next" aria-live="polite"></div>
+  <div class="updated" id="updated"></div>
+</header>
+<div class="frame">
+  <div class="statusline" id="status"></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <main id="view"></main>
+</div>
+
+<script src="dash/data.js"></script>
+<script>
+(function () {
+  "use strict";
+  var D = window.MARGI_DASH;
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  };
+  var COPY_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h1"/></svg>';
+  var CHECK_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>';
+
+  if (!D) {
+    $("title").textContent = "Dashboard";
+    $("view").innerHTML = '<div class="banner"><p><b>No dashboard data found.</b> The page reads <code>margi/dash/data.js</code>, which is missing or unreadable.</p>' +
+      '<p>Run any margi command in your agent (for example <code>/margi status</code> after <code>/margi propose</code>) to regenerate it, or open <code>export.html</code> from <code>margi export</code>.</p></div>';
+    return;
+  }
+
+  // ------------------------------------------------------------------ helpers
+  var fmtN = function (n) { return Number(n || 0).toLocaleString("en-US").replace(/,/g, " "); };
+  var fmtScore = function (v) { return (Math.round(v * 10) / 10).toString(); };
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var thisYear = (D.updated || "").slice(0, 4);
+  var fmtDate = function (ts, withTime, short) {
+    if (!ts) return "";
+    var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(ts);
+    if (!m) return ts;
+    var s = Number(m[3]) + " " + MONTHS[Number(m[2]) - 1] + (short && m[1] === thisYear ? "" : " " + m[1]);
+    return withTime ? s + ", " + m[4] + ":" + m[5] + " UTC" : s;
+  };
+  var plural = function (n, one, many) { return n + " " + (n === 1 ? one : (many || one + "s")); };
+  var rub = D.rubric;
+  var lowCut = rub.min + (rub.max - rub.min) * 0.25; // 1–5 scale: 2 or below needs attention
+  var isLow = function (s) { return s.score / s.max * rub.max <= lowCut + 1e-9; };
+  var catTitle = function (id) { var c = rub.categories.filter(function (x) { return x.id === id; })[0]; return c ? c.title : id; };
+  var ABBR = { alignment: "Al", argument: "Ar", evidence: "Ev", scholarship: "Sc", method: "Me", structure: "St", style: "Sy" };
+  var abbr = function (id) { return ABBR[id] || id.slice(0, 2).replace(/^./, function (c) { return c.toUpperCase(); }); };
+  var latest = function (sid) { var r = D.grades[sid]; return r && r.length ? r[r.length - 1] : null; };
+  var meanOf = function (run, keys) {
+    var v = keys.map(function (k) { return run.scores[k] ? run.scores[k].score / run.scores[k].max * rub.max : null; })
+      .filter(function (x) { return x != null; });
+    return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null;
+  };
+  var delta = function (sid) {
+    var runs = D.grades[sid];
+    if (!runs || runs.length < 2) return null;
+    var a = runs[runs.length - 2], b = runs[runs.length - 1];
+    var keys = Object.keys(b.scores).filter(function (k) { return a.scores[k]; });
+    if (!keys.length) return null;
+    return meanOf(b, keys) - meanOf(a, keys);
+  };
+  var shareTarget = function (t) { var m = /target\s+([\d.]+)\s*%/.exec(t || ""); return m ? Number(m[1]) / 100 : null; };
+
+  function copyText(text, btn) {
+    var ok = function () {
+      btn.classList.add("done"); btn.innerHTML = CHECK_ICON; btn.setAttribute("aria-label", "Copied");
+      setTimeout(function () { btn.classList.remove("done"); btn.innerHTML = COPY_ICON; btn.setAttribute("aria-label", "Copy command"); }, 1400);
+    };
+    var fallback = function () {
+      var ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", "");
+      ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); ok(); } catch (e) { /* leave the command visible to copy by hand */ }
+      document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(ok, fallback); else fallback();
+  }
+  var cmdChip = function (cmd) {
+    return '<span class="cmd"><code>' + esc(cmd) + '</code><button class="copy" type="button" data-copy="' + esc(cmd) + '" aria-label="Copy command">' + COPY_ICON + '</button></span>';
+  };
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-copy]");
+    if (b) { e.preventDefault(); e.stopPropagation(); copyText(b.getAttribute("data-copy"), b); }
+  });
+
+  // ------------------------------------------------------------------ state + hash
+  var state = { tab: "sections", sel: null, sev: "all", cat: "all", run: null };
+  function readHash() {
+    var h = location.hash.replace(/^#/, "").split("&");
+    h.forEach(function (kv) {
+      var p = kv.split("="); if (p.length !== 2) return;
+      var v = decodeURIComponent(p[1]);
+      if (p[0] === "tab") state.tab = v;
+      if (p[0] === "s") state.sel = v;
+    });
+  }
+  function writeHash() {
+    var h = "tab=" + encodeURIComponent(state.tab) + (state.sel && state.tab === "sections" ? "&s=" + encodeURIComponent(state.sel) : "");
+    if (location.hash.slice(1) !== h) history.replaceState(null, "", "#" + h);
+  }
+
+  // ------------------------------------------------------------------ head + status line
+  var sections = D.sections;
+  var gradedIds = sections.filter(function (s) { return latest(s.id); }).map(function (s) { return s.id; });
+  var majors = gradedIds.reduce(function (n, id) {
+    return n + latest(id).comments.filter(function (c) { return c.severity === "major"; }).length;
+  }, 0);
+
+  function renderHead() {
+    $("title").textContent = D.project.title;
+    document.title = D.project.title + " · margi";
+    $("updated").textContent = D.updated ? "Updated " + fmtDate(D.updated) : "No runs yet";
+    var steps = D.next_steps || [];
+    var el = $("next");
+    if (!steps.length) { el.innerHTML = '<span class="muted">Nothing pending</span>'; return; }
+    var first = steps[0];
+    var tag = function (s) { return s.source === "session" ? "from your session" + (s.timestamp ? ", " + fmtDate(s.timestamp) : "") : "from checks"; };
+    var html = '<div class="lead"><span class="caps">Next</span>' + cmdChip(first.command) +
+      '<span class="reason" title="' + esc(first.reason) + '">' + esc(first.reason) + '</span></div>';
+    html += '<details class="steps"><summary aria-label="All next steps">' + (steps.length > 1 ? plural(steps.length, "step") : "Why") + '</summary><div class="panel">' +
+      steps.map(function (s) {
+        return '<div class="step">' + cmdChip(s.command) + '<span class="src caps">' + esc(tag(s)) + '</span><div class="why">' + esc(s.reason) + '</div></div>';
+      }).join("") + '</div></details>';
+    el.innerHTML = html;
+  }
+  document.addEventListener("click", function (e) {
+    var d = document.querySelector(".steps[open]");
+    if (d && !d.contains(e.target)) d.removeAttribute("open");
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { var d = document.querySelector(".steps[open]"); if (d) { d.removeAttribute("open"); d.querySelector("summary").focus(); } }
+  });
+
+  function renderStatus() {
+    var d = D.docs, parts = [];
+    var docsTxt = '<span>Docs <b>' + Math.round(d.completeness * 100) + '%</b>' +
+      (d.completeness < d.threshold ? ' <span class="red">(needs ' + Math.round(d.threshold * 100) + '%)</span>' : '') + '</span>';
+    parts.push(docsTxt);
+    var real = sections.filter(function (s) { return !s.orphan; });
+    if (real.length) parts.push('<span><b>' + gradedIds.length + '</b> of ' + real.length + ' sections graded</span>');
+    if (gradedIds.length) parts.push('<span><b' + (majors ? ' class="red"' : '') + '>' + majors + '</b> major ' + (majors === 1 ? "comment" : "comments") + ' in latest grades</span>');
+    if (D.outline.total) parts.push('<span><b>' + fmtN(D.outline.total) + '</b> ' + esc(unitName(D.outline.unit)) + '</span>');
+    $("status").innerHTML = parts.join("");
+  }
+  function unitName(u) { return u === "words" ? "words" : "characters"; }
+
+  // ------------------------------------------------------------------ tabs
+  var TABS = [
+    ["sections", "Sections", null],
+    ["docs", "Project docs", D.docs.open_questions.length || null],
+    ["literature", "Literature", D.literature.rated.length + D.literature.unrated.length || null],
+    ["todos", "Todos", D.todos.length || null],
+    ["runs", "Runs", D.runs.length || null]
+  ];
+  function renderTabs() {
+    $("tabs").innerHTML = TABS.map(function (t) {
+      return '<button class="tab" role="tab" type="button" id="tab-' + t[0] + '" data-tab="' + t[0] + '" aria-controls="view" aria-selected="' + (state.tab === t[0]) + '"' +
+        (state.tab === t[0] ? '' : ' tabindex="-1"') + '>' + t[1] + (t[2] ? '<span class="n">' + t[2] + '</span>' : '') + '</button>';
+    }).join("");
+  }
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-tab]"); if (!b) return;
+    state.tab = b.getAttribute("data-tab"); render(); b = $("tab-" + state.tab); if (b) b.focus();
+  });
+  $("tabs").addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    var i = TABS.map(function (t) { return t[0]; }).indexOf(state.tab);
+    i = (i + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
+    state.tab = TABS[i][0]; render(); $("tab-" + state.tab).focus();
+  });
+
+  // ------------------------------------------------------------------ sections view
+  function sectionsView() {
+    if (!sections.length) return emptyProject();
+    var cats = rub.categories;
+    var head = '<tr><th class="sid" scope="col"><span class="visually-hidden">Number</span></th><th scope="col" class="caps">Section</th>' +
+      '<th scope="col" class="caps num hide-s">Length</th>' +
+      cats.map(function (c) { return '<th scope="col" class="cat-h catcol" title="' + esc(c.title) + '"><abbr title="' + esc(c.title) + '" style="text-decoration:none">' + esc(abbr(c.id)) + '</abbr></th>'; }).join("") +
+      '<th scope="col" class="caps c catsum">Scores</th>' +
+      '<th scope="col" class="caps num" title="Mean change since the previous grade">Δ</th>' +
+      '<th scope="col" class="caps num" title="Major comments in the latest grade">Maj.</th>' +
+      '<th scope="col" class="caps hide-s date">Graded</th></tr>';
+    var rows = sections.map(function (s) {
+      var g = latest(s.id), dl = delta(s.id);
+      var t = shareTarget(s.target);
+      var bar = '<span class="bar" aria-hidden="true"><i style="width:' + Math.min(100, s.share * 100 * 2.5).toFixed(1) + '%"></i>' +
+        (t != null ? '<b style="left:' + Math.min(100, t * 100 * 2.5).toFixed(1) + '%" title="' + esc(s.target) + '"></b>' : '') + '</span>';
+      var lenTitle = fmtN(s.chars) + " " + unitName(D.outline.unit) + ", " + Math.round(s.share * 100) + "% of the thesis" + (s.target ? " (" + s.target + ")" : "");
+      var scores = cats.map(function (c) {
+        var sc = g && g.scores[c.id];
+        if (!sc) return '<td class="c catcol"><span class="score none" aria-label="no score">·</span></td>';
+        return '<td class="c catcol"><span class="score' + (isLow(sc) ? " low" : "") + '" title="' + esc(c.title) + ": " + fmtScore(sc.score) + " of " + sc.max + '">' + fmtScore(sc.score) + '</span></td>';
+      }).join("");
+      var lowN = g ? Object.keys(g.scores).filter(function (k) { return isLow(g.scores[k]); }).length : 0;
+      var catsum = '<td class="c catsum">' + (g ? (lowN ? '<span class="score low">' + lowN + ' low</span>' : '<span class="muted">ok</span>') : '<span class="score none">·</span>') + '</td>';
+      var maj = g ? g.comments.filter(function (c) { return c.severity === "major"; }).length : null;
+      var changed = g && g.changed.length ? '<span class="flag red" title="Changed since grading: ' + esc(g.changed.join(", ")) + '">changed</span>' : '';
+      var graded = g ? '<span class="muted" title="' + esc(fmtDate(g.timestamp, true)) + '">' + fmtDate(g.timestamp, false, true) + '</span>' : '<span class="muted">—</span>';
+      return '<tr class="l' + Math.min(s.level, 4) + (g && g.low_confidence ? " lc" : "") + '" data-sid="' + esc(s.id) + '" aria-selected="' + (state.sel === s.id) + '">' +
+        '<td class="sid">' + esc(s.id) + '</td>' +
+        '<td><button type="button" class="stitle" data-sid="' + esc(s.id) + '">' + esc(s.title) + '</button>' + changed + (s.orphan ? ' <span class="flag muted">not in thesis</span>' : '') + '</td>' +
+        '<td class="num len hide-s" title="' + esc(lenTitle) + '">' + fmtN(s.chars) + bar + '</td>' + scores + catsum +
+        '<td class="num delta' + (dl == null ? '' : dl > 0.05 ? ' up' : dl < -0.05 ? ' down' : '') + '">' + (dl == null ? '<span class="muted">—</span>' : (dl > 0 ? "+" : dl < 0 ? "−" : "±") + Math.abs(dl).toFixed(1)) + '</td>' +
+        '<td class="num">' + (maj == null ? '<span class="muted">—</span>' : maj ? '<span class="red">' + maj + '</span>' : '0') + '</td>' +
+        '<td class="hide-s date">' + graded + '</td></tr>';
+    }).join("");
+    var problem = D.project.section_problem ? '<p class="warn">Section list comes from the last length snapshot: ' + esc(D.project.section_problem) + '</p>' : '';
+    var legend = '<p class="legend">' + cats.map(function (c) { return '<span><b>' + esc(abbr(c.id)) + '</b> ' + esc(c.title) + '</span>'; }).join("") +
+      '<span><b>\u0394</b> mean change since the previous grade</span><span>Scores of ' + Math.floor(lowCut) + ' or below in <span class="red">red</span></span></p>';
+    return '<div class="split"><div class="sheet"><table class="grid" aria-label="Sections and their latest scores"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>' + legend + problem + '</div>' +
+      '<aside class="sheet apparatus" id="apparatus" aria-label="Section detail" tabindex="-1">' + apparatus() + '</aside></div>';
+  }
+
+  function emptyProject() {
+    return '<div class="sheet empty"><h2>No sections found yet</h2><p>margi reads the section tree from <code>' + esc(D.project.main) + '</code>.' +
+      (D.project.section_problem ? ' ' + esc(D.project.section_problem) + '.' : '') + '</p>' +
+      '<ol><li>Write your plan into <code>PROPOSAL.md</code> and commit it.</li><li>Run ' + cmdChip("/margi propose") + ' in your agent to turn it into project docs.</li>' +
+      '<li>Add headings to your thesis, then run ' + cmdChip("/margi outline") + ' and ' + cmdChip("/margi grade 1") + '.</li></ol></div>';
+  }
+
+  function apparatus() {
+    var s = sections.filter(function (x) { return x.id === state.sel; })[0];
+    if (!s) return overviewPanel();
+    var runs = D.grades[s.id] || [];
+    var head = '<h2><span class="sid">' + esc(s.id) + '</span>' + esc(s.title) + '</h2>';
+    if (!runs.length) {
+      return head + '<div class="meta"><span>' + fmtN(s.chars) + ' ' + unitName(D.outline.unit) + '</span>' + (s.files.length ? '<span class="mono">' + esc(s.files.join(", ")) + '</span>' : '') + '</div>' +
+        '<div class="block"><h3><span class="caps">Not graded yet</span></h3><p class="summary">' + (s.chars ? 'Grade this section to see rubric scores and anchored comments.' : 'This section has no text yet.') + '</p>' +
+        (s.chars ? '<p>' + cmdChip("/margi grade " + s.id) + '</p>' : '') + '</div>';
+    }
+    var idx = state.run != null && state.run < runs.length ? state.run : runs.length - 1;
+    var g = runs[idx];
+    var runSel = runs.length > 1 ? '<label><span class="visually-hidden">Grade run</span><select id="runsel">' + runs.map(function (r, i) {
+      return '<option value="' + i + '"' + (i === idx ? " selected" : "") + '>' + fmtDate(r.timestamp, true) + (i === runs.length - 1 ? " (latest)" : "") + '</option>';
+    }).join("") + '</select></label>' : '<span>' + fmtDate(g.timestamp, true) + '</span>';
+    var meta = '<div class="meta">' + runSel + (g.model ? '<span>' + esc(g.model) + '</span>' : '') + '<span>rubric ' + esc(rub.id) + (g.rubric ? ' ' + esc(g.rubric) : '') + '</span>' +
+      '<span>' + plural(runs.length, "grade") + '</span></div>';
+    var warns = '';
+    if (g.low_confidence) warns += '<p class="warn">Low confidence: the project docs were incomplete when this was graded.</p>';
+    if (idx === runs.length - 1 && g.changed.length) warns += '<p class="warn">The text changed since this grade (' + esc(g.changed.join(", ")) + '). ' + cmdChip("/margi grade " + s.id) + '</p>';
+
+    var prev = idx > 0 ? runs[idx - 1] : null;
+    var catIds = rub.categories.map(function (c) { return c.id; }).filter(function (k) { return g.scores[k]; });
+    var cats = '<ul class="cats">' + catIds.map(function (k) {
+      var sc = g.scores[k], p = prev && prev.scores[k];
+      var d = p ? sc.score / sc.max - p.score / p.max : null;
+      var dTxt = d == null ? '<span class="muted">—</span>' : Math.abs(d) < 0.001 ? '<span class="muted">±0</span>' :
+        '<span class="delta ' + (d > 0 ? "up" : "down") + '">' + (d > 0 ? "+" : "−") + fmtScore(Math.abs(d) * sc.max) + '</span>';
+      return '<li><details><summary><span class="cname">' + esc(catTitle(k)) + '</span><span><span class="score' + (isLow(sc) ? " low" : "") + '">' + fmtScore(sc.score) + '</span><span class="muted">/' + sc.max + '</span></span><span class="num" style="text-align:right">' + dTxt + '</span></summary>' +
+        '<p class="rat">' + esc(sc.rationale) + (sc.comment_ids.length ? ' <span class="refs">→ ' + sc.comment_ids.map(function (id) { return esc(id.split(":").pop()); }).join(", ") + '</span>' : '') + '</p></details></li>';
+    }).join("") + '</ul>';
+
+    var history = runs.length > 1 ? '<div class="block"><h3><span class="caps">Score history</span><span class="muted" style="font-size:14px">' + plural(runs.length, "grade") + '</span></h3><div class="multiples">' +
+      catIds.map(function (k) { return multiple(runs, k); }).join("") + '</div></div>' : '';
+
+    return head + meta + warns +
+      (g.summary ? '<p class="summary">' + esc(g.summary) + '</p>' : '') +
+      '<div class="block"><h3><span class="caps">Scores</span><span class="muted" style="font-size:14px">open a category for its rationale</span></h3>' + cats + '</div>' +
+      comments(g) + history;
+  }
+
+  var tsNum = function (ts) { var t = Date.parse(ts); return isNaN(t) ? 0 : t; };
+  function multiple(runs, k) {
+    var pts = runs.map(function (r) { return r.scores[k] ? { t: tsNum(r.timestamp), v: r.scores[k].score / r.scores[k].max * rub.max, raw: r.scores[k], ts: r.timestamp } : null; })
+      .filter(Boolean);
+    var W = 200, H = 72, padL = 14, padR = 6, padT = 6, padB = 6;
+    var t0 = tsNum(runs[0].timestamp), t1 = tsNum(runs[runs.length - 1].timestamp);
+    var x = function (t) { return padL + (t1 > t0 ? (t - t0) / (t1 - t0) : 0.5) * (W - padL - padR); };
+    var y = function (v) { return padT + (1 - (v - rub.min) / (rub.max - rub.min)) * (H - padT - padB); };
+    var grid = [rub.min, rub.max].map(function (v) {
+      return '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--chart-grid)" stroke-width="1"/>' +
+        '<text x="0" y="' + (y(v) + 3.5) + '" font-size="10" fill="var(--ink-3)" font-family="Libertinus Sans, sans-serif">' + v + '</text>';
+    }).join("");
+    var mid = (rub.min + rub.max) / 2;
+    grid += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(mid) + '" y2="' + y(mid) + '" stroke="var(--chart-grid)" stroke-width="1" stroke-dasharray="2 3"/>';
+    var path = pts.map(function (p, j) { return (j ? "L" : "M") + x(p.t).toFixed(1) + " " + y(p.v).toFixed(1); }).join(" ");
+    var dots = pts.map(function (p) {
+      var low = isLow(p.raw);
+      return '<circle cx="' + x(p.t).toFixed(1) + '" cy="' + y(p.v).toFixed(1) + '" r="3.2" fill="' + (low ? "var(--red)" : "var(--chart)") + '" stroke="var(--page)" stroke-width="1.5"/>' +
+        '<rect class="hit" x="' + (x(p.t) - 9).toFixed(1) + '" y="0" width="18" height="' + H + '" fill="transparent" data-tip="' + esc(fmtDate(p.ts) + ": " + fmtScore(p.raw.score) + " / " + p.raw.max) + '" data-x="' + (x(p.t) / W * 100).toFixed(2) + '" data-y="' + y(p.v).toFixed(1) + '"/>';
+    }).join("");
+    var last = pts[pts.length - 1];
+    var label = esc(catTitle(k)) + ": " + pts.map(function (p) { return fmtDate(p.ts) + " " + fmtScore(p.raw.score) + " of " + p.raw.max; }).join(", ");
+    return '<figure class="mult"><figcaption><span>' + esc(catTitle(k)) + '</span><b>' + fmtScore(last.raw.score) + '</b></figcaption>' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + label + '">' + grid +
+      '<path d="' + path + '" fill="none" stroke="var(--chart)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>' + dots + '</svg>' +
+      '<div class="axis"><span>' + fmtDate(runs[0].timestamp, false, true) + '</span><span>' + fmtDate(runs[runs.length - 1].timestamp, false, true) + '</span></div>' +
+      '<div class="tip" role="presentation"></div></figure>';
+  }
+
+  function comments(g) {
+    var list = g.comments.slice();
+    var order = { major: 0, minor: 1, note: 2 };
+    list.sort(function (a, b) {
+      return (order[a.severity] - order[b.severity]) || ((a.anchor ? a.anchor.file : "~").localeCompare(b.anchor ? b.anchor.file : "~")) ||
+        ((a.anchor ? a.anchor.line_start : 1e9) - (b.anchor ? b.anchor.line_start : 1e9));
+    });
+    var counts = { all: list.length, major: 0, minor: 0, note: 0 };
+    list.forEach(function (c) { counts[c.severity]++; });
+    var catsPresent = [];
+    list.forEach(function (c) { if (catsPresent.indexOf(c.category) < 0) catsPresent.push(c.category); });
+    var shown = list.filter(function (c) { return (state.sev === "all" || c.severity === state.sev) && (state.cat === "all" || c.category === state.cat); });
+    var seg = ["all", "major", "minor", "note"].map(function (k) {
+      return '<button type="button" data-sev="' + k + '" aria-pressed="' + (state.sev === k) + '">' + (k === "all" ? "All" : k[0].toUpperCase() + k.slice(1)) + ' ' + counts[k] + '</button>';
+    }).join("");
+    var catSel = '<label><span class="visually-hidden">Category</span><select id="catsel"><option value="all">All categories</option>' +
+      catsPresent.map(function (c) { return '<option value="' + esc(c) + '"' + (state.cat === c ? " selected" : "") + '>' + esc(catTitle(c)) + '</option>'; }).join("") + '</select></label>';
+    var entries = shown.map(function (c) {
+      var a = c.anchor, lemma;
+      if (a) {
+        var lines = a.line_start === a.line_end ? a.line_start : a.line_start + "–" + a.line_end;
+        var st = a.anchor_status === "unresolved" ? '<span class="anchor-state">passage not found</span>' : a.anchor_status === "relocated" ? '<span class="anchor-state">moved</span>' : '';
+        lemma = '<span class="loc">' + esc(a.file.replace(/^.*\//, "")) + ' <span class="ln">' + lines + '</span></span><div><div class="lemma-line"><span class="lemma">' + esc(a.quote) + '</span><span class="br">]</span>' + st + '</div>';
+      } else {
+        lemma = '<span class="loc">no passage</span><div><div class="lemma-line"><span class="muted">something is missing</span><span class="br">]</span></div>';
+      }
+      var id = c.id.split(":").pop();
+      return '<li class="entry" id="c-' + esc(id) + '"' + (a ? ' title="' + esc(a.file) + '"' : '') + '>' + lemma +
+        '<div class="note"><span class="sev ' + esc(c.severity) + '">' + esc(c.severity) + '</span> <span class="muted">· ' + esc(catTitle(c.category)) + ' · ' + esc(id) + '</span> — ' + esc(c.body) + '</div></div></li>';
+    }).join("");
+    return '<div class="block"><h3><span class="caps">Apparatus</span><span class="muted" style="font-size:14px">' + plural(list.length, "comment") + '</span></h3>' +
+      (list.length ? '<div class="filters"><div class="seg" role="group" aria-label="Severity">' + seg + '</div>' + catSel + '</div>' : '') +
+      (shown.length ? '<ol class="entries">' + entries + '</ol>' : '<p class="muted">' + (list.length ? 'No comments match these filters.' : 'This grade has no comments.') + '</p>') + '</div>';
+  }
+
+  function overviewPanel() {
+    var weakest = [];
+    gradedIds.forEach(function (id) {
+      var g = latest(id);
+      Object.keys(g.scores).forEach(function (k) { if (isLow(g.scores[k])) weakest.push({ id: id, k: k, s: g.scores[k] }); });
+    });
+    weakest.sort(function (a, b) { return a.s.score / a.s.max - b.s.score / b.s.max; });
+    var title = function (id) { var s = sections.filter(function (x) { return x.id === id; })[0]; return s ? s.title : id; };
+    if (!gradedIds.length) {
+      return '<div class="empty" style="padding:0"><h2>Nothing graded yet</h2><p>Scores and anchored comments appear here once a section is graded. Select a section on the left to see its details.</p>' +
+        ((D.next_steps || [])[0] ? '<p>' + cmdChip(D.next_steps[0].command) + '</p><p class="muted">' + esc(D.next_steps[0].reason) + '</p>' : '') + '</div>';
+    }
+    return '<h2>Needs attention</h2><div class="meta"><span>Select a section to open its scores, history and comments.</span></div>' +
+      '<div class="block"><h3><span class="caps">Scores of ' + Math.floor(lowCut) + ' or below</span><span class="muted" style="font-size:14px">' + weakest.length + '</span></h3>' +
+      (weakest.length ? '<ul class="list">' + weakest.slice(0, 12).map(function (w) {
+        return '<li><a href="#tab=sections&s=' + encodeURIComponent(w.id) + '" data-goto="' + esc(w.id) + '"><span class="sid">' + esc(w.id) + '</span> ' + esc(title(w.id)) + '</a> <span class="muted">· ' + esc(catTitle(w.k)) + '</span> <span class="score low">' + fmtScore(w.s.score) + '</span></li>';
+      }).join("") + '</ul>' : '<p class="muted">No category is scored that low in the latest grades.</p>') + '</div>' +
+      '<div class="block"><h3><span class="caps">Changed since grading</span></h3>' + (function () {
+        var ch = gradedIds.filter(function (id) { return latest(id).changed.length; });
+        return ch.length ? '<ul class="list">' + ch.map(function (id) {
+          return '<li><a href="#tab=sections&s=' + encodeURIComponent(id) + '" data-goto="' + esc(id) + '"><span class="sid">' + esc(id) + '</span> ' + esc(title(id)) + '</a> ' + cmdChip("/margi grade " + id) + '</li>';
+        }).join("") + '</ul>' : '<p class="muted">Every graded section matches its latest grade.</p>';
+      })() + '</div>';
+  }
+
+  // ------------------------------------------------------------------ secondary views
+  function docsView() {
+    var d = D.docs;
+    var missing = Object.keys(d.missing);
+    return '<div class="cols"><section class="sheet pad"><h3 class="caps" style="margin:0 0 12px;color:var(--ink)">Completeness</h3>' +
+      '<p style="margin:0">' + d.filled + ' of ' + d.required + ' required fields are documented (<b' + (d.completeness < d.threshold ? ' class="red"' : '') + '>' + Math.round(d.completeness * 100) + '%</b>; grading needs ' + Math.round(d.threshold * 100) + '%).</p>' +
+      (d.completeness < d.threshold ? '<p class="why">Below the threshold every grade and rating is marked low-confidence.</p>' : '') +
+      (missing.length ? '<h4 class="caps" style="margin:20px 0 0">Still missing</h4><dl class="doclist">' + missing.map(function (f) {
+        return '<dt>margi/docs/' + esc(f) + '</dt><dd>' + d.missing[f].map(esc).join(", ") + '</dd>';
+      }).join("") + '</dl><p style="margin-top:16px">' + cmdChip("/margi propose") + '</p>' : '<p class="muted">Every required field is documented.</p>') + '</section>' +
+      '<section class="sheet pad"><h3 class="caps" style="margin:0 0 12px;color:var(--ink)">Open questions <span class="muted">' + d.open_questions.length + '</span></h3>' +
+      (d.open_questions.length ? '<ol class="list" style="list-style:decimal;padding-left:1.4em">' + d.open_questions.map(function (q) { return '<li>' + esc(q) + '</li>'; }).join("") + '</ol>' +
+        '<p style="margin-top:16px">' + cmdChip("/margi challenge") + '</p>' : '<p class="muted">No open questions in <code>margi/docs/open-questions.md</code>.</p>') + '</section></div>';
+  }
+
+  function literatureView() {
+    var L = D.literature;
+    if (!L.rated.length && !L.unrated.length) {
+      return '<div class="sheet empty"><h3>No literature yet</h3><p>Put PDFs into the literature folder, then rate them for relevance to your research question.</p><p>' + cmdChip("/margi read") + '</p></div>';
+    }
+    var rows = L.rated.map(function (r) {
+      var rel = r.relevance == null ? "—" : r.relevance;
+      var cls = r.relevance >= 4 ? " high" : r.relevance <= 1 ? " low" : "";
+      return '<tr><td class="num rel' + cls + '">' + rel + '<span class="muted" style="font-weight:400">/5</span></td>' +
+        '<td><div>' + esc(r.cite_key || r.pdf.replace(/^.*\//, "")) + '</div><div class="muted mono">' + esc(r.pdf) + '</div></td>' +
+        '<td class="hide-s">' + esc(r.role || "") + '</td>' +
+        '<td class="hide-s">' + esc((r.sections || []).join(", ")) + '</td>' +
+        '<td>' + (r.cited_in_thesis ? 'cited' : (r.relevance >= 4 ? '<b>not cited</b>' : '<span class="muted">not cited</span>')) + '</td>' +
+        '<td class="why hide-s">' + esc(r.why || "") + '</td></tr>';
+    }).join("");
+    return (L.rated.length ? '<div class="sheet"><table class="plain"><thead><tr><th class="caps num">Rel.</th><th class="caps">Source</th><th class="caps hide-s">Role</th><th class="caps hide-s">Sections</th><th class="caps">In thesis</th><th class="caps hide-s">Why</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '') +
+      (L.unrated.length ? '<div class="sheet pad" style="margin-top:24px"><h3 class="caps" style="margin:0 0 8px;color:var(--ink)">Not rated yet <span class="muted">' + L.unrated.length + '</span></h3><ul class="list">' +
+        L.unrated.map(function (p) { return '<li class="mono">' + esc(p) + '</li>'; }).join("") + '</ul><p>' + cmdChip("/margi read") + '</p></div>' : '');
+  }
+
+  function todosView() {
+    var T = D.todos;
+    if (!T.length) return '<div class="sheet empty"><h3>No todos</h3><p>margi proposes todos from grades and ratings; you accept, reject or change them before anything reaches GitHub.</p><p>' + cmdChip("/margi todos") + '</p></div>';
+    var groups = [
+      ["Accepted, not on GitHub yet", function (t) { return t.kind !== "synced" && t.status === "accepted"; }],
+      ["Proposed, waiting for your review", function (t) { return t.kind === "proposed" && t.status !== "accepted"; }],
+      ["Closures proposed", function (t) { return t.kind === "close" && t.status !== "accepted"; }],
+      ["On GitHub", function (t) { return t.kind === "synced"; }]
+    ];
+    return '<div class="cols">' + groups.map(function (g) {
+      var items = T.filter(g[1]);
+      if (!items.length) return '';
+      return '<section class="sheet pad"><h3 class="caps" style="margin:0 0 8px;color:var(--ink)">' + g[0] + ' <span class="muted">' + items.length + '</span></h3><ul class="list">' +
+        items.map(function (t) { return '<li>' + esc(t.title) + (t.issue ? ' <span class="muted">#' + esc(t.issue) + '</span>' : '') + '<div class="muted mono" style="font-size:12px">' + esc(t.file) + '</div></li>'; }).join("") + '</ul></section>';
+    }).join("") + '</div>' + (T.some(function (t) { return t.status === "accepted" && t.kind !== "synced"; }) ? '<p>' + cmdChip("/margi todos") + '</p>' : '');
+  }
+
+  function runsView() {
+    if (!D.runs.length) return '<div class="sheet empty"><h3>No runs yet</h3><p>Every margi command leaves a provenance-stamped record in <code>margi/feedback/</code>. They will be listed here.</p></div>';
+    return '<div class="sheet"><table class="plain"><thead><tr><th class="caps">When</th><th class="caps">Command</th><th class="caps">Scope</th><th class="caps hide-s">Model</th><th class="caps hide-s">Summary</th></tr></thead><tbody>' +
+      D.runs.map(function (r) {
+        return '<tr><td style="white-space:nowrap">' + fmtDate(r.timestamp, true) + '</td><td>' + esc(r.command) + '</td><td>' + esc(r.scope) + '</td><td class="hide-s muted">' + esc(r.model || "—") + '</td><td class="why hide-s">' + esc(r.summary) + '</td></tr>';
+      }).join("") + '</tbody></table></div>' +
+      '<p class="muted" style="font-size:15px">The full audit trail is <code>git log -- margi/</code>.</p>';
+  }
+
+  // ------------------------------------------------------------------ render + events
+  function render(opts) {
+    renderTabs();
+    var v = $("view");
+    var views = { sections: sectionsView, docs: docsView, literature: literatureView, todos: todosView, runs: runsView };
+    if (!views[state.tab]) state.tab = "sections";
+    v.setAttribute("aria-labelledby", "tab-" + state.tab);
+    v.innerHTML = views[state.tab]();
+    if (opts && opts.enter) { var a = $("apparatus"); if (a) { a.classList.add("enter"); } }
+    writeHash();
+  }
+  function select(sid, focusPanel) {
+    if (state.sel !== sid) { state.run = null; state.sev = "all"; state.cat = "all"; }
+    state.sel = sid; state.tab = "sections";
+    render({ enter: true });
+    var a = $("apparatus");
+    if (a) a.scrollTop = 0;
+    if (focusPanel && a && window.matchMedia("(max-width: 1080px)").matches) a.scrollIntoView({ block: "start" });
+  }
+
+  $("view").addEventListener("click", function (e) {
+    var go = e.target.closest("[data-goto]");
+    if (go) { e.preventDefault(); select(go.getAttribute("data-goto"), true); return; }
+    var sev = e.target.closest("[data-sev]");
+    if (sev) { state.sev = sev.getAttribute("data-sev"); rerenderPanel(); return; }
+    if (e.target.closest("[data-copy]") || e.target.closest("a, select, summary")) return;
+    var tr = e.target.closest("tr[data-sid]");
+    if (tr) { select(tr.getAttribute("data-sid"), true); var b = document.querySelector('.stitle[data-sid="' + CSS.escape(state.sel) + '"]'); if (b) b.focus({ preventScroll: true }); }
+  });
+  $("view").addEventListener("change", function (e) {
+    if (e.target.id === "catsel") { state.cat = e.target.value; rerenderPanel(); }
+    if (e.target.id === "runsel") { state.run = Number(e.target.value); rerenderPanel(); }
+  });
+  $("view").addEventListener("keydown", function (e) {
+    var b = e.target.closest(".stitle");
+    if (!b || (e.key !== "ArrowDown" && e.key !== "ArrowUp")) return;
+    e.preventDefault();
+    var all = Array.prototype.slice.call(document.querySelectorAll(".stitle"));
+    var i = all.indexOf(b) + (e.key === "ArrowDown" ? 1 : -1);
+    if (i < 0 || i >= all.length) return;
+    select(all[i].getAttribute("data-sid"));
+    var nb = document.querySelector('.stitle[data-sid="' + CSS.escape(state.sel) + '"]');
+    if (nb) { nb.focus(); }
+  });
+  $("view").addEventListener("pointermove", function (e) {
+    var hit = e.target.closest(".hit");
+    document.querySelectorAll(".mult .tip.on").forEach(function (t) { if (!hit || t.parentNode !== hit.closest(".mult")) t.classList.remove("on"); });
+    if (!hit) return;
+    var fig = hit.closest(".mult"), tip = fig.querySelector(".tip"), svg = fig.querySelector("svg");
+    tip.textContent = hit.getAttribute("data-tip");
+    tip.style.left = hit.getAttribute("data-x") + "%";
+    tip.style.top = (svg.offsetTop + Number(hit.getAttribute("data-y")) / 72 * svg.clientHeight) + "px";
+    tip.classList.add("on");
+  });
+  function rerenderPanel() {
+    var a = $("apparatus"); if (!a) return;
+    var y = a.scrollTop; a.classList.remove("enter"); a.innerHTML = apparatus(); a.scrollTop = y;
+  }
+  window.addEventListener("hashchange", function () {
+    var before = state.sel + "|" + state.tab; readHash();
+    if (before !== state.sel + "|" + state.tab) render({ enter: true });
+  });
+
+  readHash();
+  renderHead();
+  renderStatus();
+  render();
+})();
+</script>
+</body>
+</html>

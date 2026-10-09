@@ -13,7 +13,7 @@ are kept separate from yours. Git hooks and CI enforce this. You don't have to t
 mkdir my-thesis && cd my-thesis && git init && uvx margi init
 ```
 
-This is the only command you run in the terminal. In an empty folder it bootstraps a Typst
+This is the only setup command you run in the terminal. In an empty folder it bootstraps a Typst
 thesis: `main.typ` with a chapter skeleton in `chapters/`, an empty `refs.bib`, `lit/` for
 PDFs, and `PROPOSAL.md`. In an existing Typst project it only adds what is missing
 (`PROPOSAL.md` and margi itself) and leaves your files alone.
@@ -53,7 +53,24 @@ All commands run inside your agent.
 | `/margi todos` | Proposes todos as Markdown files and suggests closing issues that look done. You accept, reject or request changes, and only accepted items go to GitHub. |
 | `/margi status` | Shows docs completeness, latest grades, outline, todos and recent runs. |
 
-`/margi-propose` and `/margi-challenge <aspect>` work as shortcuts too. In the background,
+`/margi-propose` and `/margi-challenge <aspect>` work as shortcuts too.
+
+## Dashboard
+
+Open `margi/dash.html` in a browser. It shows every section in thesis order with its latest
+rubric scores, what changed since it was graded, the anchored comments, how scores developed
+over time, project docs, literature, todos and the run log. The header always shows the next
+margi command to run, with a copy button. Those suggestions come from rule-based checks (docs
+below the threshold, sections changed since grading, ungraded sections, unrated PDFs, …)
+and from your agent, which can add steps based on what you asked for in the session.
+
+The page itself never changes; every margi run only rewrites its data file,
+`margi/dash/data.js`, and commits it with the run. To share a snapshot, run
+
+```sh
+uv run margi export          # writes margi/dash/export.html, one self-contained offline file
+```
+ In the background,
 the skills call a few hidden `uv run margi …` helpers (`finalize`, `outline`, `status`,
 `extract-pdfs`, `sync-todos`); you never need to run them yourself.
 
@@ -102,8 +119,9 @@ skills/margi/            SKILL.md, commands/{grade,read,todos}.md, rubrics/defau
 skills/margi-propose/    SKILL.md, templates/ (the margi/docs files)
 skills/margi-challenge/  SKILL.md, lenses.md
 AGENTS.md                hard rules, merged into the thesis repo's AGENTS.md
-templates/               config, PROPOSAL.md, Typst skeleton, commit-msg hook, CI workflow, Claude settings
-src/margi/               init + hidden helpers (finalize, guard, outline, adapters/typst, …)
+templates/               config, PROPOSAL.md, Typst skeleton, commit-msg hook, CI workflow, Claude settings,
+                         dash/ (dashboard page and its Libertinus fonts, OFL)
+src/margi/               init, export + hidden helpers (finalize, guard, outline, dashboard, adapters/typst, …)
 ```
 
 The only supported format is Typst; the adapters in `src/margi/adapters/` are the extension
