@@ -83,10 +83,12 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
 }
 .head::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; border-bottom: 1px solid var(--ink); }
 .wordmark { font-family: var(--sans); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
-.title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.title { margin: 0; font-weight: 400; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
 .head .spacer { flex: 1 1 auto; }
 .next { display: flex; align-items: center; gap: var(--s3); min-width: 0; font-family: var(--sans); font-size: 14px; }
 .next .lead { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+.next .src { white-space: nowrap; }
+.next .flag { color: var(--ink-2); white-space: nowrap; }
 .next .reason { color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34ch; }
 .cmd {
   display: inline-flex; align-items: center; gap: 2px;
@@ -129,12 +131,13 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
   font-size: 16px; color: var(--ink-2);
 }
 .statusline b { font-weight: 600; color: var(--ink); }
-.tabs { display: flex; gap: var(--s5); border-bottom: 1px solid var(--rule); margin-bottom: var(--s5); overflow-x: auto; }
+.tabs { display: flex; gap: var(--s4); border-bottom: 1px solid var(--rule); margin: 0 calc(-1 * var(--s1)) var(--s5); padding: 0 var(--s1); overflow-x: auto; }
 .tab {
   appearance: none; border: 0; background: none; cursor: pointer;
   font-family: var(--sans); font-size: 15px; color: var(--ink-3);
-  padding: var(--s2) 0 var(--s2); margin-bottom: -1px; border-bottom: 2px solid transparent; white-space: nowrap;
+  padding: var(--s2) var(--s1); margin-bottom: -1px; border-bottom: 2px solid transparent; white-space: nowrap;
 }
+.tab:focus-visible { outline-offset: -2px; }
 .tab:hover { color: var(--ink); }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
 .tab .n { color: var(--ink-3); margin-left: 4px; }
@@ -153,8 +156,11 @@ th { text-align: left; font-weight: 400; }
 .grid .c { text-align: center; }
 .grid tbody tr { cursor: pointer; }
 .grid tbody tr:hover td { background: color-mix(in srgb, var(--sel) 60%, transparent); }
-.grid tbody tr[aria-selected="true"] td { background: var(--sel); }
-.grid tbody tr[aria-selected="true"] .sid { color: var(--red); }
+.grid tbody tr.sel td { background: var(--sel); }
+.grid tbody tr.sel .sid { color: var(--red); }
+.grid tbody tr.sel .stitle { text-decoration: underline; text-decoration-color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.grid td.ungraded { font-family: var(--sans); font-size: 13px; color: var(--ink-3); padding-top: 10px; }
+.list .score { min-width: 0; margin-left: 2px; }
 .sid { color: var(--ink-3); white-space: nowrap; }
 .grid td.date { white-space: nowrap; }
 .grid .stitle { min-width: 10ch; }
@@ -177,11 +183,15 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .delta.down { color: var(--ink-2); }
 .legend { display: flex; flex-wrap: wrap; gap: 2px var(--s4); margin: 0; padding: var(--s3) var(--s4); border-top: 1px solid var(--ink); font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
 .legend b { color: var(--ink-2); font-weight: 700; }
+.legend i { font-family: var(--serif); font-size: 15px; color: var(--ink-2); }
+.tablebar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule-soft); font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
+.grid td.none-shown { padding: var(--s5) var(--s4); color: var(--ink-3); }
 .flag { font-family: var(--sans); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
 .flag.red { color: var(--red); }
 
 /* apparatus panel -------------------------------------------------------------------- */
 .apparatus {
+  scroll-margin-top: calc(var(--head-real, 48px) + var(--s2));
   position: sticky; top: calc(var(--head-h) + var(--s4));
   max-height: calc(100vh - var(--head-h) - var(--s5));
   overflow: auto; overscroll-behavior: contain;
@@ -199,6 +209,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .meta { font-family: var(--sans); font-size: 13px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 2px var(--s3); align-items: center; }
 .meta select { font-size: 13px; border: 1px solid var(--rule); background: var(--page); border-radius: 2px; padding: 1px 4px; }
 .warn { margin: var(--s3) 0 0; font-size: 15px; color: var(--red-ink); }
+.lcnote { margin: var(--s3) 0 0; font-family: var(--sans); font-size: 13px; color: var(--ink-2); }
+.lcnote i { font-family: var(--serif); font-size: 15px; }
 .summary { margin: var(--s4) 0 0; font-size: 17px; max-width: 68ch; }
 .block { margin-top: var(--s6); }
 .block > h3 { margin: 0 0 var(--s3); padding-bottom: var(--s2); border-bottom: 1px solid var(--ink); display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
@@ -208,8 +220,13 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .cats li { border-bottom: 1px solid var(--rule-soft); }
 .cats details > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto 34px; gap: var(--s2); align-items: baseline; padding: 4px 0; }
 .cats details > summary::-webkit-details-marker { display: none; }
-.cats details > summary:hover .cname { text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
-.cats .cname { font-size: 15px; }
+.cats details > summary:hover .cname, .cats details[open] .cname { text-decoration-style: solid; text-decoration-color: var(--ink-3); }
+.cats .refs a { color: var(--ink-2); }
+.entry:target, .entry.hl { background: color-mix(in srgb, var(--sel) 70%, transparent); }
+.entry { scroll-margin-top: var(--s4); }
+.cats .cname { font-size: 15px; text-decoration: underline dotted var(--rule); text-underline-offset: 4px; }
+.cats .aw { font-family: var(--sans); font-size: 12px; color: var(--ink-3); margin-left: 6px; }
+.cats .adef { display: block; font-family: var(--sans); font-size: 13px; color: var(--ink-3); margin-bottom: 2px; }
 .cats details[open] { grid-column: 1 / -1; }
 .cats .rat { margin: 0 0 var(--s3); font-size: 15px; color: var(--ink-2); max-width: 66ch; }
 .cats .rat .refs { font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
@@ -282,11 +299,11 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .grid td.catsum, .grid th.catsum { display: none; }
 
 /* small screens ------------------------------------------------------------------------ */
-@media (max-width: 1360px) { .grid .date { display: none; } }
+@media (max-width: 1360px) { .grid .date, .next .reason { display: none; } }
 @media (max-width: 1080px) {
   .split { grid-template-columns: 1fr; }
   .apparatus { position: static; max-height: none; overflow: visible; }
-  .next .reason { display: none; }
+  .next .lead .src { display: none; }
 }
 @media (max-width: 720px) {
   :root { --head-h: auto; }
@@ -294,7 +311,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   .head { flex-wrap: wrap; gap: var(--s2) var(--s3); padding: var(--s2) var(--s4); }
   .title { flex: 1 1 60%; }
   .head .spacer, .updated { display: none; }
-  .next { width: 100%; justify-content: space-between; }
+  .next { width: 100%; justify-content: space-between; align-items: flex-start; }
+  .next .lead { flex-wrap: wrap; row-gap: var(--s1); }
   .frame { padding: 0 var(--s4) var(--s6); }
   .grid th { position: static; }
   .tabs { flex-wrap: wrap; gap: 0 var(--s4); overflow: visible; }
@@ -303,7 +321,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   .grid td.catsum, .grid th.catsum { display: table-cell; }
   .apparatus { padding: var(--s4); }
   .entry { grid-template-columns: 3.4em minmax(0, 1fr); gap: var(--s2); }
-  .legend { display: none; }
+  .legend .key { display: none; }
 }
 
 @media print {
@@ -322,16 +340,17 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 <body>
 <header class="head" id="head">
   <div class="wordmark">margi</div>
-  <div class="title" id="title"></div>
+  <h1 class="title" id="title"></h1>
   <div class="spacer"></div>
-  <div class="next" id="next" aria-live="polite"></div>
+  <div class="next" id="next"></div>
   <div class="updated" id="updated"></div>
 </header>
 <div class="frame">
   <div class="statusline" id="status"></div>
   <div class="tabs" role="tablist" id="tabs"></div>
-  <main id="view"></main>
+  <main><div id="view" role="tabpanel"></div></main>
 </div>
+<div class="visually-hidden" id="live" aria-live="polite"></div>
 
 <script src="dash/data.js"></script>
 <script>
@@ -370,6 +389,14 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   var rub = D.rubric;
   var lowCut = rub.min + (rub.max - rub.min) * 0.25; // 1–5 scale: 2 or below needs attention
   var isLow = function (s) { return s.score / s.max * rub.max <= lowCut + 1e-9; };
+  var anchorOf = function (s) { // "2 — weak — present, but …" from the rubric scale, if the rubric defines it
+    var a = rub.anchors && rub.anchors[String(Math.round(s.score / s.max * rub.max))];
+    if (!a) return null;
+    var i = a.indexOf(" \u2014 ");
+    return { word: i > 0 ? a.slice(0, i) : a, text: a };
+  };
+  var scoreTitle = function (k, s) { var a = anchorOf(s); return catTitle(k) + ": " + fmtScore(s.score) + " of " + s.max + (a ? " \u2014 " + a.text : ""); };
+  var docsLow = D.docs.completeness < D.docs.threshold;
   var catTitle = function (id) { var c = rub.categories.filter(function (x) { return x.id === id; })[0]; return c ? c.title : id; };
   var ABBR = { alignment: "Al", argument: "Ar", evidence: "Ev", scholarship: "Sc", method: "Me", structure: "St", style: "Sy" };
   var abbr = function (id) { return ABBR[id] || id.slice(0, 2).replace(/^./, function (c) { return c.toUpperCase(); }); };
@@ -392,6 +419,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   function copyText(text, btn) {
     var ok = function () {
       btn.classList.add("done"); btn.innerHTML = CHECK_ICON; btn.setAttribute("aria-label", "Copied");
+      $("live").textContent = ""; setTimeout(function () { $("live").textContent = "Copied " + text; }, 30);
       setTimeout(function () { btn.classList.remove("done"); btn.innerHTML = COPY_ICON; btn.setAttribute("aria-label", "Copy command"); }, 1400);
     };
     var fallback = function () {
@@ -411,9 +439,10 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   });
 
   // ------------------------------------------------------------------ state + hash
-  var state = { tab: "sections", sel: null, sev: "all", cat: "all", run: null };
+  var state = { tab: "sections", sel: null, sev: "all", cat: "all", run: null, show: "all" };
   function readHash() {
     var h = location.hash.replace(/^#/, "").split("&");
+    if (h.some(function (kv) { return kv.indexOf("tab=") === 0; })) state.sel = null;
     h.forEach(function (kv) {
       var p = kv.split("="); if (p.length !== 2) return;
       var v = decodeURIComponent(p[1]);
@@ -421,9 +450,9 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       if (p[0] === "s") state.sel = v;
     });
   }
-  function writeHash() {
+  function writeHash(push) {
     var h = "tab=" + encodeURIComponent(state.tab) + (state.sel && state.tab === "sections" ? "&s=" + encodeURIComponent(state.sel) : "");
-    if (location.hash.slice(1) !== h) history.replaceState(null, "", "#" + h);
+    if (location.hash.slice(1) !== h) history[push ? "pushState" : "replaceState"](null, "", "#" + h);
   }
 
   // ------------------------------------------------------------------ head + status line
@@ -435,18 +464,24 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 
   function renderHead() {
     $("title").textContent = D.project.title;
+    $("title").title = D.project.title;
     document.title = D.project.title + " · margi";
     $("updated").textContent = D.updated ? "Updated " + fmtDate(D.updated) : "No runs yet";
     var steps = D.next_steps || [];
     var el = $("next");
     if (!steps.length) { el.innerHTML = '<span class="muted">Nothing pending</span>'; return; }
     var first = steps[0];
-    var tag = function (s) { return s.source === "session" ? "from your session" + (s.timestamp ? ", " + fmtDate(s.timestamp) : "") : "from checks"; };
+    var tag = function (s) { return s.source === "session" ? "from your session" + (s.timestamp ? ", " + fmtDate(s.timestamp, false, true) : "") : "from checks"; };
+    var lcGrade = function (s) { return docsLow && /^\/margi[ -]grade\b/.test(s.command); };
+    var LC_WHY = "Project docs are below " + Math.round(D.docs.threshold * 100) + "%, so this grade will be marked low-confidence.";
     var html = '<div class="lead"><span class="caps">Next</span>' + cmdChip(first.command) +
+      (lcGrade(first) ? '<span class="flag" title="' + esc(LC_WHY) + '">low-confidence</span>' : '') +
+      '<span class="src caps">' + esc(tag(first)) + '</span>' +
       '<span class="reason" title="' + esc(first.reason) + '">' + esc(first.reason) + '</span></div>';
-    html += '<details class="steps"><summary aria-label="All next steps">' + (steps.length > 1 ? plural(steps.length, "step") : "Why") + '</summary><div class="panel">' +
+    html += '<details class="steps"><summary>' + (steps.length > 1 ? plural(steps.length, "step") : "Why") + '</summary><div class="panel">' +
       steps.map(function (s) {
-        return '<div class="step">' + cmdChip(s.command) + '<span class="src caps">' + esc(tag(s)) + '</span><div class="why">' + esc(s.reason) + '</div></div>';
+        return '<div class="step">' + cmdChip(s.command) + '<span class="src caps">' + esc(tag(s)) + '</span><div class="why">' + esc(s.reason) +
+          (lcGrade(s) ? ' <span class="muted">' + esc(LC_WHY) + '</span>' : '') + '</div></div>';
       }).join("") + '</div></details>';
     el.innerHTML = html;
   }
@@ -461,7 +496,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   function renderStatus() {
     var d = D.docs, parts = [];
     var docsTxt = '<span>Docs <b>' + Math.round(d.completeness * 100) + '%</b>' +
-      (d.completeness < d.threshold ? ' <span class="red">(needs ' + Math.round(d.threshold * 100) + '%)</span>' : '') + '</span>';
+      (d.completeness < d.threshold ? ' <span class="muted">(grades are low-confidence until ' + Math.round(d.threshold * 100) + '%)</span>' : '') + '</span>';
     parts.push(docsTxt);
     var real = sections.filter(function (s) { return !s.orphan; });
     if (real.length) parts.push('<span><b>' + gradedIds.length + '</b> of ' + real.length + ' sections graded</span>');
@@ -497,6 +532,11 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   });
 
   // ------------------------------------------------------------------ sections view
+  var needsAttention = function (sid) {
+    var g = latest(sid);
+    return !!g && (g.changed.length > 0 || g.comments.some(function (c) { return c.severity === "major"; }) ||
+      Object.keys(g.scores).some(function (k) { return isLow(g.scores[k]); }));
+  };
   function sectionsView() {
     if (!sections.length) return emptyProject();
     var cats = rub.categories;
@@ -507,34 +547,50 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       '<th scope="col" class="caps num" title="Mean change since the previous grade">Δ</th>' +
       '<th scope="col" class="caps num" title="Major comments in the latest grade">Maj.</th>' +
       '<th scope="col" class="caps hide-s date">Graded</th></tr>';
-    var rows = sections.map(function (s) {
+    // length bars share one scale: the longest section (or target) fills the column
+    var scale = sections.reduce(function (m, s) { return Math.max(m, s.share || 0, shareTarget(s.target) || 0); }, 0) || 1;
+    var pct = function (v) { return (v / scale * 100).toFixed(1); };
+    var visible = sections.filter(function (s) {
+      return state.show === "graded" ? !!latest(s.id) : state.show === "attention" ? needsAttention(s.id) : true;
+    });
+    var rows = visible.map(function (s) {
       var g = latest(s.id), dl = delta(s.id);
       var t = shareTarget(s.target);
-      var bar = '<span class="bar" aria-hidden="true"><i style="width:' + Math.min(100, s.share * 100 * 2.5).toFixed(1) + '%"></i>' +
-        (t != null ? '<b style="left:' + Math.min(100, t * 100 * 2.5).toFixed(1) + '%" title="' + esc(s.target) + '"></b>' : '') + '</span>';
+      var bar = '<span class="bar" aria-hidden="true"><i style="width:' + pct(s.share) + '%"></i>' +
+        (t != null ? '<b style="left:' + pct(t) + '%" title="' + esc(s.target) + '"></b>' : '') + '</span>';
       var lenTitle = fmtN(s.chars) + " " + unitName(D.outline.unit) + ", " + Math.round(s.share * 100) + "% of the thesis" + (s.target ? " (" + s.target + ")" : "");
-      var scores = cats.map(function (c) {
-        var sc = g && g.scores[c.id];
-        if (!sc) return '<td class="c catcol"><span class="score none" aria-label="no score">·</span></td>';
-        return '<td class="c catcol"><span class="score' + (isLow(sc) ? " low" : "") + '" title="' + esc(c.title) + ": " + fmtScore(sc.score) + " of " + sc.max + '">' + fmtScore(sc.score) + '</span></td>';
-      }).join("");
+      var scores = g ? cats.map(function (c) {
+        var sc = g.scores[c.id];
+        if (!sc) return '<td class="c catcol"><span class="score none" aria-hidden="true">·</span><span class="visually-hidden">not scored</span></td>';
+        return '<td class="c catcol"><span class="score' + (isLow(sc) ? " low" : "") + '" title="' + esc(scoreTitle(c.id, sc)) + '">' + fmtScore(sc.score) + '</span></td>';
+      }).join("") : '<td class="catcol ungraded" colspan="' + cats.length + '">' + (s.chars ? 'not graded' : 'no text yet') + '</td>';
       var lowN = g ? Object.keys(g.scores).filter(function (k) { return isLow(g.scores[k]); }).length : 0;
-      var catsum = '<td class="c catsum">' + (g ? (lowN ? '<span class="score low">' + lowN + ' low</span>' : '<span class="muted">ok</span>') : '<span class="score none">·</span>') + '</td>';
+      var catsum = '<td class="c catsum">' + (g ? (lowN ? '<span class="score low">' + lowN + ' low</span>' : '<span class="muted">ok</span>') : '<span class="muted">not graded</span>') + '</td>';
       var maj = g ? g.comments.filter(function (c) { return c.severity === "major"; }).length : null;
       var changed = g && g.changed.length ? '<span class="flag red" title="Changed since grading: ' + esc(g.changed.join(", ")) + '">changed</span>' : '';
-      var graded = g ? '<span class="muted" title="' + esc(fmtDate(g.timestamp, true)) + '">' + fmtDate(g.timestamp, false, true) + '</span>' : '<span class="muted">—</span>';
-      return '<tr class="l' + Math.min(s.level, 4) + (g && g.low_confidence ? " lc" : "") + '" data-sid="' + esc(s.id) + '" aria-selected="' + (state.sel === s.id) + '">' +
+      var graded = g ? '<span class="muted" title="' + esc(fmtDate(g.timestamp, true)) + '">' + fmtDate(g.timestamp, false, true) + '</span>' : '';
+      var sel = state.sel === s.id;
+      return '<tr class="l' + Math.min(s.level, 4) + (g && g.low_confidence ? " lc" : "") + (sel ? " sel" : "") + '" data-sid="' + esc(s.id) + '">' +
         '<td class="sid">' + esc(s.id) + '</td>' +
-        '<td><button type="button" class="stitle" data-sid="' + esc(s.id) + '">' + esc(s.title) + '</button>' + changed + (s.orphan ? ' <span class="flag muted">not in thesis</span>' : '') + '</td>' +
+        '<td><button type="button" class="stitle" data-sid="' + esc(s.id) + '"' + (sel ? ' aria-current="true"' : '') + '>' + esc(s.title) + '</button>' + changed + (s.orphan ? ' <span class="flag muted">not in thesis</span>' : '') + '</td>' +
         '<td class="num len hide-s" title="' + esc(lenTitle) + '">' + fmtN(s.chars) + bar + '</td>' + scores + catsum +
-        '<td class="num delta' + (dl == null ? '' : dl > 0.05 ? ' up' : dl < -0.05 ? ' down' : '') + '">' + (dl == null ? '<span class="muted">—</span>' : (dl > 0 ? "+" : dl < 0 ? "−" : "±") + Math.abs(dl).toFixed(1)) + '</td>' +
-        '<td class="num">' + (maj == null ? '<span class="muted">—</span>' : maj ? '<span class="red">' + maj + '</span>' : '0') + '</td>' +
+        '<td class="num delta' + (dl == null ? '' : dl > 0.05 ? ' up' : dl < -0.05 ? ' down' : '') + '">' + (!g ? '' : dl == null ? '<span class="muted">—</span>' : (dl > 0 ? "+" : dl < 0 ? "−" : "±") + Math.abs(dl).toFixed(1)) + '</td>' +
+        '<td class="num">' + (maj == null ? '' : maj ? '<span class="red">' + maj + '</span>' : '0') + '</td>' +
         '<td class="hide-s date">' + graded + '</td></tr>';
     }).join("");
+    if (!visible.length) {
+      rows = '<tr><td class="none-shown" colspan="' + (cats.length + 7) + '">' + (state.show === "attention" ? 'No graded section needs attention: no low scores, no major comments, nothing changed since grading.' : 'No section is graded yet.') + '</td></tr>';
+    }
+    var bar = gradedIds.length ? '<div class="tablebar"><div class="seg" role="group" aria-label="Show sections">' +
+      [["all", "All", sections.length], ["graded", "Graded", gradedIds.length], ["attention", "Needs attention", sections.filter(function (s) { return needsAttention(s.id); }).length]].map(function (o) {
+        return '<button type="button" data-show="' + o[0] + '" aria-pressed="' + (state.show === o[0]) + '">' + o[1] + ' ' + o[2] + '</button>';
+      }).join("") + '</div></div>' : '';
     var problem = D.project.section_problem ? '<p class="warn">Section list comes from the last length snapshot: ' + esc(D.project.section_problem) + '</p>' : '';
-    var legend = '<p class="legend">' + cats.map(function (c) { return '<span><b>' + esc(abbr(c.id)) + '</b> ' + esc(c.title) + '</span>'; }).join("") +
-      '<span><b>\u0394</b> mean change since the previous grade</span><span>Scores of ' + Math.floor(lowCut) + ' or below in <span class="red">red</span></span></p>';
-    return '<div class="split"><div class="sheet"><table class="grid" aria-label="Sections and their latest scores"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>' + legend + problem + '</div>' +
+    var anyLc = gradedIds.some(function (id) { return latest(id).low_confidence; });
+    var legend = '<p class="legend">' + cats.map(function (c) { return '<span class="key"><b>' + esc(abbr(c.id)) + '</b> ' + esc(c.title) + '</span>'; }).join("") +
+      '<span class="key"><b>Δ</b> mean change since the previous grade</span><span>Scores of ' + Math.floor(lowCut) + ' or below in <span class="red">red</span></span>' +
+      (anyLc ? '<span><i>Italic</i> scores were graded while the project docs were incomplete</span>' : '') + '</p>';
+    return '<div class="split"><div class="sheet">' + bar + '<table class="grid" aria-label="Sections and their latest scores"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>' + legend + problem + '</div>' +
       '<aside class="sheet apparatus" id="apparatus" aria-label="Section detail" tabindex="-1">' + apparatus() + '</aside></div>';
   }
 
@@ -558,12 +614,12 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var idx = state.run != null && state.run < runs.length ? state.run : runs.length - 1;
     var g = runs[idx];
     var runSel = runs.length > 1 ? '<label><span class="visually-hidden">Grade run</span><select id="runsel">' + runs.map(function (r, i) {
-      return '<option value="' + i + '"' + (i === idx ? " selected" : "") + '>' + fmtDate(r.timestamp, true) + (i === runs.length - 1 ? " (latest)" : "") + '</option>';
+      return '<option value="' + i + '"' + (i === idx ? " selected" : "") + '>Grade ' + (i + 1) + ' · ' + fmtDate(r.timestamp, true) + (i === runs.length - 1 ? " (latest)" : "") + '</option>';
     }).join("") + '</select></label>' : '<span>' + fmtDate(g.timestamp, true) + '</span>';
     var meta = '<div class="meta">' + runSel + (g.model ? '<span>' + esc(g.model) + '</span>' : '') + '<span>rubric ' + esc(rub.id) + (g.rubric ? ' ' + esc(g.rubric) : '') + '</span>' +
       '<span>' + plural(runs.length, "grade") + '</span></div>';
     var warns = '';
-    if (g.low_confidence) warns += '<p class="warn">Low confidence: the project docs were incomplete when this was graded.</p>';
+    if (g.low_confidence) warns += '<p class="lcnote"><i>Low confidence.</i> The project docs were incomplete when this was graded' + (docsLow ? ', and still are.' : '; they are complete now, so a regrade would count fully.') + '</p>';
     if (idx === runs.length - 1 && g.changed.length) warns += '<p class="warn">The text changed since this grade (' + esc(g.changed.join(", ")) + '). ' + cmdChip("/margi grade " + s.id) + '</p>';
 
     var prev = idx > 0 ? runs[idx - 1] : null;
@@ -573,8 +629,10 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       var d = p ? sc.score / sc.max - p.score / p.max : null;
       var dTxt = d == null ? '<span class="muted">—</span>' : Math.abs(d) < 0.001 ? '<span class="muted">±0</span>' :
         '<span class="delta ' + (d > 0 ? "up" : "down") + '">' + (d > 0 ? "+" : "−") + fmtScore(Math.abs(d) * sc.max) + '</span>';
-      return '<li><details><summary><span class="cname">' + esc(catTitle(k)) + '</span><span><span class="score' + (isLow(sc) ? " low" : "") + '">' + fmtScore(sc.score) + '</span><span class="muted">/' + sc.max + '</span></span><span class="num" style="text-align:right">' + dTxt + '</span></summary>' +
-        '<p class="rat">' + esc(sc.rationale) + (sc.comment_ids.length ? ' <span class="refs">→ ' + sc.comment_ids.map(function (id) { return esc(id.split(":").pop()); }).join(", ") + '</span>' : '') + '</p></details></li>';
+      var an = anchorOf(sc);
+      return '<li><details><summary><span class="cname">' + esc(catTitle(k)) + '</span><span><span class="score' + (isLow(sc) ? " low" : "") + '">' + fmtScore(sc.score) + '</span><span class="muted">/' + sc.max + '</span>' + (an ? '<span class="aw">' + esc(an.word) + '</span>' : '') + '</span><span class="num" style="text-align:right">' + dTxt + '</span></summary>' +
+        '<p class="rat">' + (an ? '<span class="adef">' + esc(fmtScore(sc.score)) + ' on the rubric: ' + esc(an.text) + '</span>' : '') + esc(sc.rationale) +
+        (sc.comment_ids.length ? ' <span class="refs">→ ' + sc.comment_ids.map(function (id) { var c = id.split(":").pop(); return '<a href="#c-' + esc(c) + '" data-ref="' + esc(c) + '">' + esc(c) + '</a>'; }).join(", ") + '</span>' : '') + '</p></details></li>';
     }).join("") + '</ul>';
 
     var history = runs.length > 1 ? '<div class="block"><h3><span class="caps">Score history</span><span class="muted" style="font-size:14px">' + plural(runs.length, "grade") + '</span></h3><div class="multiples">' +
@@ -588,11 +646,12 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 
   var tsNum = function (ts) { var t = Date.parse(ts); return isNaN(t) ? 0 : t; };
   function multiple(runs, k) {
-    var pts = runs.map(function (r) { return r.scores[k] ? { t: tsNum(r.timestamp), v: r.scores[k].score / r.scores[k].max * rub.max, raw: r.scores[k], ts: r.timestamp } : null; })
+    var t0 = tsNum(runs[0].timestamp), t1 = tsNum(runs[runs.length - 1].timestamp), byTime = t1 > t0;
+    var pts = runs.map(function (r, i) { return r.scores[k] ? { t: byTime ? tsNum(r.timestamp) : i, v: r.scores[k].score / r.scores[k].max * rub.max, raw: r.scores[k], ts: r.timestamp } : null; })
       .filter(Boolean);
     var W = 200, H = 72, padL = 14, padR = 6, padT = 6, padB = 6;
-    var t0 = tsNum(runs[0].timestamp), t1 = tsNum(runs[runs.length - 1].timestamp);
-    var x = function (t) { return padL + (t1 > t0 ? (t - t0) / (t1 - t0) : 0.5) * (W - padL - padR); };
+    var lo = byTime ? t0 : 0, hi = byTime ? t1 : runs.length - 1;
+    var x = function (t) { return padL + (hi > lo ? (t - lo) / (hi - lo) : 0.5) * (W - padL - padR); };
     var y = function (v) { return padT + (1 - (v - rub.min) / (rub.max - rub.min)) * (H - padT - padB); };
     var grid = [rub.min, rub.max].map(function (v) {
       return '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--chart-grid)" stroke-width="1"/>' +
@@ -639,7 +698,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
         var st = a.anchor_status === "unresolved" ? '<span class="anchor-state">passage not found</span>' : a.anchor_status === "relocated" ? '<span class="anchor-state">moved</span>' : '';
         lemma = '<span class="loc" title="' + esc(a.file) + '">' + lines + '</span><div><div class="lemma-line"><span class="lemma">' + esc(a.quote) + '</span><span class="br">]</span>' + st + '</div>';
       } else {
-        lemma = '<span class="loc">\u2014</span><div><div class="lemma-line"><span class="muted">something is missing</span><span class="br">]</span></div>';
+        lemma = '<span class="loc">\u2014</span><div><div class="lemma-line"><span class="muted">not tied to a passage</span><span class="br">]</span></div>';
       }
       var id = c.id.split(":").pop();
       return '<li class="entry" id="c-' + esc(id) + '"' + (a ? ' title="' + esc(a.file) + '"' : '') + '>' + lemma +
@@ -654,18 +713,21 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var weakest = [];
     gradedIds.forEach(function (id) {
       var g = latest(id);
-      Object.keys(g.scores).forEach(function (k) { if (isLow(g.scores[k])) weakest.push({ id: id, k: k, s: g.scores[k] }); });
+      var low = Object.keys(g.scores).filter(function (k) { return isLow(g.scores[k]); })
+        .sort(function (a, b) { return g.scores[a].score / g.scores[a].max - g.scores[b].score / g.scores[b].max; });
+      if (low.length) weakest.push({ id: id, ks: low, g: g, min: g.scores[low[0]].score / g.scores[low[0]].max });
     });
-    weakest.sort(function (a, b) { return a.s.score / a.s.max - b.s.score / b.s.max; });
+    weakest.sort(function (a, b) { return a.min - b.min; });
     var title = function (id) { var s = sections.filter(function (x) { return x.id === id; })[0]; return s ? s.title : id; };
     if (!gradedIds.length) {
-      return '<div class="empty" style="padding:0"><h2>Nothing graded yet</h2><p>Scores and anchored comments appear here once a section is graded. Select a section on the left to see its details.</p>' +
+      return '<div class="empty" style="padding:0"><h2>Nothing graded yet</h2><p>Scores and anchored comments appear here once a section is graded. Select a section to see its details.</p>' +
         ((D.next_steps || [])[0] ? '<p>' + cmdChip(D.next_steps[0].command) + '</p><p class="muted">' + esc(D.next_steps[0].reason) + '</p>' : '') + '</div>';
     }
     return '<h2>Needs attention</h2><div class="meta"><span>Select a section to open its scores, history and comments.</span></div>' +
-      '<div class="block"><h3><span class="caps">Scores of ' + Math.floor(lowCut) + ' or below</span><span class="muted" style="font-size:14px">' + weakest.length + '</span></h3>' +
+      '<div class="block"><h3><span class="caps">Scores of ' + Math.floor(lowCut) + ' or below</span><span class="muted" style="font-size:14px">' + plural(weakest.length, "section") + '</span></h3>' +
       (weakest.length ? '<ul class="list">' + weakest.slice(0, 12).map(function (w) {
-        return '<li><a href="#tab=sections&s=' + encodeURIComponent(w.id) + '" data-goto="' + esc(w.id) + '"><span class="sid">' + esc(w.id) + '</span> ' + esc(title(w.id)) + '</a> <span class="muted">· ' + esc(catTitle(w.k)) + '</span> <span class="score low">' + fmtScore(w.s.score) + '</span></li>';
+        return '<li><a href="#tab=sections&s=' + encodeURIComponent(w.id) + '" data-goto="' + esc(w.id) + '"><span class="sid">' + esc(w.id) + '</span> ' + esc(title(w.id)) + '</a> <span class="muted">· ' +
+          w.ks.map(function (k) { return esc(catTitle(k)) + ' <span class="score low" title="' + esc(scoreTitle(k, w.g.scores[k])) + '">' + fmtScore(w.g.scores[k].score) + '</span>'; }).join(', ') + '</span></li>';
       }).join("") + '</ul>' : '<p class="muted">No category is scored that low in the latest grades.</p>') + '</div>' +
       '<div class="block"><h3><span class="caps">Changed since grading</span></h3>' + (function () {
         var ch = gradedIds.filter(function (id) { return latest(id).changed.length; });
@@ -680,7 +742,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var d = D.docs;
     var missing = Object.keys(d.missing);
     return '<div class="cols"><section class="sheet pad"><h3 class="caps" style="margin:0 0 12px;color:var(--ink)">Completeness</h3>' +
-      '<p style="margin:0">' + d.filled + ' of ' + d.required + ' required fields are documented (<b' + (d.completeness < d.threshold ? ' class="red"' : '') + '>' + Math.round(d.completeness * 100) + '%</b>; grading needs ' + Math.round(d.threshold * 100) + '%).</p>' +
+      '<p style="margin:0">' + d.filled + ' of ' + d.required + ' required fields are documented (<b>' + Math.round(d.completeness * 100) + '%</b>; grading needs ' + Math.round(d.threshold * 100) + '%).</p>' +
       (d.completeness < d.threshold ? '<p class="why">Below the threshold every grade and rating is marked low-confidence.</p>' : '') +
       (missing.length ? '<h4 class="caps" style="margin:20px 0 0">Still missing</h4><dl class="doclist">' + missing.map(function (f) {
         return '<dt>margi/docs/' + esc(f) + '</dt><dd>' + d.missing[f].map(esc).join(", ") + '</dd>';
@@ -745,12 +807,13 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     v.setAttribute("aria-labelledby", "tab-" + state.tab);
     v.innerHTML = views[state.tab]();
     if (opts && opts.enter) { var a = $("apparatus"); if (a) { a.classList.add("enter"); } }
-    writeHash();
+    writeHash(opts && opts.push);
   }
   function select(sid, focusPanel) {
-    if (state.sel !== sid) { state.run = null; state.sev = "all"; state.cat = "all"; }
+    var moved = state.sel !== sid;
+    if (moved) { state.run = null; state.sev = "all"; state.cat = "all"; }
     state.sel = sid; state.tab = "sections";
-    render({ enter: true });
+    render({ enter: true, push: moved && focusPanel });
     var a = $("apparatus");
     if (a) a.scrollTop = 0;
     if (focusPanel && a && window.matchMedia("(max-width: 1080px)").matches) a.scrollIntoView({ block: "start" });
@@ -759,8 +822,12 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   $("view").addEventListener("click", function (e) {
     var go = e.target.closest("[data-goto]");
     if (go) { e.preventDefault(); select(go.getAttribute("data-goto"), true); return; }
+    var ref = e.target.closest("[data-ref]");
+    if (ref) { e.preventDefault(); showEntry(ref.getAttribute("data-ref")); return; }
     var sev = e.target.closest("[data-sev]");
     if (sev) { state.sev = sev.getAttribute("data-sev"); rerenderPanel(); return; }
+    var show = e.target.closest("[data-show]");
+    if (show) { state.show = show.getAttribute("data-show"); render(); var nb = document.querySelector('[data-show="' + state.show + '"]'); if (nb) nb.focus(); return; }
     if (e.target.closest("[data-copy]") || e.target.closest("a, select, summary")) return;
     var tr = e.target.closest("tr[data-sid]");
     if (tr) { select(tr.getAttribute("data-sid"), true); var b = document.querySelector('.stitle[data-sid="' + CSS.escape(state.sel) + '"]'); if (b) b.focus({ preventScroll: true }); }
@@ -792,17 +859,36 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   });
   function rerenderPanel() {
     var a = $("apparatus"); if (!a) return;
+    // keep keyboard focus on the control that triggered the re-render
+    var f = document.activeElement, key = null;
+    if (f && a.contains(f)) key = f.id ? "#" + f.id : f.getAttribute("data-sev") ? '[data-sev="' + f.getAttribute("data-sev") + '"]' : null;
     var y = a.scrollTop; a.classList.remove("enter"); a.innerHTML = apparatus(); a.scrollTop = y;
+    var nf = key && a.querySelector(key); if (nf) nf.focus({ preventScroll: true });
   }
-  window.addEventListener("hashchange", function () {
+  function showEntry(id) {
+    var a = $("apparatus"); if (!a) return;
+    var el = $("c-" + id);
+    if (!el) { state.sev = "all"; state.cat = "all"; rerenderPanel(); el = $("c-" + id); }
+    if (!el) return;
+    el.setAttribute("tabindex", "-1"); el.classList.add("hl");
+    el.scrollIntoView({ block: "nearest" }); el.focus({ preventScroll: true });
+    setTimeout(function () { el.classList.remove("hl"); }, 1600);
+  }
+  function onHash() {
     var before = state.sel + "|" + state.tab; readHash();
     if (before !== state.sel + "|" + state.tab) render({ enter: true });
-  });
+  }
+  window.addEventListener("hashchange", onHash);
+  window.addEventListener("popstate", onHash);
+  // the running head wraps on small screens; sticky offsets need its real height
+  function measureHead() { document.documentElement.style.setProperty("--head-real", ($("head").offsetHeight + 4) + "px"); }
+  window.addEventListener("resize", measureHead);
 
   readHash();
   renderHead();
   renderStatus();
   render();
+  measureHead();
 })();
 </script>
 </body>

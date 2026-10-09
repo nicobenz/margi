@@ -48,6 +48,17 @@ def test_grade_shows_up_and_goes_stale(repo, cfg):
     assert any(s["command"] == "/margi grade 2.1" and s["source"] == "check" for s in fresh["next_steps"])
 
 
+def test_session_step_drops_once_carried_out(repo, cfg):
+    stage(repo, {**DRAFT, "next_steps": [{"command": "/margi grade 2", "reason": "Focus on chapter 2."},
+                                         {"command": "/margi outline", "reason": "Check lengths."}]})
+    finalize(cfg)
+    assert [s["command"] for s in data(repo)["next_steps"] if s["source"] == "session"] == ["/margi grade 2", "/margi outline"]
+
+    stage(repo, {**DRAFT, "scope": "2"})
+    finalize(cfg)
+    assert [s["command"] for s in data(repo)["next_steps"] if s["source"] == "session"] == ["/margi outline"]
+
+
 def test_export_is_self_contained(repo, cfg, tmp_path):
     out = export(cfg, tmp_path / "export.html")
     html = out.read_text()
