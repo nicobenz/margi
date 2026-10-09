@@ -83,7 +83,6 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
 }
 .head::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; border-bottom: 1px solid var(--ink); }
 .wordmark { font-family: var(--sans); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
-.wordmark span { color: inherit; }
 .title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
 .head .spacer { flex: 1 1 auto; }
 .next { display: flex; align-items: center; gap: var(--s3); min-width: 0; font-family: var(--sans); font-size: 14px; }
@@ -236,7 +235,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .filters select { border: 1px solid var(--rule); background: var(--page); border-radius: 2px; padding: 3px 6px; font-size: 13px; }
 
 .entries { list-style: none; margin: 0; padding: 0; }
-.entry { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--rule-soft); }
+.entry { display: grid; grid-template-columns: 3.2em minmax(0, 1fr); gap: var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--rule-soft); }
 .entry:last-child { border-bottom: 0; }
 .lemma-line { font-size: 15px; line-height: 1.4; }
 .loc { font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--ink-2); overflow-wrap: break-word; padding-top: 2px; }
@@ -322,7 +321,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 </head>
 <body>
 <header class="head" id="head">
-  <div class="wordmark" aria-label="margi">marg<span>i</span></div>
+  <div class="wordmark">margi</div>
   <div class="title" id="title"></div>
   <div class="spacer"></div>
   <div class="next" id="next" aria-live="polite"></div>
@@ -638,7 +637,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       if (a) {
         var lines = a.line_start === a.line_end ? a.line_start : a.line_start + "–" + a.line_end;
         var st = a.anchor_status === "unresolved" ? '<span class="anchor-state">passage not found</span>' : a.anchor_status === "relocated" ? '<span class="anchor-state">moved</span>' : '';
-        lemma = '<span class="loc" title="' + esc(a.file) + '">' + (a.line_start === a.line_end ? "l.\u00a0" : "ll.\u00a0") + lines + '</span><div><div class="lemma-line"><span class="lemma">' + esc(a.quote) + '</span><span class="br">]</span>' + st + '</div>';
+        lemma = '<span class="loc" title="' + esc(a.file) + '">' + lines + '</span><div><div class="lemma-line"><span class="lemma">' + esc(a.quote) + '</span><span class="br">]</span>' + st + '</div>';
       } else {
         lemma = '<span class="loc">\u2014</span><div><div class="lemma-line"><span class="muted">something is missing</span><span class="br">]</span></div>';
       }
