@@ -1,0 +1,511 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T00:00:00Z",
+  "title": "Design System: margi",
+  "extensions": {
+    "colorMeta": {
+      "red": {
+        "role": "primary",
+        "displayName": "Rubricator Red",
+        "canonical": "#a3301b",
+        "oklch": "oklch(48.2% 0.155 32.6)",
+        "cssVar": "--red",
+        "dark": "#e3745c",
+        "tonalRamp": [
+          "#1e0100",
+          "#4a0c03",
+          "#801703",
+          "#ad3924",
+          "#d65f49",
+          "#fa8972",
+          "#fdc0b3",
+          "#ffe9e4"
+        ]
+      },
+      "red-ink": {
+        "role": "primary",
+        "displayName": "Deep Rubric",
+        "canonical": "#8e2716",
+        "oklch": "oklch(43.3% 0.141 32.0)",
+        "cssVar": "--red-ink",
+        "dark": "#f0a18f",
+        "tonalRamp": [
+          "#1d0100",
+          "#4d0700",
+          "#801806",
+          "#a83f2d",
+          "#d06450",
+          "#fa8a74",
+          "#fdc0b4",
+          "#ffe9e4"
+        ]
+      },
+      "red-tint": {
+        "role": "primary",
+        "displayName": "Rubric Wash",
+        "canonical": "#f2dcd4",
+        "oklch": "oklch(91.0% 0.027 41.1)",
+        "cssVar": "--red-tint",
+        "dark": "#4a251d",
+        "tonalRamp": [
+          "#150704",
+          "#32221c",
+          "#52403a",
+          "#74615a",
+          "#98847d",
+          "#bea9a1",
+          "#e1ccc4",
+          "#feeae2"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Desk Grey",
+        "canonical": "#e6e3dd",
+        "oklch": "oklch(91.6% 0.009 84.6)",
+        "cssVar": "--ground",
+        "dark": "#191816",
+        "tonalRamp": [
+          "#0d0b07",
+          "#282622",
+          "#474540",
+          "#686661",
+          "#8c8983",
+          "#b0aea8",
+          "#d4d1cb",
+          "#f1eee8"
+        ]
+      },
+      "page": {
+        "role": "neutral",
+        "displayName": "Sheet",
+        "canonical": "#f7f6f2",
+        "oklch": "oklch(97.3% 0.005 95.1)",
+        "cssVar": "--page",
+        "dark": "#22201d",
+        "tonalRamp": [
+          "#0c0b09",
+          "#272623",
+          "#464542",
+          "#676663",
+          "#8a8985",
+          "#afaeaa",
+          "#d2d1cd",
+          "#efeeea"
+        ]
+      },
+      "sel": {
+        "role": "neutral",
+        "displayName": "Pencil Shade",
+        "canonical": "#ebe7df",
+        "oklch": "oklch(92.9% 0.012 84.6)",
+        "cssVar": "--sel",
+        "dark": "#2d2a26",
+        "tonalRamp": [
+          "#0d0b06",
+          "#292620",
+          "#48453e",
+          "#69665f",
+          "#8c8981",
+          "#b1ada6",
+          "#d4d0c9",
+          "#f2eee6"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1c1a18",
+        "oklch": "oklch(21.9% 0.005 67.6)",
+        "cssVar": "--ink",
+        "dark": "#ece7df",
+        "tonalRamp": [
+          "#0d0b09",
+          "#282624",
+          "#474542",
+          "#686663",
+          "#8b8986",
+          "#b0adab",
+          "#d3d0ce",
+          "#f1eeeb"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Second Ink",
+        "canonical": "#47423d",
+        "oklch": "oklch(38.2% 0.011 67.5)",
+        "cssVar": "--ink-2",
+        "dark": "#c3bcb1",
+        "tonalRamp": [
+          "#0e0a07",
+          "#2a2621",
+          "#49443f",
+          "#6a6560",
+          "#8e8882",
+          "#b3ada7",
+          "#d6d0ca",
+          "#f4ede7"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Faded Ink",
+        "canonical": "#6a645d",
+        "oklch": "oklch(50.7% 0.013 71.8)",
+        "cssVar": "--ink-3",
+        "dark": "#9b948a",
+        "tonalRamp": [
+          "#0f0a06",
+          "#2b251f",
+          "#4a443d",
+          "#6b655e",
+          "#8e8881",
+          "#b3ada5",
+          "#d7d0c8",
+          "#f4ede5"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#d2cdc4",
+        "oklch": "oklch(85.0% 0.014 82.4)",
+        "cssVar": "--rule",
+        "dark": "#3d3934",
+        "tonalRamp": [
+          "#0e0b05",
+          "#2a261f",
+          "#49443d",
+          "#6a655e",
+          "#8d8980",
+          "#b2ada5",
+          "#d5d0c7",
+          "#f3eee5"
+        ]
+      },
+      "rule-soft": {
+        "role": "neutral",
+        "displayName": "Soft Hairline",
+        "canonical": "#e3dfd8",
+        "oklch": "oklch(90.5% 0.010 81.8)",
+        "cssVar": "--rule-soft",
+        "dark": "#2f2c28",
+        "tonalRamp": [
+          "#0d0b07",
+          "#292621",
+          "#48453f",
+          "#69665f",
+          "#8c8982",
+          "#b1ada7",
+          "#d4d0c9",
+          "#f2eee7"
+        ]
+      },
+      "chart": {
+        "role": "neutral",
+        "displayName": "Chart Ink",
+        "canonical": "#1c1a18",
+        "oklch": "oklch(21.9% 0.005 67.6)",
+        "cssVar": "--chart",
+        "dark": "#ece7df",
+        "tonalRamp": [
+          "#0d0b09",
+          "#282624",
+          "#474542",
+          "#686663",
+          "#8b8986",
+          "#b0adab",
+          "#d3d0ce",
+          "#f1eeeb"
+        ]
+      },
+      "chart-grid": {
+        "role": "neutral",
+        "displayName": "Chart Grid",
+        "canonical": "#ddd8cf",
+        "oklch": "oklch(88.4% 0.013 82.4)",
+        "cssVar": "--chart-grid",
+        "dark": "#3a3631",
+        "tonalRamp": [
+          "#0e0b05",
+          "#2a261f",
+          "#49443d",
+          "#6a655e",
+          "#8d8980",
+          "#b2ada5",
+          "#d5d0c7",
+          "#f3eee5"
+        ]
+      }
+    },
+    "colorModes": {
+      "source": "templates/dash/dash.html :root and @media (prefers-color-scheme: dark)",
+      "light": {
+        "red": "#a3301b",
+        "red-ink": "#8e2716",
+        "red-tint": "#f2dcd4",
+        "ground": "#e6e3dd",
+        "page": "#f7f6f2",
+        "sel": "#ebe7df",
+        "ink": "#1c1a18",
+        "ink-2": "#47423d",
+        "ink-3": "#6a645d",
+        "rule": "#d2cdc4",
+        "rule-soft": "#e3dfd8",
+        "chart": "#1c1a18",
+        "chart-grid": "#ddd8cf"
+      },
+      "dark": {
+        "red": "#e3745c",
+        "red-ink": "#f0a18f",
+        "red-tint": "#4a251d",
+        "ground": "#191816",
+        "page": "#22201d",
+        "sel": "#2d2a26",
+        "ink": "#ece7df",
+        "ink-2": "#c3bcb1",
+        "ink-3": "#9b948a",
+        "rule": "#3d3934",
+        "rule-soft": "#2f2c28",
+        "chart": "#ece7df",
+        "chart-grid": "#3a3631"
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Apparatus panel title; section number in regular weight, faded ink."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Section titles, summaries, all reading text; 16px under 720px; tabular lining figures."
+      },
+      "body-small": {
+        "displayName": "Body small",
+        "purpose": "Comment notes (16px), rationales, why-lines, category names (15px)."
+      },
+      "label": {
+        "displayName": "Capitals label",
+        "purpose": "Column heads, apparatus block headings, severity words, field labels; 0.08-0.09em, uppercase; flags 11px."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Tabs 15px, header strip 14px, meta, filters, legend 13px."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "'margi' in the running head, ink."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Commands (13px in chips), paths, line locators (12px); 0.86em inline."
+      }
+    },
+    "fonts": {
+      "source": "templates/dash/fonts/*.woff2, inlined as data URIs by src/margi/dashboard.py render_page",
+      "faces": [
+        "Libertinus Serif 400",
+        "Libertinus Serif 400 italic",
+        "Libertinus Serif 600",
+        "Libertinus Sans 400",
+        "Libertinus Sans 700",
+        "Libertinus Mono 400"
+      ]
+    },
+    "shadows": [
+      {
+        "name": "popover-lift",
+        "value": "0 10px 28px -12px rgb(0 0 0 / 0.35)",
+        "purpose": "Next-steps disclosure panel only, with a 1px ink border. Content sheets stay flat."
+      }
+    ],
+    "rules": [
+      {
+        "name": "head-double-rule",
+        "value": "border-bottom: 1px solid var(--ink) plus a second 1px ink rule 4px below",
+        "purpose": "Separates the running head from the page."
+      },
+      {
+        "name": "strong-rule",
+        "value": "1px solid var(--ink)",
+        "purpose": "Table header bottom, apparatus block headings, legend top, popover border."
+      },
+      {
+        "name": "hairline",
+        "value": "1px solid var(--rule)",
+        "purpose": "Sheet and control borders."
+      },
+      {
+        "name": "row-divider",
+        "value": "1px solid var(--rule-soft)",
+        "purpose": "Between table rows, list items, apparatus entries."
+      },
+      {
+        "name": "focus-ring",
+        "value": "2px solid var(--red), offset 2px",
+        "purpose": "Global :focus-visible."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-enter",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Apparatus children entering when a section opens."
+      },
+      {
+        "name": "duration-enter",
+        "value": "220ms",
+        "purpose": "Apparatus enter; 6px rise; stagger 30/60/90ms; off under prefers-reduced-motion."
+      },
+      {
+        "name": "duration-tip",
+        "value": "80ms",
+        "purpose": "Score-history tooltip opacity fade."
+      },
+      {
+        "name": "copy-confirm",
+        "value": "1400ms",
+        "purpose": "Copy button shows the red check before reverting."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1360px",
+        "purpose": "Below: Graded date column hides."
+      },
+      {
+        "name": "split",
+        "value": "1080px",
+        "purpose": "Below: split collapses to one column; apparatus static; next-step reason hides."
+      },
+      {
+        "name": "small",
+        "value": "720px",
+        "purpose": "Below: head wraps, body 16px, category columns collapse to a Scores summary, legend hides."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Command Chip",
+      "kind": "custom",
+      "refersTo": "command-chip",
+      "description": "A typed /margi command with its copy control; the way every next step is offered.",
+      "html": "<span class=\"ds-cmd\"><code>/margi grade 2.1</code><button class=\"ds-copy\" type=\"button\" aria-label=\"Copy command\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" aria-hidden=\"true\"><rect x=\"5.5\" y=\"5.5\" width=\"8\" height=\"8\" rx=\"1\"/><path d=\"M10.5 3.5v-1a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h1\"/></svg></button></span>",
+      "css": ".ds-cmd { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--rule, #d2cdc4); background: var(--page, #f7f6f2); border-radius: 2px; white-space: nowrap; color: var(--ink, #1c1a18); } .ds-cmd code { font-family: var(--mono, 'Libertinus Mono', ui-monospace, monospace); font-size: 13px; padding: 2px 4px 2px 8px; } .ds-copy { display: inline-grid; place-items: center; width: 28px; height: 26px; border: 0; background: none; cursor: pointer; color: var(--ink-3, #6a645d); border-radius: 2px; } .ds-copy:hover { color: var(--ink, #1c1a18); background: var(--sel, #ebe7df); } .ds-copy:focus-visible { outline: 2px solid var(--red, #a3301b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmented Filter",
+      "kind": "button",
+      "refersTo": "segment",
+      "description": "Severity filter above the apparatus entries; pressed segment inverts to ink.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Severity\"><button type=\"button\" aria-pressed=\"true\">All 4</button><button type=\"button\" aria-pressed=\"false\">Major 2</button><button type=\"button\" aria-pressed=\"false\">Minor 1</button><button type=\"button\" aria-pressed=\"false\">Note 1</button></div>",
+      "css": ".ds-seg { display: inline-flex; border: 1px solid var(--rule, #d2cdc4); border-radius: 2px; overflow: hidden; font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); } .ds-seg button { border: 0; background: var(--page, #f7f6f2); padding: 3px 9px; cursor: pointer; color: var(--ink-2, #47423d); font: inherit; font-size: 13px; } .ds-seg button + button { border-left: 1px solid var(--rule, #d2cdc4); } .ds-seg button:hover { color: var(--ink, #1c1a18); } .ds-seg button:focus-visible { outline: 2px solid var(--red, #a3301b); outline-offset: 2px; } .ds-seg button[aria-pressed=\"true\"] { background: var(--ink, #1c1a18); color: var(--page, #f7f6f2); }"
+    },
+    {
+      "name": "Select",
+      "kind": "input",
+      "refersTo": "select",
+      "description": "Native select for grade run and category filters.",
+      "html": "<select class=\"ds-select\" aria-label=\"Category\"><option>All categories</option><option>Evidence and sources</option></select>",
+      "css": ".ds-select { font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 13px; color: var(--ink, #1c1a18); border: 1px solid var(--rule, #d2cdc4); background: var(--page, #f7f6f2); border-radius: 2px; padding: 3px 6px; } .ds-select:focus-visible { outline: 2px solid var(--red, #a3301b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "View switcher under the status line; selected tab takes a 2px ink underline on the hairline.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Sections</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Project docs<span class=\"ds-n\">3</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Literature<span class=\"ds-n\">5</span></button></div>",
+      "css": ".ds-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--rule, #d2cdc4); } .ds-tab { appearance: none; border: 0; background: none; cursor: pointer; font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 15px; color: var(--ink-3, #6a645d); padding: 8px 0; margin-bottom: -1px; border-bottom: 2px solid transparent; white-space: nowrap; } .ds-tab:hover { color: var(--ink, #1c1a18); } .ds-tab:focus-visible { outline: 2px solid var(--red, #a3301b); outline-offset: 2px; } .ds-tab[aria-selected=\"true\"] { color: var(--ink, #1c1a18); border-bottom-color: var(--ink, #1c1a18); } .ds-n { color: var(--ink-3, #6a645d); margin-left: 4px; }"
+    },
+    {
+      "name": "Running Head",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Sticky head: wordmark, thesis title, next-step strip, refresh date, double ink rule below.",
+      "html": "<header class=\"ds-head\"><div class=\"ds-wordmark\">margi</div><div class=\"ds-title\">Reading at Scale: Computational Genre Detection</div><div class=\"ds-spacer\"></div><div class=\"ds-next\"><span class=\"ds-caps\">Next</span><span class=\"ds-cmd\"><code>/margi grade 3.1</code></span></div><div class=\"ds-updated\">Updated 8 Oct 2026</div></header>",
+      "css": ".ds-head { position: relative; display: flex; align-items: center; gap: 24px; min-height: 44px; padding: 0 24px; background: var(--ground, #e6e3dd); color: var(--ink, #1c1a18); border-bottom: 1px solid var(--ink, #1c1a18); font-family: var(--serif, 'Libertinus Serif', Georgia, serif); } .ds-head::after { content: \"\"; position: absolute; left: 0; right: 0; bottom: -4px; border-bottom: 1px solid var(--ink, #1c1a18); } .ds-wordmark { font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; } .ds-title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; } .ds-spacer { flex: 1 1 auto; } .ds-next { display: flex; align-items: center; gap: 8px; font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 14px; } .ds-caps { font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3, #6a645d); } .ds-cmd { border: 1px solid var(--rule, #d2cdc4); background: var(--page, #f7f6f2); border-radius: 2px; padding: 2px 8px; } .ds-cmd code { font-family: var(--mono, 'Libertinus Mono', ui-monospace, monospace); font-size: 13px; } .ds-updated { font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 13px; color: var(--ink-3, #6a645d); white-space: nowrap; }"
+    },
+    {
+      "name": "Sheet",
+      "kind": "card",
+      "refersTo": "sheet",
+      "description": "The page plane on the desk-grey ground: square, hairline-bordered, flat.",
+      "html": "<section class=\"ds-sheet\"><h3 class=\"ds-h\">Open questions <span class=\"ds-muted\">2</span></h3><ul class=\"ds-list\"><li>Which edition of the corpus is authoritative?</li><li>Is the 1900 cut-off justified?</li></ul></section>",
+      "css": ".ds-sheet { background: var(--page, #f7f6f2); border: 1px solid var(--rule, #d2cdc4); padding: 24px; color: var(--ink, #1c1a18); font: 400 17px/1.45 var(--serif, 'Libertinus Serif', Georgia, serif); } .ds-h { margin: 0 0 8px; font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 12px; font-weight: 400; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink, #1c1a18); } .ds-muted { color: var(--ink-3, #6a645d); } .ds-list { list-style: none; margin: 0; padding: 0; } .ds-list li { padding: 7px 0; border-bottom: 1px solid var(--rule-soft, #e3dfd8); } .ds-list li:last-child { border-bottom: 0; }"
+    },
+    {
+      "name": "Section Row",
+      "kind": "custom",
+      "refersTo": "grid-row-selected",
+      "description": "One section in the section table: number, title, length bar with target tick, category scores (low in red), delta, majors.",
+      "html": "<table class=\"ds-grid\"><thead><tr><th></th><th>Section</th><th class=\"ds-num\">Length</th><th class=\"ds-c\">Ar</th><th class=\"ds-c\">Ev</th><th class=\"ds-num\">Δ</th><th class=\"ds-num\">Maj.</th></tr></thead><tbody><tr><td class=\"ds-sid\">2.1</td><td>Genre theory of the Novelle <span class=\"ds-flag\">changed</span></td><td class=\"ds-num\">1 206<span class=\"ds-bar\"><i style=\"width:16%\"></i><b style=\"left:20%\"></b></span></td><td class=\"ds-c\">3</td><td class=\"ds-c\">4</td><td class=\"ds-num\">+0.4</td><td class=\"ds-num ds-red\">2</td></tr><tr aria-selected=\"true\"><td class=\"ds-sid\">2.2</td><td>Distant reading and genre</td><td class=\"ds-num\">1 545<span class=\"ds-bar\"><i style=\"width:20%\"></i></span></td><td class=\"ds-c ds-low\">2</td><td class=\"ds-c ds-low\">2</td><td class=\"ds-num\">+0.1</td><td class=\"ds-num ds-red\">2</td></tr></tbody></table>",
+      "css": ".ds-grid { border-collapse: collapse; width: 100%; background: var(--page, #f7f6f2); color: var(--ink, #1c1a18); font: 400 17px/1.45 var(--serif, 'Libertinus Serif', Georgia, serif); font-variant-numeric: tabular-nums lining-nums; } .ds-grid th { text-align: left; font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 12px; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3, #6a645d); padding: 12px 8px 8px; border-bottom: 1px solid var(--ink, #1c1a18); } .ds-grid td { padding: 7px 8px; border-bottom: 1px solid var(--rule-soft, #e3dfd8); vertical-align: top; } .ds-grid tbody tr { cursor: pointer; } .ds-grid tbody tr:hover td { background: color-mix(in srgb, var(--sel, #ebe7df) 60%, transparent); } .ds-grid tbody tr[aria-selected=\"true\"] td { background: var(--sel, #ebe7df); } .ds-grid tbody tr[aria-selected=\"true\"] .ds-sid { color: var(--red, #a3301b); } .ds-num { text-align: right !important; } .ds-c { text-align: center !important; } .ds-sid { color: var(--ink-3, #6a645d); } .ds-low { color: var(--red, #a3301b); font-weight: 600; } .ds-red { color: var(--red, #a3301b); } .ds-flag { font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--red, #a3301b); margin-left: 6px; } .ds-bar { display: block; position: relative; height: 3px; margin-top: 3px; background: var(--rule-soft, #e3dfd8); } .ds-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink-2, #47423d); } .ds-bar b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--ink, #1c1a18); }"
+    },
+    {
+      "name": "Apparatus Entry",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The signature move: a comment set as an edition's apparatus entry, locator, lemma, bracket, severity, note.",
+      "html": "<ol class=\"ds-entries\"><li class=\"ds-entry\"><span class=\"ds-loc\">3–5</span><div><div class=\"ds-lemma-line\"><span class=\"ds-lemma\">has been treated as the canonical definition</span><span class=\"ds-br\">]</span></div><div class=\"ds-note\"><span class=\"ds-sev ds-major\">major</span> <span class=\"ds-muted\">· Engagement with scholarship · c1</span> — The section never mentions the critiques that treat it as a retrospective label.</div></div></li></ol>",
+      "css": ".ds-entries { list-style: none; margin: 0; padding: 0; color: var(--ink, #1c1a18); font-family: var(--serif, 'Libertinus Serif', Georgia, serif); } .ds-entry { display: grid; grid-template-columns: 3.2em minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft, #e3dfd8); } .ds-loc { font-family: var(--mono, 'Libertinus Mono', ui-monospace, monospace); font-size: 12px; line-height: 1.5; color: var(--ink-2, #47423d); padding-top: 2px; } .ds-lemma-line { font-size: 15px; line-height: 1.4; } .ds-lemma { font-style: italic; } .ds-lemma::before { content: \"\\201C\"; font-style: normal; } .ds-lemma::after { content: \"\\201D\"; font-style: normal; } .ds-br { color: var(--ink-3, #6a645d); margin: 0 6px; } .ds-note { margin-top: 4px; font-size: 16px; max-width: 66ch; } .ds-sev { font-family: var(--sans, 'Libertinus Sans', 'Gill Sans', system-ui, sans-serif); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; } .ds-major { color: var(--red, #a3301b); font-weight: 700; } .ds-muted { color: var(--ink-3, #6a645d); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Critical Apparatus",
+    "overview": "margi's dashboard is set like the apparatus of a scholarly edition: the student's own section list is the text, and every grade, comment and next step is an annotation ranged around it in the margin. It reads as a printed sheet laid on a warm grey desk: a lighter page plane, near-black ink, hairline rules, and a single rubricator red that a scribe would use to mark what needs attention. Nothing is decorated; hierarchy comes from weight, size, letter-spaced capitals and rules.\n\nDensity is high and deliberate. The Sections view puts every section, in thesis order, with all rubric scores on one table; the apparatus panel beside it opens one section's scores, history and anchored comments. Comments are set as apparatus entries: line locator, the quoted lemma closed by a bracket, then severity, category and the note. Numbers are tabular everywhere so columns align like a printed table.\n\nThe system refuses the dashboard category default: no KPI cards, no hero numbers, no filled colour badges, no green-good/red-bad pairing. The status line states figures in running prose; flags are letter-spaced words, not pills.",
+    "keyCharacteristics": [
+      "Warm grey ground, lighter page sheets, near-black ink; light and dark modes with the same roles.",
+      "One accent, rubricator red, reserved for attention and the active mark.",
+      "Libertinus throughout: Serif for content, Sans for controls and labels, Mono only for commands, paths and line locators.",
+      "Structure by 1px hairline rules and a double rule under the running head; flat, square sheets.",
+      "Tabular lining figures on every number."
+    ],
+    "rules": [
+      {
+        "name": "The Rubricator Rule",
+        "body": "Red means \"look here\". It is never used for a brand mark, a positive state, a target, or a delta; the wordmark, length targets and score changes stay in ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Verdict Hue Rule",
+        "body": "There is no \"good\" colour. Rising and falling deltas are ink and second ink; a high literature relevance is ink, a low one faded ink. Only attention earns a hue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Voices Rule",
+        "body": "Serif is what the student reads, Sans is what the student operates, Mono is what the student types or opens. Never set content in Sans or controls in Serif.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every figure is tabular and lining (`font-variant-numeric: tabular-nums lining-nums` on body); thousands are grouped with a space (\"11 777\").",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "Content sheets never carry a shadow; only an element that floats over content may lift, and it still keeps its ink border.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do set feedback as annotation beside the student's text: locator, lemma, bracket, severity, note.",
+      "Do keep red to attention (major, low scores, changed since grading, warnings) and to the active mark and focus ring.",
+      "Do separate regions with 1px rules: ink for headings and table heads, hairline for sheet borders, soft hairline between rows.",
+      "Do use tabular lining figures and space-grouped thousands for every number.",
+      "Do write labels as 12px letter-spaced Sans capitals that name a column, block or field directly.",
+      "Do give every command a copyable command chip.",
+      "Do define every colour for both light and dark modes through the same role names."
+    ],
+    "donts": [
+      "Don't use KPI cards, hero numbers or filled colour badges; put figures in the status line's prose and flags in letter-spaced text.",
+      "Don't colour good news: no green, no red for falling deltas, no red wordmark or targets.",
+      "Don't round or shadow content sheets; only the floating popover lifts.",
+      "Don't set content in Sans or Mono; Mono is for commands, paths and line locators only.",
+      "Don't add weights beyond the inlined set (Serif 400/400i/600, Sans 400/700, Mono 400).",
+      "Don't set a capitals label above a heading as an eyebrow; capitals are the label itself."
+    ]
+  }
+}

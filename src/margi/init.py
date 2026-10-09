@@ -25,6 +25,7 @@ from pathlib import Path
 
 from . import __version__
 from .config import CONFIG_NAME, MARGI_DIR, load
+from .dashboard import refresh
 from .docs_check import ALL_DOCS, templates_dir
 from .finalize import bot_commit
 from .gitutil import git, is_repo, staged_changes
@@ -182,10 +183,11 @@ def _margi_dir(root: Path, report: InitReport) -> None:
         keep = m / sub / ".gitkeep"
         if not keep.exists():
             keep.write_text("", encoding="utf-8")
-    _write(root, f"{MARGI_DIR}/.gitignore", ".staging/\n.cache/\n", report, overwrite=True)
+    _write(root, f"{MARGI_DIR}/.gitignore", ".staging/\n.cache/\ndash/export.html\n", report, overwrite=True)
     for name in ALL_DOCS:
         _write(root, f"{MARGI_DIR}/docs/{name}", (templates_dir() / name).read_text(encoding="utf-8"), report, overwrite=False)
     _write(root, f"{MARGI_DIR}/README.md", (tool_templates() / "margi-README.md").read_text(encoding="utf-8"), report, overwrite=True)
+    report.written += refresh(load(root))
 
 
 def init(

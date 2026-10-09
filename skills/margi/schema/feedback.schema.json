@@ -71,6 +71,20 @@
         "description": "Command-specific data (outline counts, read ratings, propose sources, challenge log, todo ids).",
         "type": "object"
       },
+      "next_steps": {
+        "description": "Optional. What the student should run next, given this run and the chat (e.g. a focus they asked for). Shown on the dashboard. Names a margi command and why; never thesis prose.",
+        "type": "array",
+        "maxItems": 5,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command", "reason"],
+          "properties": {
+            "command": { "type": "string", "pattern": "^/margi[ -][a-z]", "maxLength": 120 },
+            "reason": { "type": "string", "minLength": 1, "maxLength": 300 }
+          }
+        }
+      },
       "agent": {
         "description": "Self-reported by the agent; finalize records it with model_source=self-reported.",
         "type": "object",
@@ -93,6 +107,7 @@
         "scores": { "$ref": "#/$defs/draft_properties/scores" },
         "comments": { "$ref": "#/$defs/draft_properties/comments" },
         "payload": { "$ref": "#/$defs/draft_properties/payload" },
+        "next_steps": { "$ref": "#/$defs/draft_properties/next_steps" },
         "agent": { "$ref": "#/$defs/draft_properties/agent" }
       }
     },
@@ -162,6 +177,7 @@
         "scores": { "$ref": "#/$defs/draft_properties/scores" },
         "comments": { "$ref": "#/$defs/draft_properties/comments" },
         "payload": { "$ref": "#/$defs/draft_properties/payload" },
+        "next_steps": { "$ref": "#/$defs/draft_properties/next_steps" },
         "agent": { "$ref": "#/$defs/draft_properties/agent" }
       }
     }

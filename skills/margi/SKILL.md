@@ -68,6 +68,9 @@ Work quietly and confidently; report results, not process.
 | `/margi outline` | Run `uv run margi outline` and show the output. No draft is needed. |
 | `/margi status` | Run `uv run margi status` and show the output. |
 
+`margi finalize` also refreshes the dashboard (`margi/dash.html`, data in `margi/dash/data.js`).
+Never edit either file by hand.
+
 ## Drafts
 
 Write exactly one JSON draft per command to `margi/.staging/<command>.json`, matching
@@ -84,6 +87,11 @@ Write exactly one JSON draft per command to `margi/.staging/<command>.json`, mat
     verifies it.
   - `body` ≤ 1200 chars and names the problem. It never contains replacement prose.
 - `payload`: command-specific data (see each command file).
+- `next_steps`: optional, up to 5 `{command, reason}`. What the student should run next, given
+  this run **and the conversation**, e.g. a focus they asked for ("/margi grade 3.1", "You
+  asked to focus on the corpus chapter."). `command` starts with `/margi`; `reason` is one
+  sentence about the project, never thesis prose. They lead the dashboard's next steps, ahead
+  of the rule-based checks. Leave the field out when the checks already cover it.
 - No other fields. Never include `provenance`, `run` or `schema`.
 
 Get line numbers by reading the file with line numbers. Section ids and line ranges come from

@@ -46,7 +46,7 @@ def test_finalize_writes_record_and_bot_commit(repo, cfg):
     log = run_git(repo, "log", "-1", "--format=%an|%s|%b").stdout
     assert log.startswith("margi-bot|margi: grade 2.1|Margi-Run:")
     changed = run_git(repo, "show", "--name-only", "--format=", "HEAD").stdout.split()
-    assert changed == [result.records[0].relative_to(repo).as_posix()]
+    assert changed == ["margi/dash/data.js", result.records[0].relative_to(repo).as_posix()]
     assert not (repo / "margi/.staging/grade.json").exists()
 
 
