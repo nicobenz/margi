@@ -83,7 +83,7 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
 }
 .head::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; border-bottom: 1px solid var(--ink); }
 .wordmark { font-family: var(--sans); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
-.wordmark span { color: var(--ink-3); }
+.wordmark span { color: inherit; }
 .title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
 .head .spacer { flex: 1 1 auto; }
 .next { display: flex; align-items: center; gap: var(--s3); min-width: 0; font-family: var(--sans); font-size: 14px; }
@@ -205,12 +205,13 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .block > h3 { margin: 0 0 var(--s3); padding-bottom: var(--s2); border-bottom: 1px solid var(--ink); display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
 .block > h3 .caps { color: var(--ink); }
 
-.cats { margin: 0; padding: 0; list-style: none; }
+.cats { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); column-gap: var(--s5); align-items: start; }
 .cats li { border-bottom: 1px solid var(--rule-soft); }
-.cats details > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto 52px; gap: var(--s3); align-items: baseline; padding: 7px 0; }
+.cats details > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto 34px; gap: var(--s2); align-items: baseline; padding: 4px 0; }
 .cats details > summary::-webkit-details-marker { display: none; }
 .cats details > summary:hover .cname { text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
-.cats .cname { font-size: 16px; }
+.cats .cname { font-size: 15px; }
+.cats details[open] { grid-column: 1 / -1; }
 .cats .rat { margin: 0 0 var(--s3); font-size: 15px; color: var(--ink-2); max-width: 66ch; }
 .cats .rat .refs { font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
 
@@ -235,11 +236,10 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .filters select { border: 1px solid var(--rule); background: var(--page); border-radius: 2px; padding: 3px 6px; font-size: 13px; }
 
 .entries { list-style: none; margin: 0; padding: 0; }
-.entry { display: grid; grid-template-columns: 10.5em minmax(0, 1fr); gap: var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--rule-soft); }
+.entry { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--rule-soft); }
 .entry:last-child { border-bottom: 0; }
 .lemma-line { font-size: 15px; line-height: 1.4; }
 .loc { font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--ink-2); overflow-wrap: break-word; padding-top: 2px; }
-.loc .ln { display: block; }
 .br { color: var(--ink-3); margin: 0 6px; }
 .lemma { font-style: italic; }
 .lemma::before { content: "\201C"; font-style: normal; }
@@ -249,6 +249,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .sev.major { color: var(--red); font-weight: 700; }
 .sev.minor { color: var(--ink-2); }
 .sev.note { color: var(--ink-3); }
+.note .mono { white-space: nowrap; }
 .anchor-state { font-family: var(--sans); font-size: 12px; color: var(--red-ink); margin-left: 6px; }
 
 .empty { padding: var(--s6) var(--s5); }
@@ -302,8 +303,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   .grid .catcol { display: none; }
   .grid td.catsum, .grid th.catsum { display: table-cell; }
   .apparatus { padding: var(--s4); }
-  .entry { grid-template-columns: 1fr; gap: 2px; }
-  .loc .ln { display: inline; }
+  .entry { grid-template-columns: 3.4em minmax(0, 1fr); gap: var(--s2); }
   .legend { display: none; }
 }
 
@@ -638,13 +638,13 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       if (a) {
         var lines = a.line_start === a.line_end ? a.line_start : a.line_start + "–" + a.line_end;
         var st = a.anchor_status === "unresolved" ? '<span class="anchor-state">passage not found</span>' : a.anchor_status === "relocated" ? '<span class="anchor-state">moved</span>' : '';
-        lemma = '<span class="loc">' + esc(a.file.replace(/^.*\//, "")) + ' <span class="ln">' + lines + '</span></span><div><div class="lemma-line"><span class="lemma">' + esc(a.quote) + '</span><span class="br">]</span>' + st + '</div>';
+        lemma = '<span class="loc" title="' + esc(a.file) + '">' + (a.line_start === a.line_end ? "l.\u00a0" : "ll.\u00a0") + lines + '</span><div><div class="lemma-line"><span class="lemma">' + esc(a.quote) + '</span><span class="br">]</span>' + st + '</div>';
       } else {
-        lemma = '<span class="loc">no passage</span><div><div class="lemma-line"><span class="muted">something is missing</span><span class="br">]</span></div>';
+        lemma = '<span class="loc">\u2014</span><div><div class="lemma-line"><span class="muted">something is missing</span><span class="br">]</span></div>';
       }
       var id = c.id.split(":").pop();
       return '<li class="entry" id="c-' + esc(id) + '"' + (a ? ' title="' + esc(a.file) + '"' : '') + '>' + lemma +
-        '<div class="note"><span class="sev ' + esc(c.severity) + '">' + esc(c.severity) + '</span> <span class="muted">· ' + esc(catTitle(c.category)) + ' · ' + esc(id) + '</span> — ' + esc(c.body) + '</div></div></li>';
+        '<div class="note"><span class="sev ' + esc(c.severity) + '">' + esc(c.severity) + '</span> <span class="muted">· ' + esc(catTitle(c.category)) + ' · ' + esc(id) + (c.anchor ? ' · <span class="mono">' + esc(c.anchor.file.replace(/^.*\//, "")) + '</span>' : '') + '</span> — ' + esc(c.body) + '</div></div></li>';
     }).join("");
     return '<div class="block"><h3><span class="caps">Apparatus</span><span class="muted" style="font-size:14px">' + plural(list.length, "comment") + '</span></h3>' +
       (list.length ? '<div class="filters"><div class="seg" role="group" aria-label="Severity">' + seg + '</div>' + catSel + '</div>' : '') +
