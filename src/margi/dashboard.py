@@ -342,6 +342,15 @@ def _date(ts: str | None) -> str:
     return f"{int(m.group(3))} {MONTHS[int(m.group(2)) - 1]} {m.group(1)}" if m else (ts or "")
 
 
+def _carried_out(command: str, later: list[dict]) -> bool:
+    """A session step is done once a later run used the same command (and scope, if it names one)."""
+    m = re.match(r"/margi[ -]([a-z-]+)\s*(\S*)", command)
+    if not m:
+        return False
+    name, scope = m.groups()
+    return any(r.get("command") == name and (not scope or r.get("scope") == scope) for r in later)
+
+
 def next_steps(data: dict, records: list[dict]) -> list[dict]:
     """Rule-based checks first, then the latest steps the agent left in a draft (`next_steps`)."""
     steps: list[dict] = []
@@ -379,10 +388,13 @@ def next_steps(data: dict, records: list[dict]) -> list[dict]:
         add("/margi challenge", f"{n} open question{'s' if n != 1 else ''} in the project docs.")
 
     checks = steps[:MAX_STEPS]
-    agent = next((r for r in reversed(records) if r.get("next_steps")), None)
+    at = next((i for i in range(len(records) - 1, -1, -1) if records[i].get("next_steps")), None)
     session = []
-    if agent:
+    if at is not None:
+        agent, later = records[at], records[at + 1:]
         for s in agent["next_steps"][:MAX_STEPS]:
+            if _carried_out(s["command"], later):
+                continue
             session.append({"command": s["command"], "reason": s.get("reason", ""), "source": "session",
                             "timestamp": agent["provenance"].get("timestamp")})
     # session steps reflect what the student asked for, so they lead; checks follow without duplicates
