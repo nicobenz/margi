@@ -4,7 +4,7 @@ import json
 
 from conftest import make_pdf, run_git
 
-from margi.dashboard import DASH_DATA, export
+from margi.dashboard import DASH_DATA, LOCAL_JS, LOCAL_TAG, export
 from margi.finalize import STAGING, finalize
 from margi.passages import CROPS, locate, normalize, trace
 
@@ -39,7 +39,13 @@ def test_locate_states(tmp_path):
     assert all(crop["box"][0] <= l[0] and l[2] <= crop["box"][2] for l in crop["lines"])
     assert moved["status"] == "relocated" and moved["page"] == 2 and moved["section"] == ["2 Discussion"]
     assert lost == {"status": "unresolved", "page": 1}
-    assert visual == {"status": "visual", "page": 2}
+    assert visual == {"status": "visual", "page": 2, "size": [612.0, 792.0],
+                      "crops": [{"box": [0.0, 0.0, 1.0, 1.0], "lines": []}]}  # the whole page, to check by eye
+
+
+def test_missing_pdf_is_unchecked_not_unfound(tmp_path):
+    out = trace(tmp_path, {"ratings": [{"pdf": "gone.pdf", "key_passages": [{"page": 3, "quote": "q"}]}]})
+    assert out["ratings"][0]["key_passages"][0]["anchor"] == {"status": "unchecked", "page": 3}
 
 
 def test_locate_joins_hyphenation(tmp_path):
@@ -74,5 +80,10 @@ def test_read_record_traces_and_renders(repo, cfg):
     assert f'.cache/lit/crops/{crops[0].name}' in data and '"href": "../lit/paper.pdf"' in data
     assert "lit/paper.pdf" not in run_git(repo, "ls-files").stdout.split()
 
+    # which PDFs are here is a local fact: gitignored, and the export leaves it out
+    assert '"lit/paper.pdf"' in (repo / LOCAL_JS).read_text()
+    assert LOCAL_JS not in run_git(repo, "ls-files").stdout.split()
+
     # export inlines the image, so the shared file shows the passage too
-    assert "data:image/png;base64," in export(cfg).read_text()
+    page = export(cfg).read_text()
+    assert "data:image/png;base64," in page and LOCAL_TAG not in page

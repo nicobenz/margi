@@ -194,7 +194,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .apparatus {
   scroll-margin-top: calc(var(--head-real, 48px) + var(--s2));
   position: sticky; top: calc(var(--head-h) + var(--s4));
-  max-height: calc(100vh - var(--head-h) - var(--s5));
+  /* fits the viewport from where the panel starts (set by the page), so its end shows without scrolling the page */
+  max-height: max(calc(100vh - var(--panel-top, 0px) - var(--s7)), 50vh);
   overflow: auto; overscroll-behavior: contain;
   padding: var(--s5) var(--s5) var(--s6);
   scrollbar-width: thin;
@@ -273,10 +274,9 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .ptitle { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .ptitle:focus-visible { outline-offset: 3px; }
 .grid tbody tr.sel .ptitle { text-decoration: underline; text-decoration-color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 4px; }
-.grid tbody tr.sel .rel { color: var(--red); }
 .grid .src-path { font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
 .passage .where { font-family: var(--sans); font-size: 13px; color: var(--ink-3); margin-bottom: var(--s2); }
-.passage .where .sep { margin: 0 6px; color: var(--rule); }
+.passage .where .sep { margin: 0 6px; color: var(--ink-3); }
 .excerpt {
   position: relative; margin: 0 0 var(--s2); background: #fff; border: 1px solid var(--rule);
   overflow: hidden; max-width: 100%;
@@ -288,11 +288,34 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .excerpt-frame { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
 .excerpt-frame .excerpt { max-width: none; }
 .excerpt-frame + .excerpt-frame { margin-top: var(--s2); }
-.passage .open { display: inline-flex; align-items: center; gap: 5px; margin-top: var(--s2); font-family: var(--sans); font-size: 13px; color: var(--ink-2); }
+.passage .acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s4); margin-top: var(--s2); }
+.passage .cite { display: inline-flex; align-items: center; gap: var(--s2); font-family: var(--sans); font-size: 12px; }
+.passage .open { display: inline-flex; align-items: center; gap: 5px; padding: 4px 0; font-family: var(--sans); font-size: 13px; color: var(--ink-2); }
 .passage .open svg { width: 11px; height: 11px; }
-.passage .missing { margin: 0 0 var(--s2); font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
-.passage.no-pdf .open { display: none; }
-@media (prefers-color-scheme: dark) { .excerpt { filter: brightness(0.88); border-color: var(--rule); } }
+.passage .missing { margin: 0 0 var(--s2); font-family: var(--sans); font-size: 13px; color: var(--ink-3); max-width: 60ch; }
+.anchor-state.found { color: var(--ink-3); }
+.anchor-state.quiet { color: var(--ink-2); }
+.facsimile { display: block; width: 132px; margin: 0 0 var(--s2); background: #fff; border: 1px solid var(--rule); }
+.facsimile img { display: block; width: 100%; height: 100%; }
+a.facsimile:hover { border-color: var(--ink); }
+.lost { margin-top: var(--s5); }
+.lost h4 { margin: 0; padding-bottom: var(--s2); border-bottom: 1px solid var(--rule); color: var(--red); }
+.lost > .lcnote { margin: var(--s2) 0 var(--s1); max-width: 62ch; }
+.passage.unfound .lemma { color: var(--ink-2); }
+.passage.unfound .open { color: var(--ink-3); }
+.meta.prov { margin: 2px 0 0; }
+.meta .mono { font-size: 12px; }
+.warnword { color: var(--red-ink); }
+.nowrap { white-space: nowrap; }
+/* Literature gives the panel more room than Sections: the evidence is page images at print size or larger */
+.split.lit { grid-template-columns: minmax(0, 1fr) minmax(420px, 1.05fr); }
+.apparatus .cmd { white-space: normal; max-width: 100%; }
+.apparatus .cmd code { overflow-wrap: anywhere; }
+/* the crop stays paper-white in dark mode, dimmed; it is set crisp-edged, since a fade into a dark sheet reads as a smudge */
+@media (prefers-color-scheme: dark) {
+  .excerpt, .facsimile { filter: brightness(0.8) contrast(1.05); border-color: var(--rule); }
+  .excerpt { -webkit-mask-image: none; mask-image: none; }
+}
 
 .empty { padding: var(--s6) var(--s5); }
 .empty h2, .empty h3 { font-weight: 600; margin: 0 0 var(--s2); }
@@ -327,7 +350,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 /* small screens ------------------------------------------------------------------------ */
 @media (max-width: 1360px) { .grid .date, .next .reason { display: none; } }
 @media (max-width: 1080px) {
-  .split { grid-template-columns: 1fr; }
+  .split, .split.lit { grid-template-columns: minmax(0, 1fr); }
   .apparatus { position: static; max-height: none; overflow: visible; }
   .next .lead .src { display: none; }
 }
@@ -353,9 +376,9 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 @media print {
   .head { position: static; }
   .tabs, .filters, .copy, .steps { display: none; }
-  .split { grid-template-columns: 1fr; }
+  .split, .split.lit { grid-template-columns: 1fr; }
   .apparatus { position: static; max-height: none; overflow: visible; }
-  .excerpt { -webkit-mask-image: none; mask-image: none; }
+  .excerpt { -webkit-mask-image: none; mask-image: none; filter: none; }
   body { background: #fff; }
 }
 @media (forced-colors: active) {
@@ -380,6 +403,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 <div class="visually-hidden" id="live" aria-live="polite"></div>
 
 <script src="dash/data.js"></script>
+<script src=".cache/local.js"></script>
 <script>
 (function () {
   "use strict";
@@ -444,10 +468,11 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   var shareTarget = function (t) { var m = /target\s+([\d.]+)\s*%/.exec(t || ""); return m ? Number(m[1]) / 100 : null; };
 
   function copyText(text, btn) {
+    var label = btn.getAttribute("aria-label");
     var ok = function () {
       btn.classList.add("done"); btn.innerHTML = CHECK_ICON; btn.setAttribute("aria-label", "Copied");
       $("live").textContent = ""; setTimeout(function () { $("live").textContent = "Copied " + text; }, 30);
-      setTimeout(function () { btn.classList.remove("done"); btn.innerHTML = COPY_ICON; btn.setAttribute("aria-label", "Copy command"); }, 1400);
+      setTimeout(function () { btn.classList.remove("done"); btn.innerHTML = COPY_ICON; btn.setAttribute("aria-label", label); }, 1400);
     };
     var fallback = function () {
       var ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", "");
@@ -457,8 +482,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     };
     if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(ok, fallback); else fallback();
   }
-  var cmdChip = function (cmd) {
-    return '<span class="cmd"><code>' + esc(cmd) + '</code><button class="copy" type="button" data-copy="' + esc(cmd) + '" aria-label="Copy command">' + COPY_ICON + '</button></span>';
+  var cmdChip = function (cmd, label) {
+    return '<span class="cmd"><code>' + esc(cmd) + '</code><button class="copy" type="button" data-copy="' + esc(cmd) + '" aria-label="' + esc(label || "Copy command") + '">' + COPY_ICON + '</button></span>';
   };
   document.addEventListener("click", function (e) {
     var b = e.target.closest("[data-copy]");
@@ -804,31 +829,54 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
 
   var OPEN_ICON = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M5 2.5H2.5v7h7V7M7 2.5h2.5V5M9.5 2.5 5.5 6.5"/></svg>';
+  var NEW_TAB = '<span class="visually-hidden"> (opens in a new tab)</span>';
+  // local facts from the gitignored margi/.cache/local.js: which rated PDFs are on this machine (null: unknown)
+  var LOCAL = window.MARGI_LOCAL && window.MARGI_LOCAL.pdfs ? window.MARGI_LOCAL : null;
+  var pdfHere = function (r) { return LOCAL ? LOCAL.pdfs.indexOf(r.pdf) >= 0 : null; };
   var paperName = function (r) { return r.cite_key || r.pdf.replace(/^.*\//, ""); };
   var passagesOf = function (r) { return (r.key_passages || []).filter(function (k) { return k && k.quote; }); };
-  var unfound = function (r) { return passagesOf(r).filter(function (k) { return k.anchor && k.anchor.status === "unresolved"; }).length; };
+  // how far a passage is checked: found (ok, relocated), visual (by eye only), unchecked, unresolved (not in the PDF)
+  var traceOf = function (k) {
+    var s = k.anchor && k.anchor.status;
+    return s === "ok" || s === "relocated" || s === "visual" || s === "unresolved" ? s : "unchecked";
+  };
+  var isFound = function (k) { var t = traceOf(k); return t === "ok" || t === "relocated"; };
+  var unfound = function (r) { return passagesOf(r).filter(function (k) { return traceOf(k) === "unresolved"; }).length; };
+  var pageOf = function (k) { return (k.anchor && k.anchor.page) || k.page; };
+  var pdfHref = function (r, page) { return (r.href || "../" + r.pdf) + (page ? "#page=" + page : ""); };
+  var citedText = function (r) { return r.cited_in_thesis === true ? "cited" : r.cited_in_thesis === false ? "not cited" : "citation not checked"; };
+  // the thesis sections a rating is for: links where the id is a known section
+  var forSections = function (r) {
+    return (r.sections || []).map(function (id) {
+      var known = sections.some(function (s) { return s.id === String(id); });
+      return known ? '<a href="#tab=sections&s=' + encodeURIComponent(id) + '" data-goto="' + esc(id) + '">' + esc(id) + '</a>' : esc(id);
+    }).join(", ");
+  };
 
   function literatureView() {
     var L = D.literature;
     if (!L.rated.length && !L.unrated.length) {
       return '<div class="sheet empty"><h3>No literature yet</h3><p>Put PDFs into the literature folder, then rate them for relevance to your research question.</p><p>' + cmdChip("/margi read") + '</p></div>';
     }
-    var unrated = L.unrated.length ? '<div class="sheet pad" style="margin-top:24px"><h3 class="caps" style="margin:0 0 8px;color:var(--ink)">Not rated yet <span class="muted">' + L.unrated.length + '</span></h3><ul class="list">' +
+    var unrated = L.unrated.length ? '<div class="sheet pad" style="margin-top:24px"><h2 class="caps" style="margin:0 0 8px;color:var(--ink)">Not rated yet <span class="muted">' + L.unrated.length + '</span></h2><ul class="list">' +
       L.unrated.map(function (p) { return '<li class="mono">' + esc(p) + '</li>'; }).join("") + '</ul><p>' + cmdChip("/margi read") + '</p></div>' : '';
     if (!L.rated.length) return unrated.replace('style="margin-top:24px"', '');
     var rows = L.rated.map(function (r) {
       var rel = r.relevance == null ? "—" : r.relevance;
       var cls = r.relevance >= 4 ? " high" : r.relevance <= 1 ? " low" : "";
-      var n = passagesOf(r).length, sel = state.paper === r.pdf;
+      var ps = passagesOf(r), nf = ps.filter(isFound).length, sel = state.paper === r.pdf;
+      var found = !ps.length ? '<span class="muted">—</span>'
+        : '<span class="' + (unfound(r) ? "red" : "") + '">' + nf + '</span><span class="muted"> of ' + ps.length + '</span>';
       return '<tr class="' + (sel ? "sel" : "") + '" data-pdf="' + esc(r.pdf) + '"><td class="num rel' + cls + '">' + rel + '<span class="muted" style="font-weight:400">/5</span></td>' +
         '<td><button type="button" class="ptitle" data-pdf="' + esc(r.pdf) + '"' + (sel ? ' aria-current="true"' : '') + '>' + esc(paperName(r)) + '</button><div class="src-path mono">' + esc(r.pdf) + '</div></td>' +
         '<td class="hide-s">' + esc(r.role || "") + '</td>' +
         '<td class="hide-s">' + esc((r.sections || []).join(", ")) + '</td>' +
-        '<td>' + (r.cited_in_thesis ? 'cited' : (r.relevance >= 4 ? '<b>not cited</b>' : '<span class="muted">not cited</span>')) + '</td>' +
-        '<td class="num">' + (n ? n : '<span class="muted">—</span>') + '</td></tr>';
+        '<td>' + (r.cited_in_thesis === true ? 'cited' : r.cited_in_thesis === false ? (r.relevance >= 4 ? '<b>not cited</b>' : '<span class="muted">not cited</span>') : '<span class="muted">—</span>') + '</td>' +
+        '<td class="num nowrap">' + found + '</td></tr>';
     }).join("");
-    return '<div class="split"><div><div class="sheet"><table class="grid" aria-label="Rated literature"><thead><tr><th class="caps num" scope="col">Rel.</th><th class="caps" scope="col">Source</th>' +
-      '<th class="caps hide-s" scope="col">Role</th><th class="caps hide-s" scope="col">Sections</th><th class="caps" scope="col">In thesis</th><th class="caps num" scope="col" title="Key passages traced into the PDF">Pass.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + unrated + '</div>' +
+    return '<div class="split lit"><div><div class="sheet"><table class="grid" aria-label="Rated literature"><thead><tr><th class="caps num" scope="col">Rel.</th><th class="caps" scope="col">Source</th>' +
+      '<th class="caps hide-s" scope="col">Role</th><th class="caps hide-s" scope="col">Sections</th><th class="caps" scope="col">In thesis</th><th class="caps num" scope="col">Found<span class="visually-hidden"> in the PDF, of the key passages</span></th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<p class="legend"><span><b>Found</b> key passages margi found word for word in the PDF</span></p></div>' + unrated + '</div>' +
       '<aside class="sheet apparatus" id="apparatus" aria-label="Paper detail" tabindex="-1">' + paperPanel() + '</aside></div>';
   }
 
@@ -836,9 +884,9 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var L = D.literature;
     var r = L.rated.filter(function (x) { return x.pdf === state.paper; })[0];
     if (!r) {
-      var open = L.rated.filter(function (x) { return x.relevance >= 4 && !x.cited_in_thesis; });
+      var open = L.rated.filter(function (x) { return x.relevance >= 4 && x.cited_in_thesis === false; });
       var lost = L.rated.filter(function (x) { return unfound(x); });
-      return '<h2>Literature</h2><div class="meta"><span>Select a paper to see where its key passages sit in the PDF.</span></div>' +
+      return '<h2>Literature</h2><div class="meta"><span>Select a paper to see the evidence behind its rating and check each passage against the PDF.</span></div>' +
         '<div class="block"><h3><span class="caps">Relevant, not cited yet</span><span class="muted" style="font-size:14px">' + plural(open.length, "paper") + '</span></h3>' +
         (open.length ? '<ul class="list">' + open.map(function (x) {
           return '<li><a href="#tab=literature&p=' + encodeURIComponent(x.pdf) + '" data-paper="' + esc(x.pdf) + '">' + esc(paperName(x)) + '</a> <span class="muted">· ' + esc(x.relevance) + '/5' + (x.role ? ' · ' + esc(x.role) : '') + '</span></li>';
@@ -848,55 +896,106 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
         }).join("") + '</ul></div>' : '');
     }
     var ps = passagesOf(r);
-    var meta = '<div class="meta"><span>' + (r.relevance == null ? '—' : esc(r.relevance)) + '/5 relevance</span>' + (r.role ? '<span>' + esc(r.role) + '</span>' : '') +
-      ((r.sections || []).length ? '<span>for ' + esc(r.sections.join(", ")) + '</span>' : '') + '<span>' + (r.cited_in_thesis ? 'cited' : 'not cited') + '</span>' +
-      (r.timestamp ? '<span>rated ' + fmtDate(r.timestamp) + '</span>' : '') + '</div>';
-    return '<h2>' + esc(paperName(r)) + '</h2>' + meta +
-      '<p class="lcnote"><span class="mono">' + esc(r.pdf) + '</span> · <a href="' + esc(r.href || "../" + r.pdf) + '" target="_blank" rel="noopener">open the PDF</a></p>' +
+    var rank = { ok: 0, relocated: 0, visual: 1, unchecked: 2 };
+    var checked = ps.map(function (k, i) { return { k: k, i: i }; }).filter(function (x) { return traceOf(x.k) !== "unresolved"; })
+      .sort(function (a, b) { return (rank[traceOf(a.k)] - rank[traceOf(b.k)]) || (a.i - b.i); });
+    var lostPs = ps.map(function (k, i) { return { k: k, i: i }; }).filter(function (x) { return traceOf(x.k) === "unresolved"; });
+    var nFound = ps.filter(isFound).length;
+    var rel = r.relevance == null ? '—' : esc(r.relevance);
+    var here = pdfHere(r);
+
+    var meta = '<div class="meta"><span>' + rel + '/5 relevance</span>' + (r.role ? '<span>' + esc(r.role) + '</span>' : '') +
+      ((r.sections || []).length ? '<span>for ' + forSections(r) + '</span>' : '') + '<span>' + citedText(r) + '</span></div>';
+    // who rated it and from which record: every number is traceable
+    var prov = '<p class="meta prov">' + (r.timestamp ? '<span>Rated ' + fmtDate(r.timestamp) + (r.model ? ' by <span class="mono">' + esc(r.model) + '</span>' : '') + '</span>' : '') +
+      (r.low_confidence ? '<span class="warnword">low confidence: project docs incomplete</span>' : '') +
+      '<span><a href="#tab=runs">record in Runs</a></span>' +
+      (here === false ? '<span><span class="mono">' + esc(r.pdf) + '</span> not on this machine</span>'
+        : '<span><a class="mono" href="' + esc(pdfHref(r)) + '" target="_blank" rel="noopener">' + esc(r.pdf) + NEW_TAB + '</a></span>') + '</p>';
+
+    var count = !ps.length ? '' : [nFound ? nFound + ' found in the PDF' : '', checked.length - nFound ? (checked.length - nFound) + ' not checked' : '',
+      lostPs.length ? '<span class="red">' + lostPs.length + ' not found</span>' : ''].filter(Boolean).join(' · ');
+    var evidence = '<div class="block"><h3><span class="caps">Evidence for ' + rel + '/5</span><span class="muted" style="font-size:14px">' + (count || 'no passages') + '</span></h3>' +
+      (checked.length ? '<ol class="entries">' + checked.map(function (x) { return passage(r, x.k, x.i, here); }).join("") + '</ol>'
+        : ps.length ? '' : '<p class="muted">This rating quotes no passages, so nothing in it can be checked against the PDF.</p>') +
+      (lostPs.length ? '<div class="lost"><h4 class="caps">Not found in the PDF</h4>' +
+        '<p class="lcnote">margi found none of these words in the PDF. Treat them as unverified: they may be misquoted or on another page. Check them yourself before you rely on them.</p>' +
+        '<ol class="entries">' + lostPs.map(function (x) { return passage(r, x.k, x.i, here); }).join("") + '</ol></div>' : '') + '</div>';
+
+    // end on what to do with this paper
+    var next = [];
+    if (lostPs.length || checked.some(function (x) { return traceOf(x.k) === "unchecked"; })) {
+      next.push('<p class="lcnote">Rate it again to replace passages margi couldn’t check.</p><p>' + cmdChip("/margi read " + r.pdf) + '</p>');
+    } else if (r.relevance >= 4 && r.cited_in_thesis === false && nFound && r.cite_key) {
+      next.push('<p class="lcnote">Not cited yet. Copy a citation from a found passage' + ((r.sections || []).length ? ' into ' + ((r.sections.length > 1) ? 'sections ' : 'section ') + forSections(r) : '') + '.</p>');
+    }
+    if (!r.cite_key && nFound) {
+      next.push('<p class="lcnote">No bibliography entry matched this PDF, so there are no citations to copy. Add it to your <code>.bib</code> file, then rate it again.</p>');
+    }
+    return '<h2>' + esc(paperName(r)) + '</h2>' + meta + prov +
       (r.why ? '<p class="summary">' + esc(r.why) + '</p>' : '') +
       (r.caveats ? '<p class="lcnote"><i>Caveats.</i> ' + esc(r.caveats) + '</p>' : '') +
-      '<div class="block"><h3><span class="caps">Key passages</span><span class="muted" style="font-size:14px">' + plural(ps.length, "passage") + '</span></h3>' +
-      (ps.length ? '<ol class="entries">' + ps.map(function (k, i) { return passage(r, k, i); }).join("") + '</ol>' : '<p class="muted">This rating has no key passages.</p>') + '</div>';
+      evidence + (next.length ? '<div class="block"><h3><span class="caps">Next</span></h3>' + next.join("") + '</div>' : '');
   }
 
-  function passage(r, k, i) {
-    var a = k.anchor || {};
-    var page = a.page || k.page;
-    var st = a.status === "unresolved" ? '<span class="anchor-state">passage not found in the PDF</span>'
-      : a.status === "relocated" ? '<span class="anchor-state">found on p. ' + esc(a.page) + (k.page ? ', not p. ' + esc(k.page) : '') + '</span>'
-      : a.status === "visual" ? '<span class="anchor-state" style="color:var(--ink-3)">read from the page image</span>' : '';
+  var TRACE_NOTE = {
+    ok: function () { return '<span class="anchor-state found">found in the PDF</span>'; },
+    relocated: function (k, a) { return '<span class="anchor-state">found on p. ' + esc(a.page) + (k.page ? ', not p. ' + esc(k.page) : '') + '</span>'; },
+    visual: function () { return '<span class="anchor-state quiet">read from the page image; check it on the page</span>'; },
+    unchecked: function () { return '<span class="anchor-state quiet">not checked against the PDF</span>'; },
+    unresolved: function () { return ''; }
+  };
+
+  function passage(r, k, i, here) {
+    var a = k.anchor || {}, t = traceOf(k), page = pageOf(k), lost = t === "unresolved";
     var where = (a.section || []).length ? '<div class="where">' + a.section.map(esc).join('<span class="sep" aria-hidden="true">›</span>') + '</div>' : '';
-    var crops = (a.crops || []).map(function (c) {
+    var crops = lost ? "" : (a.crops || []).map(function (c) {
       var b = c.box, w = (b[2] - b[0]) * a.size[0], h = (b[3] - b[1]) * a.size[1];
+      if (!c.src) return "";
+      if (t === "visual") { // the whole page, small, linked to the PDF: the quote was read from it
+        var img = '<img src="' + esc(c.src) + '" alt="Page ' + esc(page) + ', the page the quote was read from' + (here === false ? '' : '; opens the PDF in a new tab') + '" onerror="margiNoCrop(this)">';
+        var ar = 'aspect-ratio:' + w.toFixed(1) + ' / ' + h.toFixed(1);
+        return '<div class="excerpt-frame">' + (here === false ? '<span class="facsimile" style="' + ar + '">' + img + '</span>'
+          : '<a class="facsimile" href="' + esc(pdfHref(r, page)) + '" target="_blank" rel="noopener" style="' + ar + '">' + img + '</a>') + '</div>';
+      }
       var pct = function (v, lo, span) { return ((v - lo) / span * 100).toFixed(2) + "%"; };
       var washes = c.lines.map(function (l) {
         var pad = 0.18 * (l[3] - l[1]);
         return '<span class="wash" style="left:' + pct(l[0] - pad / 2, b[0], b[2] - b[0]) + ';top:' + pct(l[1] - pad, b[1], b[3] - b[1]) +
           ';width:' + ((l[2] - l[0] + pad) / (b[2] - b[0]) * 100).toFixed(2) + '%;height:' + ((l[3] - l[1] + 2 * pad) / (b[3] - b[1]) * 100).toFixed(2) + '%"></span>';
       }).join("");
-      // the crop fills the panel up to 1.5x print size, never below print size: on a phone it scrolls sideways instead
-      return c.src ? '<div class="excerpt-frame"><figure class="excerpt" style="aspect-ratio:' + w.toFixed(1) + ' / ' + h.toFixed(1) +
+      // the crop fills the panel up to 1.5x print size, never below print size: on a narrow screen it scrolls sideways instead
+      return '<div class="excerpt-frame"><figure class="excerpt" style="aspect-ratio:' + w.toFixed(1) + ' / ' + h.toFixed(1) +
         ';width:min(100%, ' + (w * 1.5).toFixed(0) + 'px);min-width:' + w.toFixed(0) + 'px">' +
-        '<img src="' + esc(c.src) + '" alt="' + esc(k.quote) + '" onerror="margiNoCrop(this)">' + '<span aria-hidden="true">' + washes + '</span></figure></div>' : '';
+        '<img src="' + esc(c.src) + '" alt="Excerpt of page ' + esc(page) + ' with the quoted lines highlighted" onerror="margiNoCrop(this)">' + '<span aria-hidden="true">' + washes + '</span></figure></div>';
     }).join("");
-    var href = (r.href || "../" + r.pdf) + (page ? "#page=" + page : "");
-    return '<li class="entry passage" id="k-' + i + '"><span class="loc">' + (page ? 'p. ' + esc(page) : '—') + '</span><div>' + where + crops +
-      '<div class="lemma-line"><span class="lemma">' + esc(k.quote) + '</span><span class="br">]</span>' + st + '</div>' +
+    // a citation to copy, only for words margi found; the printed page number only when the PDF names it
+    var cite = isFound(k) && r.cite_key ? '<span class="cite">' + cmdChip(a.label ? '@' + r.cite_key + '[p. ' + a.label + ']' : '@' + r.cite_key, "Copy citation") +
+      (a.label ? '' : '<span class="muted">add the printed page</span>') + '</span>' : '';
+    var open = here === false ? '' : '<a class="open" href="' + esc(pdfHref(r, page)) + '" target="_blank" rel="noopener">' +
+      (lost ? (page ? 'Look for it on p. ' + esc(page) : 'Look for it in the PDF') : page ? 'Open p. ' + esc(page) + ' in the PDF' : 'Open the PDF') + OPEN_ICON + NEW_TAB + '</a>';
+    return '<li class="entry passage' + (lost ? ' unfound' : '') + '" id="k-' + i + '"><span class="loc">' + (page && !lost ? 'p. ' + esc(page) : '—') + '</span><div>' + where + crops +
+      '<div class="lemma-line"><span class="lemma">' + esc(k.quote) + '</span><span class="br">]</span>' + TRACE_NOTE[t](k, a) + '</div>' +
       (k.why ? '<div class="note">' + esc(k.why) + '</div>' : '') +
-      '<a class="open" href="' + esc(href) + '" target="_blank" rel="noopener">' + (page ? 'Open p. ' + esc(page) + ' in the PDF' : 'Open the PDF') + OPEN_ICON + '</a></div></li>';
+      (cite || open ? '<div class="acts">' + cite + open + '</div>' : '') + '</div></li>';
   }
 
-  // a crop that doesn't load: the PDF isn't on this machine, changed since it was read, or isn't rendered yet
+  // a crop that doesn't load: say why from what this machine knows, and keep the PDF link when the PDF is here
   window.margiNoCrop = function (img) {
     var fig = img.closest(".excerpt-frame"), item = img.closest(".passage");
     if (!fig || !item) return;
     if (!item.querySelector(".missing")) {
+      var r = D.literature.rated.filter(function (x) { return x.pdf === state.paper; })[0];
+      var here = r ? pdfHere(r) : null;
       var p = document.createElement("p");
       p.className = "missing";
-      p.textContent = "The page image isn’t on this machine. Put the PDF back into the literature folder and run any margi command to render it.";
+      p.textContent = here === true
+        ? "The page image hasn’t been rendered yet. Run any margi command to render it. If the PDF changed since it was rated, rate it again."
+        : here === false
+          ? "The PDF isn’t on this machine, so there is no page image. Put " + (r ? r.pdf : "it") + " back and run any margi command."
+          : "The page image isn’t on this machine. If the PDF is in the literature folder, run any margi command to render it.";
       fig.parentNode.insertBefore(p, fig);
     }
-    item.classList.add("no-pdf");
     fig.remove();
   };
 
@@ -936,6 +1035,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     v.innerHTML = views[state.tab]();
     if (opts && opts.enter) { var a = $("apparatus"); if (a) { a.classList.add("enter"); } }
     writeHash(opts && opts.push);
+    fitPanel();
   }
   function select(sid, focusPanel) {
     var moved = state.sel !== sid;
@@ -951,6 +1051,11 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var moved = state.paper !== pdf;
     state.paper = pdf; state.tab = "literature";
     render({ enter: true, push: moved && focusPanel });
+    var r = D.literature.rated.filter(function (x) { return x.pdf === pdf; })[0];
+    if (r && moved) {
+      var ps = passagesOf(r);
+      $("live").textContent = paperName(r) + ", " + (r.relevance == null ? "not rated" : r.relevance + " of 5") + ", " + ps.filter(isFound).length + " of " + plural(ps.length, "passage") + " found in the PDF";
+    }
     var a = $("apparatus");
     if (a) a.scrollTop = 0;
     if (focusPanel && a && window.matchMedia("(max-width: 1080px)").matches) a.scrollIntoView({ block: "start" });
@@ -1033,8 +1138,14 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   window.addEventListener("hashchange", onHash);
   window.addEventListener("popstate", onHash);
   // the running head wraps on small screens; sticky offsets need its real height
-  function measureHead() { document.documentElement.style.setProperty("--head-real", ($("head").offsetHeight + 4) + "px"); }
+  function measureHead() { document.documentElement.style.setProperty("--head-real", ($("head").offsetHeight + 4) + "px"); fitPanel(); }
   window.addEventListener("resize", measureHead);
+  // where the sticky panel starts on the page, so it can end inside the first viewport
+  function fitPanel() {
+    var a = $("apparatus"); if (!a) return;
+    // measured on the split, which doesn't move when the panel sticks
+    document.documentElement.style.setProperty("--panel-top", Math.round(a.parentNode.getBoundingClientRect().top + window.scrollY) + "px");
+  }
 
   readHash();
   renderHead();

@@ -21,6 +21,7 @@ CROPS = f"{MARGI_DIR}/.cache/lit/crops"
 SCALE = 3          # render scale: 216 dpi, about 2x for a column shown at panel width
 CONTEXT = 2        # lines of context above and below the quote
 PAD = 6.0          # points around the crop
+PAGE = [0.0, 0.0, 1.0, 1.0]  # a crop box covering the whole page (visual passages)
 
 PUNCT = str.maketrans({"‘": "'", "’": "'", "‚": "'", "“": '"', "”": '"', "„": '"',
                        "–": "-", "—": "-", "−": "-", "­": None})
@@ -177,8 +178,8 @@ def locate(pdf: Path, passages: list[dict]) -> list[dict]:
 
     try:
         doc = pdfium.PdfDocument(pdf)
-    except Exception:  # missing, encrypted or broken: nothing to anchor
-        return [{"status": "unresolved", "page": p.get("page")} for p in passages]
+    except Exception:  # missing, encrypted or broken: nothing to check the quotes against
+        return [{"status": "unchecked", "page": p.get("page")} for p in passages]
     try:
         pages, textpages, lines = [], {}, []
         for n in range(len(doc)):
@@ -200,7 +201,8 @@ def locate(pdf: Path, passages: list[dict]) -> list[dict]:
                     full += " "
                     flat.append(Char(-1, -1, None))
         entries = _sections(doc, textpages)
-        return [_anchor(p, full, offsets, flat, pages, entries) for p in passages]
+        labels = [_label(doc, n) for n in range(len(doc))]
+        return [_anchor(p, full, offsets, flat, pages, entries, labels) for p in passages]
     finally:
         doc.close()
 
@@ -209,10 +211,27 @@ def _last_body(lines: list[Line], drop: set[int]) -> int:
     return max((i for i in range(len(lines)) if i not in drop), default=-1)
 
 
-def _anchor(passage: dict, full: str, offsets: list[int], flat: list[Char], pages: list, entries: list) -> dict:
+def _label(doc, n: int) -> str | None:
+    """The page's printed number from the PDF's page labels ("233", "xii"), if the PDF has them."""
+    try:
+        label = doc.get_page_label(n)
+    except Exception:
+        return None
+    return (label.strip() or None) if isinstance(label, str) else None
+
+
+def _anchor(passage: dict, full: str, offsets: list[int], flat: list[Char], pages: list, entries: list,
+            labels: list[str | None]) -> dict:
     stated = passage.get("page")
     if passage.get("source") == "visual":
-        return {"status": "visual", "page": stated}
+        anchor = {"status": "visual", "page": stated}
+        if isinstance(stated, int) and 1 <= stated <= len(pages) and labels[stated - 1]:
+            anchor["label"] = labels[stated - 1]
+        if isinstance(stated, int) and 1 <= stated <= len(pages) and pages[stated - 1].get_rotation() == 0:
+            left, bottom, right, top = pages[stated - 1].get_cropbox()
+            # the whole page, shown small: the student checks the quote on the image it was read from
+            anchor.update(size=[round(right - left, 2), round(top - bottom, 2)], crops=[{"box": PAGE, "lines": []}])
+        return anchor
     quote = normalize(str(passage.get("quote", "")))
     hits = [m.start() for m in re.finditer(re.escape(quote), full)] if len(quote) >= 8 else []
     if not hits:
@@ -227,6 +246,8 @@ def _anchor(passage: dict, full: str, offsets: list[int], flat: list[Char], page
     width, height = right - left, top - bottom
     anchor = {"status": "ok" if on_page else "relocated", "page": first + 1,
               "size": [round(width, 2), round(height, 2)]}
+    if labels[first]:
+        anchor["label"] = labels[first]
     path = section_path(entries, first, chars[0].index if chars else 0)
     if path:
         anchor["section"] = path
@@ -298,7 +319,8 @@ def render(pdf: Path, jobs: list[tuple[int, list[float], Path]]) -> None:
             left, bottom, right, top = page.get_cropbox()
             w, h = right - left, top - bottom
             crop = (box[0] * w, (1 - box[3]) * h, (1 - box[2]) * w, box[1] * h)  # left, bottom, right, top margins
-            bitmap = page.render(scale=SCALE, crop=crop, grayscale=True)
+            # a whole page is shown as a small facsimile, so it needs far fewer pixels than an excerpt
+            bitmap = page.render(scale=1 if box == PAGE else SCALE, crop=crop, grayscale=True)
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(_png(bitmap.width, bitmap.height, bitmap.stride, bytes(bitmap.buffer)))
     finally:
@@ -326,8 +348,8 @@ def trace(root: Path, payload: dict) -> dict:
         if pdf.is_file():
             item["pdf_sha256"] = sha256(pdf.read_bytes())
             anchors = locate(pdf, passages)
-        else:
-            anchors = [{"status": "unresolved", "page": p.get("page")} for p in passages]
+        else:  # nothing to check against: not the same as a quote that isn't in the paper
+            anchors = [{"status": "unchecked", "page": p.get("page")} for p in passages]
         item["key_passages"] = [dict(p, anchor=a) for p, a in zip(passages, anchors)]
         ratings.append(item)
     payload["ratings"] = ratings
