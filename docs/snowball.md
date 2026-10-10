@@ -25,6 +25,8 @@ seed ──resolve──▶ level 1: references of seed
 
 `<paper>` may be a DOI, a cite key from `refs.bib`, a PDF in `lit/` (DOI from the first pages)
 or a title (OpenAlex search, the student confirms the match). The resolved OpenAlex ID is recorded.
+If the seed is a book (see *Books* below), margi says so and stops: there is nothing to snowball
+from.
 
 ### Stage 1: fetch (deterministic, `margi snowball fetch`)
 
@@ -64,6 +66,16 @@ level.
 Already-known papers (`in_bib`, `in_lit`) are scored and expanded like any other but are not
 proposed as new finds. They often lead to the best level-2 candidates.
 
+### Books
+
+margi does not snowball off books (OpenAlex `type` `book`, `book-chapter`, `edited-book`,
+`monograph`, `reference-book`). A book found as a candidate is **ranked but never expanded**: it
+is scored from whatever metadata OpenAlex has (abstract or description if present, otherwise
+title, venue or publisher, year and topics) and can pass the threshold and reach the final
+selection. It is a leaf in the tree. Its references are not fetched, and it does not count
+against the run's expansion budget. margi focuses on digital humanities, where the core
+literature is mostly articles and proceedings, so stopping at books costs little.
+
 ### Stage 3: full text (only for the final selection)
 
 For each paper in the final selection:
@@ -75,6 +87,10 @@ Then `/margi read` rates the PDFs as usual (0–5, key passages, role, sections)
 `fulltext_threshold` can drop papers whose full-text relevance falls short of what the abstract
 suggested.
 
+Two scales on purpose, for now: screening scores 0–1 (from an abstract), `/margi read` rates
+0–5 (from the full text). They judge different evidence, so they stay separate in v1. They may be
+unified later (decided 2026-10-10).
+
 ## Why abstracts first, not titles
 
 The first pass scores the abstract, not just the title:
@@ -83,8 +99,8 @@ The first pass scores the abstract, not just the title:
    roughly 300 tokens per candidate instead of 30. For the worst case below (~450 candidates)
    that is ~135k input tokens, which is acceptable for a command run a few times per thesis.
 2. **Titles can't carry a 0.7 threshold.** A hard cut-off needs a score that is roughly
-   calibrated. Title-only scores are mostly noise, especially in the humanities, where titles are
-   often metaphorical ("Reading Machines", "The Archive and the Repertoire"). A paper wrongly dropped
+   calibrated. Title-only scores are mostly noise, and digital-humanities titles are often
+   metaphorical ("Reading Machines", "Distant Horizons"). A paper wrongly dropped
    at level 1 also loses its whole level-2 subtree, so a false negative costs more here than at
    any later stage.
 3. **A title pre-filter isn't worth the complexity yet.** It would only pay off if a level
@@ -93,8 +109,7 @@ The first pass scores the abstract, not just the title:
 
 Candidates without an abstract (`basis: title`) are scored from the title, venue, type and
 OpenAlex topics. They are **neither dropped nor expanded automatically**. Instead they appear in
-a "needs a look" list. Books and book chapters land here often, and in a digital-humanities
-thesis they are frequently the important ones.
+a "needs a look" list, where the student decides. Books follow their own rule (see *Books*).
 
 ## Parameters
 
@@ -112,9 +127,9 @@ In `thesis.config.yml` under `snowball:`. Each can be overridden per run as a CL
 
 Worst case with the defaults, assuming ~40 references per paper: level 1 screens 40 and keeps 10.
 Level 2 screens ≤ 400 (fewer after deduplication) and keeps ≤ 100. Up to ~110 papers can reach the
-final selection. That is more than anyone reads in full, so the final list is ranked and the
-student chooses what to fetch. Raising `threshold` or lowering `max_per_paper` is the main way to
-narrow it.
+final selection. A large list is fine: how wide to cast the net is the student's choice, made
+through `threshold`, `max_per_paper` and `depth`. The final list is ranked, so the strongest
+papers come first either way. The defaults may be tuned once there is real usage.
 
 ## Output
 
@@ -128,10 +143,10 @@ narrow it.
 
 ## Known gaps
 
-- **Humanities coverage.** OpenAlex often has no reference list for books, so expansion
-  dead-ends there. Fallback: if the PDF is in `lit/`, extract its bibliography with pypdfium2 and
-  resolve each entry through OpenAlex search or Crossref `query.bibliographic`. Matches are marked
-  `resolved_by: text` and given a confidence.
+- **Missing reference lists.** Some articles and proceedings have no `referenced_works` in
+  OpenAlex. Such a paper is ranked but cannot be expanded, and the run file says so. A possible
+  later fallback: if its PDF is in `lit/`, extract the bibliography with pypdfium2 and resolve
+  each entry through OpenAlex search or Crossref `query.bibliographic`.
 - **Missing abstracts** for some publishers in OpenAlex; partly covered by the Semantic Scholar
   fallback.
 - **Rate limits and keys.** Check OpenAlex's current policy before shipping; the cache keeps
