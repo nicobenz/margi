@@ -245,11 +245,12 @@ def guard(msg_file: str | None, rev_range: str | None) -> None:
 @main.command(name="extract-pdfs", hidden=True)
 @click.argument("pdfs", nargs=-1)
 def extract_pdfs(pdfs: tuple[str, ...]) -> None:
-    """[plumbing] Extract literature PDFs to margi/.cache/lit/."""
+    """[plumbing] Extract literature PDFs to margi/.cache/lit/. Prints pdf, text file and flagged pages."""
     from .pdf import extract
 
     for path, entry in extract(_cfg(), list(pdfs) or None).items():
-        click.echo(f"{path}\t{entry['text']}")
+        flags = ",".join(f"{page}:{why}" for page, why in entry["flags"].items()) or "-"
+        click.echo(f"{path}\t{entry['text']}\t{flags}")
 
 
 if __name__ == "__main__":
