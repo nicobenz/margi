@@ -4,7 +4,9 @@
 
 ## Platform
 
-web
+web, desktop first (user, 2026-10-10): students write and run margi at a desktop or laptop, where
+`uvx` and a coding agent are available; nobody writes a thesis on a phone. Narrow screens must not
+break, but they get no dedicated design work.
 
 ## Stack
 
