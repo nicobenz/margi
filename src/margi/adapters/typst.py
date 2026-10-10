@@ -23,6 +23,9 @@ CODE_LINE = re.compile(r"^\s*#(set|show|import|let|include|pagebreak|outline|bib
 LABEL = re.compile(r"<[\w:.-]+>")
 REF = re.compile(r"@[\w:.-]+")
 LINE_COMMENT = re.compile(r"(?<![:/])//.*$")
+LIST_ITEM = re.compile(r"^\s*([-+]|\d+\.|/\s*[^:]*:)\s+")
+LOREM = re.compile(r"#lorem\(|\blorem ipsum\b", re.I)
+MARKERS = re.compile(r"\b(TODO|FIXME|TBD|XXX)\b|\?\?\?|\bcitation needed\b", re.I)
 
 
 @dataclass
@@ -87,8 +90,19 @@ class TypstAdapter(Adapter):
                 prose = state.consume(line.text)
             current = stack[-1]
             _add_line(current, line)
+            visible = LINE_COMMENT.sub("", line.text)
+            if LOREM.search(visible):
+                current.own_placeholder = True
             if prose.strip():
                 current.own_chars += count(prose, mode) + (1 if mode == "chars" else 0)
+                current.own_lines += 1
+                if LIST_ITEM.match(line.text):
+                    current.own_list_lines += 1
+                elif not LOREM.search(visible):
+                    current.own_words += len(prose.split())
+                for m in MARKERS.finditer(prose):
+                    if m.group(0).upper() not in current.own_markers:
+                        current.own_markers.append(m.group(0).upper())
         return root
 
 

@@ -24,6 +24,7 @@ DEFAULTS: dict[str, Any] = {
     "literature": {"dir": "lit", "bib": None},
     "rubric": "default",
     "docs": {"min_completeness": 0.7},
+    "grade": {"precheck": "ask", "min_words": 150, "max_list_share": 0.5},
     "ai_identity": {"name": "margi-bot", "email": "margi-bot@users.noreply.github.com"},
     "github": {"label": "margi"},
 }

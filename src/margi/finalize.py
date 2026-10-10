@@ -140,6 +140,43 @@ def _slug(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9.]+", "-", text).strip("-")[:60] or "all"
 
 
+# --------------------------------------------------------------------------- readiness
+
+
+def grade_readiness(cfg: Config, draft: dict) -> dict:
+    """Run the precheck for a grade draft and decide, per grade.precheck, whether it may be recorded."""
+    from .readiness import ReadinessError, for_scope, mode
+
+    try:
+        m = mode(cfg)
+    except ReadinessError as e:
+        raise FinalizeError(str(e)) from e
+    _, check = for_scope(cfg, draft["scope"])
+    asked = draft.get("readiness", {})
+    graded = bool(draft.get("scores") or draft.get("comments"))
+    out = {"mode": m, "decision": "graded", "check": check}
+    if asked.get("reasons"):
+        out["reasons"] = asked["reasons"]
+    if asked.get("decision") == "not_ready":
+        if graded:
+            raise FinalizeError(f"grade {draft['scope']}: a not_ready grade carries no scores or comments")
+        out["decision"] = "not_ready"
+        return out
+    if not graded or check is None or check["ready"] or m == "none":
+        return out
+    why = "; ".join(check["reasons"])
+    if m == "strict":
+        raise FinalizeError(f"grade {draft['scope']}: the section is not ready to grade ({why}) and grade.precheck is "
+                            "strict. Record it as not ready (readiness.decision: not_ready, no scores); to grade it "
+                            "anyway, the user changes grade.precheck in thesis.config.yml.")
+    if asked.get("decision") != "override":
+        raise FinalizeError(f"grade {draft['scope']}: the section is not ready to grade ({why}). Ask the user: if they "
+                            "want it graded anyway, set readiness.decision to override; otherwise record it as not "
+                            "ready (readiness.decision: not_ready, no scores).")
+    out["decision"] = "override"
+    return out
+
+
 # --------------------------------------------------------------------------- build
 
 
@@ -172,6 +209,10 @@ def build_record(
 ) -> dict:
     record = {"schema": "margi/record@1", "run": {"id": run_id}}
     record.update(draft)
+    if draft["command"] == "grade":
+        record["readiness"] = grade_readiness(cfg, draft)
+    else:
+        record.pop("readiness", None)
 
     comments = []
     for c in draft.get("comments", []):
@@ -246,9 +287,10 @@ def finalize(
     feedback.mkdir(parents=True, exist_ok=True)
 
     result = FinalizeResult(has_git=cfg.has_git)
-    for i, (path, draft) in enumerate(drafts):
-        rid = run_id if len(drafts) == 1 else f"{run_id}-{i + 1}"
-        record = build_record(cfg, draft, rid, now, model=model, harness=harness, model_source=model_source)
+    records = [build_record(cfg, draft, run_id if len(drafts) == 1 else f"{run_id}-{i + 1}", now,
+                            model=model, harness=harness, model_source=model_source)
+               for i, (_, draft) in enumerate(drafts)]  # every draft must pass before anything is written
+    for (path, draft), record in zip(drafts, records):
         out = feedback / f"{stamp}_{draft['command']}_{_slug(draft['scope'])}.json"
         n = 2
         while out.exists():

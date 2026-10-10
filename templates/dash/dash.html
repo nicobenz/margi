@@ -532,6 +532,13 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   });
 
   // ------------------------------------------------------------------ sections view
+  // not ready to grade: the live precheck says so, or the latest check recorded it (agent judgment included)
+  var draftState = function (s) {
+    if (latest(s.id) || !s.chars) return null;
+    var rd = s.readiness, pc = (D.prechecks || {})[s.id];
+    var reasons = (rd && !rd.ready ? rd.reasons : []).concat(pc ? pc.reasons : []);
+    return reasons.length || pc ? { reasons: reasons, recorded: pc, markers: rd ? rd.markers : [] } : null;
+  };
   var needsAttention = function (sid) {
     var g = latest(sid);
     return !!g && (g.changed.length > 0 || g.comments.some(function (c) { return c.severity === "major"; }) ||
@@ -554,7 +561,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       return state.show === "graded" ? !!latest(s.id) : state.show === "attention" ? needsAttention(s.id) : true;
     });
     var rows = visible.map(function (s) {
-      var g = latest(s.id), dl = delta(s.id);
+      var g = latest(s.id), dl = delta(s.id), draft = draftState(s);
       var t = shareTarget(s.target);
       var bar = '<span class="bar" aria-hidden="true"><i style="width:' + pct(s.share) + '%"></i>' +
         (t != null ? '<b style="left:' + pct(t) + '%" title="' + esc(s.target) + '"></b>' : '') + '</span>';
@@ -563,9 +570,10 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
         var sc = g.scores[c.id];
         if (!sc) return '<td class="c catcol"><span class="score none" aria-hidden="true">·</span><span class="visually-hidden">not scored</span></td>';
         return '<td class="c catcol"><span class="score' + (isLow(sc) ? " low" : "") + '" title="' + esc(scoreTitle(c.id, sc)) + '">' + fmtScore(sc.score) + '</span></td>';
-      }).join("") : '<td class="catcol ungraded" colspan="' + cats.length + '">' + (s.chars ? 'not graded' : 'no text yet') + '</td>';
+      }).join("") : '<td class="catcol ungraded" colspan="' + cats.length + '"' + (draft ? ' title="' + esc(draft.reasons.join("; ")) + '"' : '') + '>' +
+        (!s.chars ? 'no text yet' : draft ? 'draft · not ready to grade' : 'not graded') + '</td>';
       var lowN = g ? Object.keys(g.scores).filter(function (k) { return isLow(g.scores[k]); }).length : 0;
-      var catsum = '<td class="c catsum">' + (g ? (lowN ? '<span class="score low">' + lowN + ' low</span>' : '<span class="muted">ok</span>') : '<span class="muted">not graded</span>') + '</td>';
+      var catsum = '<td class="c catsum">' + (g ? (lowN ? '<span class="score low">' + lowN + ' low</span>' : '<span class="muted">ok</span>') : '<span class="muted">' + (draft ? 'draft' : 'not graded') + '</span>') + '</td>';
       var maj = g ? g.comments.filter(function (c) { return c.severity === "major"; }).length : null;
       var changed = g && g.changed.length ? '<span class="flag red" title="Changed since grading: ' + esc(g.changed.join(", ")) + '">changed</span>' : '';
       var graded = g ? '<span class="muted" title="' + esc(fmtDate(g.timestamp, true)) + '">' + fmtDate(g.timestamp, false, true) + '</span>' : '';
@@ -607,7 +615,20 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var runs = D.grades[s.id] || [];
     var head = '<h2><span class="sid">' + esc(s.id) + '</span>' + esc(s.title) + '</h2>';
     if (!runs.length) {
-      return head + '<div class="meta"><span>' + fmtN(s.chars) + ' ' + unitName(D.outline.unit) + '</span>' + (s.files.length ? '<span class="mono">' + esc(s.files.join(", ")) + '</span>' : '') + '</div>' +
+      var smeta = '<div class="meta"><span>' + fmtN(s.chars) + ' ' + unitName(D.outline.unit) + '</span>' + (s.files.length ? '<span class="mono">' + esc(s.files.join(", ")) + '</span>' : '') + '</div>';
+      var draft = draftState(s);
+      if (draft) {
+        var mode = D.grade_precheck;
+        return head + smeta + '<div class="block"><h3><span class="caps">Not ready to grade</span>' +
+          (draft.recorded ? '<span class="muted" style="font-size:14px">checked ' + fmtDate(draft.recorded.timestamp) + '</span>' : '') + '</h3>' +
+          (draft.reasons.length ? '<ul class="list">' + draft.reasons.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join("") + '</ul>' : '') +
+          (draft.markers.length ? '<p class="lcnote">Markers in the text: ' + esc(draft.markers.join(", ")) + '</p>' : '') +
+          '<p class="lcnote">' + (mode === "strict" ? 'Grading is set to strict, so margi grades this once the section is running prose.'
+            : mode === "ask" ? 'margi asks before grading a section like this; the choice is recorded.'
+            : 'The precheck is off, so margi grades this on request.') + '</p>' +
+          (mode !== "strict" ? '<p>' + cmdChip("/margi grade " + s.id) + '</p>' : '') + '</div>';
+      }
+      return head + smeta +
         '<div class="block"><h3><span class="caps">Not graded yet</span></h3><p class="summary">' + (s.chars ? 'Grade this section to see rubric scores and anchored comments.' : 'This section has no text yet.') + '</p>' +
         (s.chars ? '<p>' + cmdChip("/margi grade " + s.id) + '</p>' : '') + '</div>';
     }
@@ -619,6 +640,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var meta = '<div class="meta">' + runSel + (g.model ? '<span>' + esc(g.model) + '</span>' : '') + '<span>rubric ' + esc(rub.id) + (g.rubric ? ' ' + esc(g.rubric) : '') + '</span>' +
       '<span>' + plural(runs.length, "grade") + '</span></div>';
     var warns = '';
+    if (g.override) warns += '<p class="lcnote"><i>Graded despite the readiness check.</i> ' + esc((g.readiness_reasons || []).join("; ")) + '.</p>';
     if (g.low_confidence) warns += '<p class="lcnote"><i>Low confidence.</i> The project docs were incomplete when this was graded' + (docsLow ? ', and still are.' : '; they are complete now, so a regrade would count fully.') + '</p>';
     if (idx === runs.length - 1 && g.changed.length) warns += '<p class="warn">The text changed since this grade (' + esc(g.changed.join(", ")) + '). ' + cmdChip("/margi grade " + s.id) + '</p>';
 

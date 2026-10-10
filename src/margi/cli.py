@@ -130,6 +130,27 @@ def outline(no_save: bool) -> None:
 
 
 @main.command(hidden=True)
+@click.argument("section")
+def precheck(section: str) -> None:
+    """[plumbing] Is a section ready to grade? Run before `/margi grade`."""
+    from .readiness import ReadinessError, for_scope, mode
+
+    cfg = _cfg()
+    try:
+        m = mode(cfg)
+    except ReadinessError as e:
+        raise click.ClickException(str(e)) from e
+    sec, check = for_scope(cfg, section)
+    if check is None:
+        raise click.ClickException(f"no section {section!r} in the thesis (see `uv run margi outline --no-save`)")
+    click.echo(f"{sec.id} {sec.title}: {'ready' if check['ready'] else 'not ready'} to grade (grade.precheck: {m})")
+    for r in check["reasons"]:
+        click.echo(f"  - {r}")
+    click.echo(f"  {check['words']} words of running prose, {check['list_share']:.0%} list items"
+               + (f", markers: {', '.join(check['markers'])}" if check["markers"] else ""))
+
+
+@main.command(hidden=True)
 def status() -> None:
     """[plumbing] Overview: docs completeness, latest grades, outline, todos, recent runs."""
     click.echo(status_mod.render(_cfg()))
