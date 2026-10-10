@@ -2,10 +2,11 @@
 
 **AI in the margins, never in the text.**
 
-margi is a feedback layer for a thesis that you write 100% by hand. You use it from your AI
-agent with `/margi` commands. The agent reads your thesis and writes documentation,
-grades, literature ratings and todos, but **only inside `margi/`**, and always in commits that
-are kept separate from yours. Git hooks and CI enforce this. You don't have to take it on trust.
+margi is a feedback layer for a thesis that you write 100% by hand. You use it from
+[Claude Code](https://claude.com/claude-code) with `/margi` commands. The agent reads your thesis
+and writes documentation, grades, literature ratings and todos, but **only inside `margi/`**, and
+always in commits that are kept separate from yours. Git hooks and CI enforce this. You don't
+have to take it on trust.
 
 ## Install
 
@@ -23,7 +24,7 @@ Then:
 1. Write your plan into `PROPOSAL.md`: title ideas, research question, data, method, outline,
    constraints. Fragments and loose thoughts are fine.
 2. Commit it.
-3. Open your agent in the repository and run `/margi propose`. margi turns the proposal into
+3. Open Claude Code in the repository and run `/margi propose`. margi turns the proposal into
    structured docs in `margi/docs/` and lists what is still unclear in
    `margi/docs/open-questions.md`.
 4. Add to `PROPOSAL.md`, commit, and run `/margi propose` again until the docs are complete
@@ -35,13 +36,17 @@ dependency to the repo's `pyproject.toml` (creating a bare one if needed) and lo
 `.venv/`. Run commands with `uv run margi …` (or activate `.venv`). After cloning on another
 machine, run `uv sync` once.
 
-`margi init` also vendors the skills to `.agents/skills/` and symlinks them from `.claude/skills/`, so
-Claude Code, Codex, Cursor and other agents that read `SKILL.md` can use them. Finally it
-writes `thesis.config.yml`, installs the commit guard and the CI workflow, and creates `margi/`.
+`margi init` also installs the skills (vendored to `.agents/skills/`, symlinked from
+`.claude/skills/`) and Claude Code's permissions in `.claude/settings.json`. Finally it writes
+`thesis.config.yml`, installs the commit guard and the CI workflow, and creates `margi/`.
+
+margi supports **Claude Code** only for now. Other agents that read `SKILL.md` may run the
+commands, but they are untested and the `protect_thesis` permissions don't apply to them; the
+commit guard and CI do.
 
 ## Commands
 
-All commands run inside your agent.
+All commands run inside Claude Code.
 
 | Command | |
 |---|---|
