@@ -21,7 +21,6 @@
       "Edit(thesis.config.yml)",
       "Edit(pyproject.toml)",
       "Edit(uv.lock)",
-      "Edit(AGENTS.md)",
       "Edit(.agents/**)",
       "Edit(.githooks/**)",
       "Bash(git commit:*)",

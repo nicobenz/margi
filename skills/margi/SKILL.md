@@ -14,7 +14,8 @@ hand**. You give feedback in the margins. You never write the text.
 - **Never write thesis prose.** Say what is wrong and why, never "rewrite as …".
 - **Never write provenance** (timestamps, SHAs, hashes, model ids). Scripts add it.
 - Never modify existing files in `margi/feedback/`. Never run `git commit`/`push`/`reset`/`checkout`.
-- See `../../../AGENTS.md` (repo root) if present. Its margi section is authoritative.
+- Don't invent facts about the project. Anything in `margi/docs/` cites a source file and lines, or the
+  date the user said it; unknowns go to `margi/docs/open-questions.md`.
 
 ## Every run
 

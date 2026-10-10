@@ -118,7 +118,6 @@ everything is enforced.
 skills/margi/            SKILL.md, commands/{grade,read,todos}.md, rubrics/default/, schema/
 skills/margi-propose/    SKILL.md, templates/ (the margi/docs files)
 skills/margi-challenge/  SKILL.md, lenses.md
-AGENTS.md                hard rules, merged into the thesis repo's AGENTS.md
 templates/               config, PROPOSAL.md, Typst skeleton, commit-msg hook, CI workflow, Claude settings,
                          dash/ (dashboard page and its Libertinus fonts, OFL)
 src/margi/               init, export + hidden helpers (finalize, guard, outline, dashboard, adapters/typst, …)

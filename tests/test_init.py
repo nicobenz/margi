@@ -72,3 +72,22 @@ def test_legacy_onboard_config_maps_to_propose(repo):
     cfg_file = repo / "thesis.config.yml"
     cfg_file.write_text(cfg_file.read_text().replace("propose:\n  source: PROPOSAL.md", "onboard:\n  source: expose.md"))
     assert load(repo)["propose"]["source"] == "expose.md"
+
+
+def test_init_writes_no_agents_md(repo):
+    assert not (repo / "AGENTS.md").exists()
+
+
+def test_reinit_removes_legacy_agents_md_section(repo):
+    legacy = "<!-- margi:begin -->\n## margi rules\nNever edit.\n<!-- margi:end -->\n"
+    (repo / "AGENTS.md").write_text(legacy)
+    human_commit(repo, "old margi", "AGENTS.md")
+    init(repo, install=False)
+    assert not (repo / "AGENTS.md").exists()
+    assert "AGENTS.md" not in run_git(repo, "ls-files").stdout.split()
+
+    (repo / "AGENTS.md").write_text("# My own rules\n\nBe concise.\n\n" + legacy)
+    human_commit(repo, "own rules plus old margi", "AGENTS.md")
+    init(repo, install=False)
+    assert (repo / "AGENTS.md").read_text() == "# My own rules\n\nBe concise.\n"
+    assert run_git(repo, "status", "--porcelain").stdout == ""
