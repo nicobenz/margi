@@ -93,8 +93,15 @@ margi commits  → only margi/                   ("margi: grade 2.1", author mar
   record in `margi/feedback/` (which is append-only).
 - **CI** (`margi guard --range`) repeats the hook's checks, so `--no-verify` doesn't bypass them.
 - **Agent permissions**: `.claude/settings.json` allows `Edit(margi/**)`, the margi helpers and
-  read-only `git`/`gh` commands, and denies edits to thesis sources and git commits.
-  `sync-todos` (creates GitHub issues) still asks for your permission.
+  read-only `git`/`gh` commands, and always denies edits to margi's own setup (including
+  `thesis.config.yml`). `sync-todos` (creates GitHub issues) still asks for your permission.
+- **`protect_thesis`** in `thesis.config.yml` (default `true`) also denies every agent session
+  edits to thesis sources (`.typ`, `.bib`, `.tex`, `.qmd`) and `git commit`/`push`/`reset`/`checkout`,
+  whatever you ask it. Set it to `false` if you want your agent's help outside margi, then run
+  `uv run margi init`: it rewrites the settings and commits them together with the config change
+  (`chore: update margi … (protect_thesis: false)`), so the choice is on record in `git log`.
+  If the two ever disagree, the next margi command stops and tells you to run `margi init`.
+  margi's own commands follow the human-writing rules either way.
 
 `git log -- margi/` is the complete AI audit trail for your advisors.
 

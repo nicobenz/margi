@@ -16,6 +16,7 @@ MARGI_DIR = "margi"
 
 DEFAULTS: dict[str, Any] = {
     "format": "typst",
+    "protect_thesis": True,
     "main": "main.typ",
     "sections": {},
     "count": "chars",  # chars | chars_no_spaces | words

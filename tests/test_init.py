@@ -91,3 +91,46 @@ def test_reinit_removes_legacy_agents_md_section(repo):
     init(repo, install=False)
     assert (repo / "AGENTS.md").read_text() == "# My own rules\n\nBe concise.\n"
     assert run_git(repo, "status", "--porcelain").stdout == ""
+
+
+def _deny(root):
+    import json
+    return json.loads((root / ".claude/settings.json").read_text())["permissions"]["deny"]
+
+
+def test_protect_thesis_switch_drives_claude_settings(repo):
+    from margi.agent_settings import drift
+
+    assert "Edit(**/*.typ)" in _deny(repo) and "Bash(git commit:*)" in _deny(repo)
+    assert "(protect_thesis: true)" in run_git(repo, "log", "--format=%s").stdout
+
+    # a human flips the switch and re-runs init: settings follow, and both land in one commit
+    cfg = repo / "thesis.config.yml"
+    cfg.write_text(cfg.read_text().replace("protect_thesis: true", "protect_thesis: false"))
+    init(repo, install=False)
+    deny = _deny(repo)
+    assert "Edit(**/*.typ)" not in deny and "Bash(git commit:*)" not in deny
+    assert "Edit(thesis.config.yml)" in deny and "Edit(.githooks/**)" in deny  # the switch stays human-only
+    flip = run_git(repo, "log", "--format=%H %s", "--grep=update margi").stdout.split("\n")[0]
+    assert flip.endswith("(protect_thesis: false)")
+    files = run_git(repo, "show", "--name-only", "--format=", flip.split()[0]).stdout.split()
+    assert "thesis.config.yml" in files and ".claude/settings.json" in files
+    assert drift(load(repo)) is None
+
+    # flipping back without re-running init is caught before the next margi run
+    cfg.write_text(cfg.read_text().replace("protect_thesis: false", "protect_thesis: true"))
+    human_commit(repo, "protect again", "thesis.config.yml")
+    assert "protect_thesis: true" in drift(load(repo))
+
+
+def test_protect_thesis_keeps_user_permissions(repo):
+    import json
+    path = repo / ".claude/settings.json"
+    data = json.loads(path.read_text())
+    data["permissions"]["deny"].append("Bash(rm:*)")
+    path.write_text(json.dumps(data))
+    human_commit(repo, "my own deny", ".claude/settings.json")
+    cfg = repo / "thesis.config.yml"
+    cfg.write_text(cfg.read_text().replace("protect_thesis: true", "protect_thesis: false"))
+    init(repo, install=False)
+    assert "Bash(rm:*)" in _deny(repo)

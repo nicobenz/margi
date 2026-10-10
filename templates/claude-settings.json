@@ -14,15 +14,17 @@
       "Bash(gh issue view:*)"
     ],
     "deny": [
-      "Edit(**/*.typ)",
-      "Edit(**/*.bib)",
-      "Edit(**/*.tex)",
-      "Edit(**/*.qmd)",
       "Edit(thesis.config.yml)",
       "Edit(pyproject.toml)",
       "Edit(uv.lock)",
       "Edit(.agents/**)",
-      "Edit(.githooks/**)",
+      "Edit(.githooks/**)"
+    ],
+    "deny_protect_thesis": [
+      "Edit(**/*.typ)",
+      "Edit(**/*.bib)",
+      "Edit(**/*.tex)",
+      "Edit(**/*.qmd)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git reset:*)",
