@@ -216,6 +216,10 @@ def build_record(
         record["readiness"] = grade_readiness(cfg, draft)
     else:
         record.pop("readiness", None)
+    if draft["command"] == "read" and isinstance(draft.get("payload"), dict):
+        from .passages import trace
+
+        record["payload"] = trace(cfg.root, draft["payload"])
 
     comments = []
     for c in draft.get("comments", []):

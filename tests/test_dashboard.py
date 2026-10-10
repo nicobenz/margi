@@ -1,4 +1,5 @@
 import json
+import re
 
 from conftest import human_commit, run_git
 
@@ -63,7 +64,8 @@ def test_export_is_self_contained(repo, cfg, tmp_path):
     out = export(cfg, tmp_path / "export.html")
     html = out.read_text()
     assert DATA_TAG not in html and "window.MARGI_DASH = {" in html
-    assert "src=\"" not in html.replace('src:url(data:', '')  # no external scripts, images or fonts
+    # no external scripts, images or fonts (the page's own code builds `src="' + …` for inlined crops)
+    assert not re.search(r'src="(?!data:)[^\']', html) and "src:url(data:" in html
     assert "</script>" in html and html.count("<script") == 2
 
 

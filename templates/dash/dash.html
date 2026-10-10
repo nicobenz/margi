@@ -22,6 +22,7 @@
   --red-ink: #8e2716;
   --chart: #1c1a18;
   --chart-grid: #ddd8cf;
+  --wash: #f0cfc3;      /* quoted lines on a page image; the image is paper-white in both modes */
 
   --serif: "Libertinus Serif", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: "Libertinus Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
@@ -268,6 +269,31 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .note .mono { white-space: nowrap; }
 .anchor-state { font-family: var(--sans); font-size: 12px; color: var(--red-ink); margin-left: 6px; }
 
+/* literature passages ---------------------------------------------------------------- */
+.ptitle { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.ptitle:focus-visible { outline-offset: 3px; }
+.grid tbody tr.sel .ptitle { text-decoration: underline; text-decoration-color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.grid tbody tr.sel .rel { color: var(--red); }
+.grid .src-path { font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
+.passage .where { font-family: var(--sans); font-size: 13px; color: var(--ink-3); margin-bottom: var(--s2); }
+.passage .where .sep { margin: 0 6px; color: var(--rule); }
+.excerpt {
+  position: relative; margin: 0 0 var(--s2); background: #fff; border: 1px solid var(--rule);
+  overflow: hidden; max-width: 100%;
+  -webkit-mask-image: linear-gradient(transparent, #000 10px, #000 calc(100% - 10px), transparent);
+  mask-image: linear-gradient(transparent, #000 10px, #000 calc(100% - 10px), transparent);
+}
+.excerpt img { display: block; width: 100%; height: 100%; }
+.excerpt .wash { position: absolute; background: var(--wash); mix-blend-mode: multiply; pointer-events: none; }
+.excerpt-frame { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+.excerpt-frame .excerpt { max-width: none; }
+.excerpt-frame + .excerpt-frame { margin-top: var(--s2); }
+.passage .open { display: inline-flex; align-items: center; gap: 5px; margin-top: var(--s2); font-family: var(--sans); font-size: 13px; color: var(--ink-2); }
+.passage .open svg { width: 11px; height: 11px; }
+.passage .missing { margin: 0 0 var(--s2); font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
+.passage.no-pdf .open { display: none; }
+@media (prefers-color-scheme: dark) { .excerpt { filter: brightness(0.88); border-color: var(--rule); } }
+
 .empty { padding: var(--s6) var(--s5); }
 .empty h2, .empty h3 { font-weight: 600; margin: 0 0 var(--s2); }
 .empty p { margin: 0 0 var(--s3); color: var(--ink-2); max-width: 60ch; }
@@ -329,6 +355,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   .tabs, .filters, .copy, .steps { display: none; }
   .split { grid-template-columns: 1fr; }
   .apparatus { position: static; max-height: none; overflow: visible; }
+  .excerpt { -webkit-mask-image: none; mask-image: none; }
   body { background: #fff; }
 }
 @media (forced-colors: active) {
@@ -439,19 +466,21 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   });
 
   // ------------------------------------------------------------------ state + hash
-  var state = { tab: "sections", sel: null, sev: "all", cat: "all", run: null, show: "all" };
+  var state = { tab: "sections", sel: null, paper: null, sev: "all", cat: "all", run: null, show: "all" };
   function readHash() {
     var h = location.hash.replace(/^#/, "").split("&");
-    if (h.some(function (kv) { return kv.indexOf("tab=") === 0; })) state.sel = null;
+    if (h.some(function (kv) { return kv.indexOf("tab=") === 0; })) { state.sel = null; state.paper = null; }
     h.forEach(function (kv) {
       var p = kv.split("="); if (p.length !== 2) return;
       var v = decodeURIComponent(p[1]);
       if (p[0] === "tab") state.tab = v;
       if (p[0] === "s") state.sel = v;
+      if (p[0] === "p") state.paper = v;
     });
   }
   function writeHash(push) {
-    var h = "tab=" + encodeURIComponent(state.tab) + (state.sel && state.tab === "sections" ? "&s=" + encodeURIComponent(state.sel) : "");
+    var h = "tab=" + encodeURIComponent(state.tab) + (state.sel && state.tab === "sections" ? "&s=" + encodeURIComponent(state.sel) : "") +
+      (state.paper && state.tab === "literature" ? "&p=" + encodeURIComponent(state.paper) : "");
     if (location.hash.slice(1) !== h) history[push ? "pushState" : "replaceState"](null, "", "#" + h);
   }
 
@@ -774,25 +803,102 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
         '<p style="margin-top:16px">' + cmdChip("/margi challenge") + '</p>' : '<p class="muted">No open questions in <code>margi/docs/open-questions.md</code>.</p>') + '</section></div>';
   }
 
+  var OPEN_ICON = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M5 2.5H2.5v7h7V7M7 2.5h2.5V5M9.5 2.5 5.5 6.5"/></svg>';
+  var paperName = function (r) { return r.cite_key || r.pdf.replace(/^.*\//, ""); };
+  var passagesOf = function (r) { return (r.key_passages || []).filter(function (k) { return k && k.quote; }); };
+  var unfound = function (r) { return passagesOf(r).filter(function (k) { return k.anchor && k.anchor.status === "unresolved"; }).length; };
+
   function literatureView() {
     var L = D.literature;
     if (!L.rated.length && !L.unrated.length) {
       return '<div class="sheet empty"><h3>No literature yet</h3><p>Put PDFs into the literature folder, then rate them for relevance to your research question.</p><p>' + cmdChip("/margi read") + '</p></div>';
     }
+    var unrated = L.unrated.length ? '<div class="sheet pad" style="margin-top:24px"><h3 class="caps" style="margin:0 0 8px;color:var(--ink)">Not rated yet <span class="muted">' + L.unrated.length + '</span></h3><ul class="list">' +
+      L.unrated.map(function (p) { return '<li class="mono">' + esc(p) + '</li>'; }).join("") + '</ul><p>' + cmdChip("/margi read") + '</p></div>' : '';
+    if (!L.rated.length) return unrated.replace('style="margin-top:24px"', '');
     var rows = L.rated.map(function (r) {
       var rel = r.relevance == null ? "—" : r.relevance;
       var cls = r.relevance >= 4 ? " high" : r.relevance <= 1 ? " low" : "";
-      return '<tr><td class="num rel' + cls + '">' + rel + '<span class="muted" style="font-weight:400">/5</span></td>' +
-        '<td><div>' + esc(r.cite_key || r.pdf.replace(/^.*\//, "")) + '</div><div class="muted mono">' + esc(r.pdf) + '</div></td>' +
+      var n = passagesOf(r).length, sel = state.paper === r.pdf;
+      return '<tr class="' + (sel ? "sel" : "") + '" data-pdf="' + esc(r.pdf) + '"><td class="num rel' + cls + '">' + rel + '<span class="muted" style="font-weight:400">/5</span></td>' +
+        '<td><button type="button" class="ptitle" data-pdf="' + esc(r.pdf) + '"' + (sel ? ' aria-current="true"' : '') + '>' + esc(paperName(r)) + '</button><div class="src-path mono">' + esc(r.pdf) + '</div></td>' +
         '<td class="hide-s">' + esc(r.role || "") + '</td>' +
         '<td class="hide-s">' + esc((r.sections || []).join(", ")) + '</td>' +
         '<td>' + (r.cited_in_thesis ? 'cited' : (r.relevance >= 4 ? '<b>not cited</b>' : '<span class="muted">not cited</span>')) + '</td>' +
-        '<td class="why hide-s">' + esc(r.why || "") + '</td></tr>';
+        '<td class="num">' + (n ? n : '<span class="muted">—</span>') + '</td></tr>';
     }).join("");
-    return (L.rated.length ? '<div class="sheet"><table class="plain"><thead><tr><th class="caps num">Rel.</th><th class="caps">Source</th><th class="caps hide-s">Role</th><th class="caps hide-s">Sections</th><th class="caps">In thesis</th><th class="caps hide-s">Why</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '') +
-      (L.unrated.length ? '<div class="sheet pad" style="margin-top:24px"><h3 class="caps" style="margin:0 0 8px;color:var(--ink)">Not rated yet <span class="muted">' + L.unrated.length + '</span></h3><ul class="list">' +
-        L.unrated.map(function (p) { return '<li class="mono">' + esc(p) + '</li>'; }).join("") + '</ul><p>' + cmdChip("/margi read") + '</p></div>' : '');
+    return '<div class="split"><div><div class="sheet"><table class="grid" aria-label="Rated literature"><thead><tr><th class="caps num" scope="col">Rel.</th><th class="caps" scope="col">Source</th>' +
+      '<th class="caps hide-s" scope="col">Role</th><th class="caps hide-s" scope="col">Sections</th><th class="caps" scope="col">In thesis</th><th class="caps num" scope="col" title="Key passages traced into the PDF">Pass.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + unrated + '</div>' +
+      '<aside class="sheet apparatus" id="apparatus" aria-label="Paper detail" tabindex="-1">' + paperPanel() + '</aside></div>';
   }
+
+  function paperPanel() {
+    var L = D.literature;
+    var r = L.rated.filter(function (x) { return x.pdf === state.paper; })[0];
+    if (!r) {
+      var open = L.rated.filter(function (x) { return x.relevance >= 4 && !x.cited_in_thesis; });
+      var lost = L.rated.filter(function (x) { return unfound(x); });
+      return '<h2>Literature</h2><div class="meta"><span>Select a paper to see where its key passages sit in the PDF.</span></div>' +
+        '<div class="block"><h3><span class="caps">Relevant, not cited yet</span><span class="muted" style="font-size:14px">' + plural(open.length, "paper") + '</span></h3>' +
+        (open.length ? '<ul class="list">' + open.map(function (x) {
+          return '<li><a href="#tab=literature&p=' + encodeURIComponent(x.pdf) + '" data-paper="' + esc(x.pdf) + '">' + esc(paperName(x)) + '</a> <span class="muted">· ' + esc(x.relevance) + '/5' + (x.role ? ' · ' + esc(x.role) : '') + '</span></li>';
+        }).join("") + '</ul>' : '<p class="muted">Every paper rated 4 or 5 is cited in the thesis.</p>') + '</div>' +
+        (lost.length ? '<div class="block"><h3><span class="caps">Passages not found in their PDF</span></h3><ul class="list">' + lost.map(function (x) {
+          return '<li><a href="#tab=literature&p=' + encodeURIComponent(x.pdf) + '" data-paper="' + esc(x.pdf) + '">' + esc(paperName(x)) + '</a> <span class="muted">· ' + plural(unfound(x), "passage") + '</span></li>';
+        }).join("") + '</ul></div>' : '');
+    }
+    var ps = passagesOf(r);
+    var meta = '<div class="meta"><span>' + (r.relevance == null ? '—' : esc(r.relevance)) + '/5 relevance</span>' + (r.role ? '<span>' + esc(r.role) + '</span>' : '') +
+      ((r.sections || []).length ? '<span>for ' + esc(r.sections.join(", ")) + '</span>' : '') + '<span>' + (r.cited_in_thesis ? 'cited' : 'not cited') + '</span>' +
+      (r.timestamp ? '<span>rated ' + fmtDate(r.timestamp) + '</span>' : '') + '</div>';
+    return '<h2>' + esc(paperName(r)) + '</h2>' + meta +
+      '<p class="lcnote"><span class="mono">' + esc(r.pdf) + '</span> · <a href="' + esc(r.href || "../" + r.pdf) + '" target="_blank" rel="noopener">open the PDF</a></p>' +
+      (r.why ? '<p class="summary">' + esc(r.why) + '</p>' : '') +
+      (r.caveats ? '<p class="lcnote"><i>Caveats.</i> ' + esc(r.caveats) + '</p>' : '') +
+      '<div class="block"><h3><span class="caps">Key passages</span><span class="muted" style="font-size:14px">' + plural(ps.length, "passage") + '</span></h3>' +
+      (ps.length ? '<ol class="entries">' + ps.map(function (k, i) { return passage(r, k, i); }).join("") + '</ol>' : '<p class="muted">This rating has no key passages.</p>') + '</div>';
+  }
+
+  function passage(r, k, i) {
+    var a = k.anchor || {};
+    var page = a.page || k.page;
+    var st = a.status === "unresolved" ? '<span class="anchor-state">passage not found in the PDF</span>'
+      : a.status === "relocated" ? '<span class="anchor-state">found on p. ' + esc(a.page) + (k.page ? ', not p. ' + esc(k.page) : '') + '</span>'
+      : a.status === "visual" ? '<span class="anchor-state" style="color:var(--ink-3)">read from the page image</span>' : '';
+    var where = (a.section || []).length ? '<div class="where">' + a.section.map(esc).join('<span class="sep" aria-hidden="true">›</span>') + '</div>' : '';
+    var crops = (a.crops || []).map(function (c) {
+      var b = c.box, w = (b[2] - b[0]) * a.size[0], h = (b[3] - b[1]) * a.size[1];
+      var pct = function (v, lo, span) { return ((v - lo) / span * 100).toFixed(2) + "%"; };
+      var washes = c.lines.map(function (l) {
+        var pad = 0.18 * (l[3] - l[1]);
+        return '<span class="wash" style="left:' + pct(l[0] - pad / 2, b[0], b[2] - b[0]) + ';top:' + pct(l[1] - pad, b[1], b[3] - b[1]) +
+          ';width:' + ((l[2] - l[0] + pad) / (b[2] - b[0]) * 100).toFixed(2) + '%;height:' + ((l[3] - l[1] + 2 * pad) / (b[3] - b[1]) * 100).toFixed(2) + '%"></span>';
+      }).join("");
+      // the crop fills the panel up to 1.5x print size, never below print size: on a phone it scrolls sideways instead
+      return c.src ? '<div class="excerpt-frame"><figure class="excerpt" style="aspect-ratio:' + w.toFixed(1) + ' / ' + h.toFixed(1) +
+        ';width:min(100%, ' + (w * 1.5).toFixed(0) + 'px);min-width:' + w.toFixed(0) + 'px">' +
+        '<img src="' + esc(c.src) + '" alt="' + esc(k.quote) + '" onerror="margiNoCrop(this)">' + '<span aria-hidden="true">' + washes + '</span></figure></div>' : '';
+    }).join("");
+    var href = (r.href || "../" + r.pdf) + (page ? "#page=" + page : "");
+    return '<li class="entry passage" id="k-' + i + '"><span class="loc">' + (page ? 'p. ' + esc(page) : '—') + '</span><div>' + where + crops +
+      '<div class="lemma-line"><span class="lemma">' + esc(k.quote) + '</span><span class="br">]</span>' + st + '</div>' +
+      (k.why ? '<div class="note">' + esc(k.why) + '</div>' : '') +
+      '<a class="open" href="' + esc(href) + '" target="_blank" rel="noopener">' + (page ? 'Open p. ' + esc(page) + ' in the PDF' : 'Open the PDF') + OPEN_ICON + '</a></div></li>';
+  }
+
+  // a crop that doesn't load: the PDF isn't on this machine, changed since it was read, or isn't rendered yet
+  window.margiNoCrop = function (img) {
+    var fig = img.closest(".excerpt-frame"), item = img.closest(".passage");
+    if (!fig || !item) return;
+    if (!item.querySelector(".missing")) {
+      var p = document.createElement("p");
+      p.className = "missing";
+      p.textContent = "The page image isn’t on this machine. Put the PDF back into the literature folder and run any margi command to render it.";
+      fig.parentNode.insertBefore(p, fig);
+    }
+    item.classList.add("no-pdf");
+    fig.remove();
+  };
 
   function todosView() {
     var T = D.todos;
@@ -841,6 +947,15 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     if (focusPanel && a && window.matchMedia("(max-width: 1080px)").matches) a.scrollIntoView({ block: "start" });
   }
 
+  function selectPaper(pdf, focusPanel) {
+    var moved = state.paper !== pdf;
+    state.paper = pdf; state.tab = "literature";
+    render({ enter: true, push: moved && focusPanel });
+    var a = $("apparatus");
+    if (a) a.scrollTop = 0;
+    if (focusPanel && a && window.matchMedia("(max-width: 1080px)").matches) a.scrollIntoView({ block: "start" });
+  }
+
   $("view").addEventListener("click", function (e) {
     var go = e.target.closest("[data-goto]");
     if (go) { e.preventDefault(); select(go.getAttribute("data-goto"), true); return; }
@@ -851,6 +966,10 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var show = e.target.closest("[data-show]");
     if (show) { state.show = show.getAttribute("data-show"); render(); var nb = document.querySelector('[data-show="' + state.show + '"]'); if (nb) nb.focus(); return; }
     if (e.target.closest("[data-copy]") || e.target.closest("a, select, summary")) return;
+    var pg = e.target.closest("[data-paper]");
+    if (pg) { e.preventDefault(); selectPaper(pg.getAttribute("data-paper"), true); return; }
+    var ptr = e.target.closest("tr[data-pdf]");
+    if (ptr) { selectPaper(ptr.getAttribute("data-pdf"), true); var pb = document.querySelector('.ptitle[data-pdf="' + CSS.escape(state.paper) + '"]'); if (pb) pb.focus({ preventScroll: true }); return; }
     var tr = e.target.closest("tr[data-sid]");
     if (tr) { select(tr.getAttribute("data-sid"), true); var b = document.querySelector('.stitle[data-sid="' + CSS.escape(state.sel) + '"]'); if (b) b.focus({ preventScroll: true }); }
   });
@@ -859,6 +978,17 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     if (e.target.id === "runsel") { state.run = Number(e.target.value); rerenderPanel(); }
   });
   $("view").addEventListener("keydown", function (e) {
+    var pb = e.target.closest(".ptitle");
+    if (pb && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      var ps = Array.prototype.slice.call(document.querySelectorAll(".ptitle"));
+      var j = ps.indexOf(pb) + (e.key === "ArrowDown" ? 1 : -1);
+      if (j < 0 || j >= ps.length) return;
+      selectPaper(ps[j].getAttribute("data-pdf"));
+      var np = document.querySelector('.ptitle[data-pdf="' + CSS.escape(state.paper) + '"]');
+      if (np) np.focus();
+      return;
+    }
     var b = e.target.closest(".stitle");
     if (!b || (e.key !== "ArrowDown" && e.key !== "ArrowUp")) return;
     e.preventDefault();
@@ -897,8 +1027,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     setTimeout(function () { el.classList.remove("hl"); }, 1600);
   }
   function onHash() {
-    var before = state.sel + "|" + state.tab; readHash();
-    if (before !== state.sel + "|" + state.tab) render({ enter: true });
+    var before = state.sel + "|" + state.paper + "|" + state.tab; readHash();
+    if (before !== state.sel + "|" + state.paper + "|" + state.tab) render({ enter: true });
   }
   window.addEventListener("hashchange", onHash);
   window.addEventListener("popstate", onHash);

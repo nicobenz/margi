@@ -17,7 +17,8 @@ mkdir my-thesis && cd my-thesis && git init && uvx margi init
 This is the only setup command you run in the terminal. In an empty folder it bootstraps a Typst
 thesis: `main.typ` with a chapter skeleton in `chapters/`, an empty `refs.bib`, `lit/` for
 PDFs, and `PROPOSAL.md`. In an existing Typst project it only adds what is missing
-(`PROPOSAL.md` and margi itself) and leaves your files alone.
+(`PROPOSAL.md` and margi itself) and leaves your files alone. The literature folder gets its own
+`.gitignore`: papers stay on your machine and never go into the repository.
 
 Then:
 
@@ -65,7 +66,14 @@ All commands run inside Claude Code.
 Open `margi/dash.html` in a browser. It shows every section in thesis order with its latest
 rubric scores, what changed since it was graded, the anchored comments, how scores developed
 over time, project docs, literature, todos and the run log. The header always shows the next
-margi command to run, with a copy button. Those suggestions come from rule-based checks (docs
+margi command to run, with a copy button.
+
+In the Literature view, select a paper to see its key passages where they sit in the PDF: the
+paper's own section (from the PDF's bookmarks), an image of that part of the page with the quoted
+lines highlighted, and a link that opens the PDF at that page. margi finds every quote in the PDF
+itself, so a quote that isn't in the paper shows as *passage not found* instead of pointing
+somewhere wrong. The page images are rendered into `margi/.cache/` and are never committed;
+`margi export` includes them. Those suggestions come from rule-based checks (docs
 below the threshold, sections changed since grading, ungraded sections, unrated PDFs, …)
 and from your agent, which can add steps based on what you asked for in the session.
 

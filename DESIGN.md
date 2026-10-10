@@ -5,6 +5,7 @@ colors:
   red: "#a3301b"
   red-ink: "#8e2716"
   red-tint: "#f2dcd4"
+  wash: "#f0cfc3"
   ground: "#e6e3dd"
   page: "#f7f6f2"
   sel: "#ebe7df"
@@ -138,6 +139,7 @@ A warm, paper-and-ink neutral range with a single red; dark mode inverts the sam
 - **Rubricator Red** (red): marks only what needs attention: major-severity labels, scores at or below the low cut (2 on the 1-5 scale), the "changed since grading" flag, a nonzero major-comment count, the selected section's number, and the "needs N%" docs shortfall. It also carries the interaction marks: focus ring, text caret, link-hover underline, the copy-confirmed tick, and the border of the missing-data banner.
 - **Deep Rubric** (red-ink): red for running warning text (low confidence, text changed since grade, anchor "moved" / "passage not found"), slightly darker than Rubricator Red so sentences stay comfortable to read.
 - **Rubric Wash** (red-tint): the text-selection highlight only.
+- **Passage Wash** (wash): the quoted lines on a page image in the Literature view, multiplied over the paper-white crop. It marks a quoted selection, not attention, and stays the same in dark mode because the crop stays paper-white.
 
 ### Neutral
 - **Desk Grey** (ground): the page background, the running head, the scrollbar track.
@@ -245,6 +247,12 @@ The signature action: a typed command you can copy.
 - Two-column grid: a 3.2em locator column in Mono 12px with bare line numbers ("12" / "3–5"; a prefix like "l." reads as "1." in Mono), then the lemma line: italic quoted passage, a faded closing bracket, and an anchor-state note in Deep Rubric if moved or unresolved.
 - Below, the note: severity in 12px capitals (major: Rubricator Red 700; minor: second ink; note: faded ink), then category, comment id and file in faded ink, an em dash, and the comment body in Serif 16px.
 - Entries divided by Soft Hairlines.
+
+### Passage entry (Literature apparatus)
+- The Literature view uses the Sections split: the rated-literature table left (selected row: Pencil Shade, relevance figure in red), the apparatus panel right for one paper: name as headline, a meta line (relevance, role, thesis sections, cited or not, rating date), the PDF path with an "open the PDF" link, the rating's why as summary, caveats as an italic-led note.
+- Each key passage is an apparatus entry: locator `p. N` in Mono 12px; the paper's own section path in Sans 13px faded ink with › separators; the page crop; the lemma line (italic quote, faded bracket, anchor state in Deep Rubric: "found on p. N, not p. M", "passage not found in the PDF"; "read from the page image" in faded ink); the passage's why as the note; "Open p. N in the PDF" in Sans 13px with a drawn 11px external-link icon.
+- The crop: a greyscale page image on white inside a 1px hairline, square, no shadow; top and bottom fade out over 10px so it reads as an excerpt (no fade in print). Width fills the panel up to 1.5x print size and never drops below print size; on a phone it scrolls sideways inside its frame. Quoted lines carry the Passage Wash as an overlay, not baked into the image. Dark mode dims the crop to 88% brightness.
+- A crop that doesn't load (PDF not on this machine, changed, or not rendered yet) is replaced by a Sans 13px faded note saying how to get it back, and the page link hides.
 
 ### Score history (small multiples)
 - Grid of 140px-minimum figures, one per category: caption in capitals with the latest score in Serif 600; a 200 x 72 line chart with min/max grid lines, a dashed midline, a 1.6px Chart Ink line and 3.2px dots (red when low) ringed in Sheet; start and end dates beneath.
