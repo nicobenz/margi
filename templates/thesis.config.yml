@@ -21,8 +21,6 @@ literature:
   dir: lit                   # PDFs rated by `/margi read`
   bib: {{bib}}
 
-rubric: default              # margi/rubrics/<id>/ overrides the bundled rubric
-
 docs:
   min_completeness: 0.7      # grade/read refuse below this share of documented fields
 

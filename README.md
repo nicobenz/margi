@@ -136,8 +136,20 @@ src/margi/               init, export + hidden helpers (finalize, guard, outline
 ```
 
 The only supported format is Typst; the adapters in `src/margi/adapters/` are the extension
-point for LaTeX, Quarto and Markdown. To use your own rubric, put it in
-`margi/rubrics/<id>/` in the thesis repo.
+point for LaTeX, Quarto and Markdown.
+
+### Rubrics
+
+Every grade uses the bundled rubric in `skills/margi/rubrics/default/` (seven categories, scored
+1–5). Custom rubrics are not supported yet. They may come later in a constrained form, where
+each category has:
+
+- a description of what is graded;
+- a bounded scale: 1–5 for now, possibly 1–10, percentages or other bounded scales later;
+- descriptions of the floor and ceiling values (what the lowest and highest score mean).
+
+Open-ended scoring without such anchors will not be supported. Custom rubrics are written by
+people, so they would live outside `margi/`, which holds only what margi writes.
 
 ## Development
 

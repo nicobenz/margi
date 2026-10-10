@@ -114,13 +114,16 @@ def verify_anchor(anchor: dict, content: bytes | None) -> dict:
     return anchor
 
 
+RUBRIC = "default"  # custom rubrics are not supported yet (see README, "Rubrics")
+
+
 def resolve_rubric(cfg: Config) -> dict | None:
-    rid = cfg["rubric"]
+    """The bundled rubric: the repo's vendored copy of the skill if present, else the package's."""
+    rid = RUBRIC
     candidates = [
-        cfg.root / MARGI_DIR / "rubrics" / rid,
         cfg.root / ".agents" / "skills" / "margi" / "rubrics" / rid,
+        skills_dir() / "margi" / "rubrics" / rid,
     ]
-    candidates.append(skills_dir() / "margi" / "rubrics" / rid)
     for d in candidates:
         meta = d / "rubric.yml"
         if meta.is_file():
