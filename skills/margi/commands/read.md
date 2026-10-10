@@ -36,7 +36,11 @@ Don't read whole PDFs visually when the text is fine: it costs far more and give
 - `role`: one of `theory | method | data | related-work | counterposition | background`.
 - `key_passages`: up to 5 entries of `{page, quote (verbatim, ≤ 300 chars), why, source}`. Copy
   quotes from the text file where you can (`source: "text"`); `source: "visual"` marks a quote you
-  read from the page image because the text layer failed there.
+  read from the page image because the text layer failed there. `page` is the `--- page N ---`
+  marker the quote sits under. Finalize finds each quote in the PDF and records its page, the
+  paper's section and the region to show in the dashboard; the student uses that to check you.
+  So copy the words exactly, one contiguous run within one column, and don't stitch sentences
+  together or quote figure text. Don't write an `anchor` yourself.
 - `cite_key`: the bib key if one matches, else null.
 - `cited_in_thesis`: true or false (grep the thesis sources for the cite key).
 - `caveats`: limits, date, or a disputed status.

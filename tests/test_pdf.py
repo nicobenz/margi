@@ -4,34 +4,14 @@ import json
 
 from click.testing import CliRunner
 
+from conftest import make_pdf
+
 from margi.cli import main
 from margi.pdf import CACHE, clean, extract, flag
 
 PROSE = ("The quick brown fox jumps over the lazy dog while the committee reviews "
          "another chapter of the thesis about reading practices in early modern Europe.")
 SHIFTED = "7KHUH ZDV D FKDQJH WR WKH PLQLPXPV IRU FLUFOLQJ DSSURDFKHV"  # Caesar-shifted font
-
-
-def make_pdf(pages: list[list[str]]) -> bytes:
-    """A minimal valid PDF, one Helvetica text line per string."""
-    objs = ["<< /Type /Catalog /Pages 2 0 R >>", None,
-            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"]
-    kids = []
-    for lines in pages:
-        ops = "".join(f"BT /F1 9 Tf 40 {780 - 14 * i} Td ({line}) Tj ET\n" for i, line in enumerate(lines))
-        objs.append(f"<< /Length {len(ops)} >>\nstream\n{ops}endstream")
-        objs.append(f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-                    f"/Resources << /Font << /F1 3 0 R >> >> /Contents {len(objs)} 0 R >>")
-        kids.append(f"{len(objs)} 0 R")
-    objs[1] = f"<< /Type /Pages /Kids [{' '.join(kids)}] /Count {len(kids)} >>"
-    out, offsets = b"%PDF-1.4\n", []
-    for n, body in enumerate(objs, 1):
-        offsets.append(len(out))
-        out += f"{n} 0 obj\n{body}\nendobj\n".encode("latin-1")
-    xref = len(out)
-    out += f"xref\n0 {len(objs) + 1}\n0000000000 65535 f \n".encode()
-    out += "".join(f"{o:010d} 00000 n \n" for o in offsets).encode()
-    return out + f"trailer\n<< /Size {len(objs) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
 
 
 def test_clean_normalises_pdfium_output():
@@ -47,7 +27,7 @@ def test_flag():
 
 def test_extract_flags_pages_and_caches(cfg, monkeypatch):
     lit = cfg.root / "lit"
-    lit.mkdir()
+    lit.mkdir(exist_ok=True)
     (lit / "paper.pdf").write_bytes(make_pdf([[PROSE] * 3, [], [SHIFTED] * 5]))
     entry = extract(cfg)["lit/paper.pdf"]
     assert entry["pages"] == 3 and entry["flags"] == {"2": "no-text", "3": "not-prose"}
@@ -64,7 +44,7 @@ def test_extract_flags_pages_and_caches(cfg, monkeypatch):
 
 
 def test_extract_broken_pdf(cfg):
-    (cfg.root / "lit").mkdir()
+    (cfg.root / "lit").mkdir(exist_ok=True)
     (cfg.root / "lit" / "broken.pdf").write_bytes(b"%PDF-1.4 not really")
     entry = extract(cfg)["lit/broken.pdf"]
     assert entry["flags"] == {"all": "failed"}
@@ -72,7 +52,7 @@ def test_extract_broken_pdf(cfg):
 
 
 def test_extract_command_prints_flags(cfg, monkeypatch):
-    (cfg.root / "lit").mkdir()
+    (cfg.root / "lit").mkdir(exist_ok=True)
     (cfg.root / "lit" / "a.pdf").write_bytes(make_pdf([[PROSE] * 3]))
     (cfg.root / "lit" / "b.pdf").write_bytes(make_pdf([[PROSE] * 3, []]))
     monkeypatch.chdir(cfg.root)

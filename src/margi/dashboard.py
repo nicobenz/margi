@@ -331,10 +331,50 @@ def _literature(cfg: Config, records: list[dict]) -> dict:
                 ratings[item["pdf"]] = dict(item, timestamp=r["provenance"].get("timestamp"))
     lit_dir = cfg.root / (cfg.get("literature", {}) or {}).get("dir", "lit")
     pdfs = sorted(p.relative_to(cfg.root).as_posix() for p in lit_dir.rglob("*.pdf")) if lit_dir.is_dir() else []
+    for item in ratings.values():
+        _passage_links(item)
     return {
         "rated": sorted(ratings.values(), key=lambda x: (-(x.get("relevance") or 0), x["pdf"])),
         "unrated": [p for p in pdfs if p not in ratings],
     }
+
+
+def _passage_links(item: dict) -> None:
+    """Add what the page needs to show a passage: its PDF link and crop images (paths from dash.html).
+
+    Paths only, never whether the files exist here: the data stays the same on every machine and
+    the page falls back to text when a crop image doesn't load.
+    """
+    from .passages import CROPS, crop_name
+
+    item["href"] = "../" + item["pdf"]
+    for p in item.get("key_passages") or []:
+        anchor = p.get("anchor") or {}
+        for c in anchor.get("crops") or []:
+            if item.get("pdf_sha256"):
+                c["src"] = CROPS.removeprefix(f"{MARGI_DIR}/") + "/" + crop_name(item["pdf_sha256"], anchor["page"], c["box"])
+
+
+def render_crops(cfg: Config, data: dict) -> None:
+    """Render missing passage crops into the gitignored cache (local only, never committed)."""
+    from .passages import crop_jobs, render
+
+    for pdf, jobs in crop_jobs(cfg.root, data["literature"]["rated"]).items():
+        try:
+            render(pdf, jobs)
+        except Exception:  # a PDF pdfium can't render keeps its text fallback
+            continue
+
+
+def _inline_crops(cfg: Config, data: dict) -> None:
+    for item in data["literature"]["rated"]:
+        for p in item.get("key_passages") or []:
+            for c in (p.get("anchor") or {}).get("crops") or []:
+                path = cfg.root / MARGI_DIR / c.get("src", "")
+                if c.get("src") and path.is_file():
+                    c["src"] = "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+                else:
+                    c.pop("src", None)
 
 
 def _todos(cfg: Config) -> list[dict]:
@@ -445,7 +485,9 @@ def refresh(cfg: Config) -> list[str]:
     written = []
     if _write_if_changed(cfg.root / DASH_HTML, render_page()):
         written.append(DASH_HTML)
-    if _write_if_changed(cfg.root / DASH_DATA, to_js(collect(cfg))):
+    data = collect(cfg)
+    render_crops(cfg, data)
+    if _write_if_changed(cfg.root / DASH_DATA, to_js(data)):
         written.append(DASH_DATA)
     return written
 
@@ -453,7 +495,10 @@ def refresh(cfg: Config) -> list[str]:
 def export(cfg: Config, out: Path | None = None) -> Path:
     """One self-contained, offline HTML file with the data inlined."""
     page = render_page()
-    inline = "<script>\n" + to_js(collect(cfg)) + "</script>"
+    data = collect(cfg)
+    render_crops(cfg, data)
+    _inline_crops(cfg, data)
+    inline = "<script>\n" + to_js(data) + "</script>"
     if DATA_TAG not in page:
         raise RuntimeError("dashboard template is missing its data tag")
     path = out or cfg.root / EXPORT_HTML

@@ -166,8 +166,10 @@ def _bootstrap(root: Path, main: str, report: InitReport) -> list[str]:
     skeleton = tool_templates() / "typst"
     for src in sorted(p for p in skeleton.rglob("*") if p.is_file()):
         add(src.relative_to(skeleton).as_posix(), src.read_text(encoding="utf-8"))
-    add("lit/.gitkeep", "")
     return created
+
+
+LIT_GITIGNORE = "# Papers stay on this machine: margi reads them here, but they don't belong in git.\n*\n!.gitignore\n"
 
 
 def _margi_dir(root: Path, report: InitReport) -> None:
@@ -206,6 +208,10 @@ def init(
     config = (tool_templates() / "thesis.config.yml").read_text(encoding="utf-8")
     config = config.replace("{{main}}", main).replace("{{bib}}", bib)
     _write(root, CONFIG_NAME, config, report, overwrite=force_config)
+    lit_ignore = f"{(load(root).get('literature') or {}).get('dir') or 'lit'}/.gitignore"
+    if not (root / lit_ignore).exists():
+        _write(root, lit_ignore, LIT_GITIGNORE, report, overwrite=False)
+        created.append(lit_ignore)
     _vendor_skills(root, report)
     _retire_agents_md(root, report)
     _hook(root, report, has_git=has_git)

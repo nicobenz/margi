@@ -35,7 +35,7 @@ def test_init_bootstraps_empty_project(tmp_path):
     root.mkdir()
     run_git(root, "init", "-q", "-b", "main")
     report = init(root, install=False)
-    for rel in ("PROPOSAL.md", "main.typ", "chapters/01-introduction.typ", "refs.bib", "lit/.gitkeep"):
+    for rel in ("PROPOSAL.md", "main.typ", "chapters/01-introduction.typ", "refs.bib", "lit/.gitignore"):
         assert (root / rel).exists(), rel
     assert "PROPOSAL.md" in report.written
     tracked = run_git(root, "ls-files").stdout.split()

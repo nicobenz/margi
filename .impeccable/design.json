@@ -237,6 +237,15 @@
           "#d5d0c7",
           "#f3eee5"
         ]
+      },
+      "wash": {
+        "role": "primary",
+        "displayName": "Passage Wash",
+        "canonical": "#f0cfc3",
+        "oklch": "oklch(87.6% 0.04 41.5)",
+        "cssVar": "--wash",
+        "dark": "#f0cfc3",
+        "note": "Multiplied over paper-white page images, so it is the same in both modes."
       }
     },
     "colorModes": {
@@ -254,7 +263,8 @@
         "rule": "#d2cdc4",
         "rule-soft": "#e3dfd8",
         "chart": "#1c1a18",
-        "chart-grid": "#ddd8cf"
+        "chart-grid": "#ddd8cf",
+        "wash": "#f0cfc3"
       },
       "dark": {
         "red": "#e3745c",
@@ -269,7 +279,8 @@
         "rule": "#3d3934",
         "rule-soft": "#2f2c28",
         "chart": "#ece7df",
-        "chart-grid": "#3a3631"
+        "chart-grid": "#3a3631",
+        "wash": "#f0cfc3"
       }
     },
     "typographyMeta": {
