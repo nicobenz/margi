@@ -78,8 +78,9 @@ yet (2026-10-09).
 ## Capabilities and Constraints
 
 - Scores: 1–5 per rubric category (alignment, argument, evidence, scholarship, method, structure,
-  style); categories may be omitted when they don't apply to a section (`rubric.yml`). Custom
-  rubrics can live in `margi/rubrics/<id>/`, so category sets are not fixed.
+  style); categories may be omitted when they don't apply to a section (`rubric.yml`). Only the
+  bundled default rubric is supported for now; custom rubrics may come later with bounded
+  scales (1–5 now; 1–10 or percentages possible) and floor/ceiling descriptions (user, 2026-10-10).
 - Comments carry severity `major | minor | note` and an optional anchor (file, lines, verbatim
   quote, anchor status `ok | relocated | unresolved`).
 - A grade can be marked low-confidence when the project docs are incomplete.

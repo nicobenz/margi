@@ -109,16 +109,16 @@ def _title(cfg: Config) -> str:
 
 
 def _rubric(cfg: Config) -> dict:
-    from .finalize import resolve_rubric
+    from .finalize import RUBRIC, resolve_rubric
 
     info = resolve_rubric(cfg)
     if not info:
-        return {"id": cfg["rubric"], "version": None, "min": 1, "max": 5, "categories": [], "anchors": {}}
+        return {"id": RUBRIC, "version": None, "min": 1, "max": 5, "categories": [], "anchors": {}}
     path = cfg.root / info["path"] if not info["path"].startswith("<bundled>") else None
     if path is None:
         from .resources import skills_dir
 
-        path = skills_dir() / "margi" / "rubrics" / cfg["rubric"]
+        path = skills_dir() / "margi" / "rubrics" / RUBRIC
     data = yaml.safe_load((path / "rubric.yml").read_text(encoding="utf-8")) or {}
     scale = data.get("scale") or {}
     return {

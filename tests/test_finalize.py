@@ -3,6 +3,7 @@ import json
 import pytest
 from conftest import run_git
 
+from margi.config import load
 from margi.finalize import FinalizeError, finalize, verify_anchor
 
 DRAFT = {
@@ -101,3 +102,16 @@ def test_docs_only_change_committed_with_subject(repo, cfg):
     result = finalize(cfg, command="propose")
     assert result.records == [] and result.commit
     assert run_git(repo, "log", "-1", "--format=%s").stdout.strip() == "margi: propose"
+
+
+def test_custom_rubrics_are_ignored(repo, cfg):
+    custom = repo / "margi/rubrics/mine"
+    custom.mkdir(parents=True)
+    (custom / "rubric.yml").write_text("id: mine\nversion: '9'\n")
+    path = repo / "thesis.config.yml"
+    path.write_text(path.read_text() + "\nrubric: mine\n")
+    run_git(repo, "add", "thesis.config.yml")
+    run_git(repo, "commit", "-q", "-m", "try a custom rubric")
+    stage(repo, DRAFT)
+    rec = json.loads(finalize(load(repo)).records[0].read_text())
+    assert rec["provenance"]["rubric"]["id"] == "default"
