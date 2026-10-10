@@ -6,3 +6,4 @@ build/
 .pytest_cache/
 .impeccable/questions/
 .impeccable/review/
+.impeccable/critique/
