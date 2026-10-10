@@ -29,11 +29,12 @@ from .dashboard import refresh
 from .docs_check import ALL_DOCS, templates_dir
 from .finalize import bot_commit
 from .gitutil import git, is_repo, staged_changes
-from .resources import agents_md, skills_dir, templates_dir as tool_templates
+from . import agent_settings
+from .resources import skills_dir, templates_dir as tool_templates
 
 SKILLS = ["margi", "margi-propose", "margi-challenge"]
 RETIRED_SKILLS = ["margi-onboard"]  # removed on re-init
-BEGIN, END = "<!-- margi:begin -->", "<!-- margi:end -->"
+BEGIN, END = "<!-- margi:begin -->", "<!-- margi:end -->"  # AGENTS.md section of earlier versions
 
 
 class InitError(RuntimeError):
@@ -92,31 +93,25 @@ def _vendor_skills(root: Path, report: InitReport) -> None:
         report.written.append(f".claude/skills/{name} -> ../../.agents/skills/{name}")
 
 
-def _agents_md(root: Path, report: InitReport) -> None:
-    section = f"{BEGIN}\n{agents_md().read_text(encoding='utf-8').strip()}\n{END}\n"
+def _retire_agents_md(root: Path, report: InitReport) -> None:
+    """Earlier versions merged a margi section into AGENTS.md; remove it, keep everything else."""
     path = root / "AGENTS.md"
-    text = path.read_text(encoding="utf-8") if path.exists() else ""
-    if BEGIN in text and END in text:
-        pre, _, rest = text.partition(BEGIN)
-        _, _, post = rest.partition(END)
-        text = pre + section.rstrip("\n") + post
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    if BEGIN not in text or END not in text:
+        return
+    pre, _, rest = text.partition(BEGIN)
+    _, _, post = rest.partition(END)
+    text = (pre.rstrip() + "\n\n" + post.lstrip()).strip()
+    if text:
+        path.write_text(text + "\n", encoding="utf-8")
     else:
-        text = (text.rstrip() + "\n\n" if text.strip() else "") + section
-    path.write_text(text, encoding="utf-8")
-    report.written.append("AGENTS.md")
+        path.unlink()
+    report.written.append("AGENTS.md (margi section removed)")
 
 
 def _claude_settings(root: Path, report: InitReport) -> None:
-    path = root / ".claude" / "settings.json"
-    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-    template = json.loads((tool_templates() / "claude-settings.json").read_text(encoding="utf-8"))
-    perms = data.setdefault("permissions", {})
-    for key in ("allow", "deny"):
-        merged = list(dict.fromkeys(perms.get(key, []) + template["permissions"][key]))
-        perms[key] = merged
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-    report.written.append(".claude/settings.json")
+    agent_settings.write(root, bool(load(root)["protect_thesis"]))
+    report.written.append(agent_settings.SETTINGS)
 
 
 def _hook(root: Path, report: InitReport, *, has_git: bool) -> None:
@@ -203,6 +198,7 @@ def init(
     if has_git and staged_changes(root):
         raise InitError("you have staged changes; commit or unstage them before running `margi init`")
     report = InitReport()
+    installed = has_git and bool(git("ls-files", "--", CONFIG_NAME, cwd=root).strip())
 
     main = load(root)["main"] if (root / CONFIG_NAME).exists() else detect_main(root)
     created = _bootstrap(root, main, report)
@@ -211,7 +207,7 @@ def init(
     config = config.replace("{{main}}", main).replace("{{bib}}", bib)
     _write(root, CONFIG_NAME, config, report, overwrite=force_config)
     _vendor_skills(root, report)
-    _agents_md(root, report)
+    _retire_agents_md(root, report)
     _hook(root, report, has_git=has_git)
     _write(root, ".github/workflows/margi-guard.yml", (tool_templates() / "margi-guard.yml").read_text(encoding="utf-8"),
            report, overwrite=True)
@@ -227,11 +223,17 @@ def init(
         report.skipped.append("commits (no git repository)")
         return report
 
-    human_paths = [CONFIG_NAME, ".agents/skills", ".claude", "AGENTS.md", ".githooks", ".github/workflows/margi-guard.yml",
+    human_paths = [CONFIG_NAME, ".agents/skills", ".claude", ".githooks", ".github/workflows/margi-guard.yml",
                    "pyproject.toml", "uv.lock", *created]
-    git("add", "-A", "--", *[p for p in human_paths if (root / p).exists() or (root / p).is_symlink()], cwd=root)
+    paths = [p for p in human_paths if (root / p).exists() or (root / p).is_symlink()]
+    if "AGENTS.md (margi section removed)" in report.written and git("ls-files", "--", "AGENTS.md", cwd=root).strip():
+        paths.append("AGENTS.md")  # stages the edit, or the deletion when nothing else was in it
+    git("add", "-A", "--", *paths, cwd=root)
     if git("diff", "--cached", "--name-only", cwd=root).split():
-        git("commit", "-q", "-m", f"chore: install margi {__version__}", cwd=root)
+        subject = f"chore: update margi {__version__}" if installed else f"chore: install margi {__version__}"
+        if claude_settings:
+            subject += f" (protect_thesis: {str(bool(load(root)['protect_thesis'])).lower()})"
+        git("commit", "-q", "-m", subject, cwd=root)
         report.commits.append(git("rev-parse", "--short", "HEAD", cwd=root).strip())
     sha = bot_commit(load(root), "init")
     if sha:

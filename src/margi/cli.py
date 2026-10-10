@@ -171,6 +171,11 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
             ensure_clean(cfg)
         except FinalizeError as e:
             raise click.ClickException(str(e)) from e
+        from .agent_settings import drift
+
+        mismatch = drift(cfg)
+        if mismatch:
+            raise click.ClickException(f"{mismatch}. Run `uv run margi init` to apply the setting.")
         report = docs_check.check(cfg.root / MARGI_DIR / "docs")
         threshold = float(cfg["docs"]["min_completeness"])
         tree = "tree clean outside margi/" if cfg.has_git else NO_GIT

@@ -2,10 +2,11 @@
 
 **AI in the margins, never in the text.**
 
-margi is a feedback layer for a thesis that you write 100% by hand. You use it from your AI
-agent with `/margi` commands. The agent reads your thesis and writes documentation,
-grades, literature ratings and todos, but **only inside `margi/`**, and always in commits that
-are kept separate from yours. Git hooks and CI enforce this. You don't have to take it on trust.
+margi is a feedback layer for a thesis that you write 100% by hand. You use it from
+[Claude Code](https://claude.com/claude-code) with `/margi` commands. The agent reads your thesis
+and writes documentation, grades, literature ratings and todos, but **only inside `margi/`**, and
+always in commits that are kept separate from yours. Git hooks and CI enforce this. You don't
+have to take it on trust.
 
 ## Install
 
@@ -23,7 +24,7 @@ Then:
 1. Write your plan into `PROPOSAL.md`: title ideas, research question, data, method, outline,
    constraints. Fragments and loose thoughts are fine.
 2. Commit it.
-3. Open your agent in the repository and run `/margi propose`. margi turns the proposal into
+3. Open Claude Code in the repository and run `/margi propose`. margi turns the proposal into
    structured docs in `margi/docs/` and lists what is still unclear in
    `margi/docs/open-questions.md`.
 4. Add to `PROPOSAL.md`, commit, and run `/margi propose` again until the docs are complete
@@ -35,13 +36,17 @@ dependency to the repo's `pyproject.toml` (creating a bare one if needed) and lo
 `.venv/`. Run commands with `uv run margi …` (or activate `.venv`). After cloning on another
 machine, run `uv sync` once.
 
-`margi init` also vendors the skills to `.agents/skills/` and symlinks them from `.claude/skills/`, so
-Claude Code, Codex, Cursor and other agents that read `SKILL.md` can use them. Finally it
-writes `thesis.config.yml`, installs the commit guard and the CI workflow, and creates `margi/`.
+`margi init` also installs the skills (vendored to `.agents/skills/`, symlinked from
+`.claude/skills/`) and Claude Code's permissions in `.claude/settings.json`. Finally it writes
+`thesis.config.yml`, installs the commit guard and the CI workflow, and creates `margi/`.
+
+margi supports **Claude Code** only for now. Other agents that read `SKILL.md` may run the
+commands, but they are untested and the `protect_thesis` permissions don't apply to them; the
+commit guard and CI do.
 
 ## Commands
 
-All commands run inside your agent.
+All commands run inside Claude Code.
 
 | Command | |
 |---|---|
@@ -93,8 +98,15 @@ margi commits  → only margi/                   ("margi: grade 2.1", author mar
   record in `margi/feedback/` (which is append-only).
 - **CI** (`margi guard --range`) repeats the hook's checks, so `--no-verify` doesn't bypass them.
 - **Agent permissions**: `.claude/settings.json` allows `Edit(margi/**)`, the margi helpers and
-  read-only `git`/`gh` commands, and denies edits to thesis sources and git commits.
-  `sync-todos` (creates GitHub issues) still asks for your permission.
+  read-only `git`/`gh` commands, and always denies edits to margi's own setup (including
+  `thesis.config.yml`). `sync-todos` (creates GitHub issues) still asks for your permission.
+- **`protect_thesis`** in `thesis.config.yml` (default `true`) also denies every agent session
+  edits to thesis sources (`.typ`, `.bib`, `.tex`, `.qmd`) and `git commit`/`push`/`reset`/`checkout`,
+  whatever you ask it. Set it to `false` if you want your agent's help outside margi, then run
+  `uv run margi init`: it rewrites the settings and commits them together with the config change
+  (`chore: update margi … (protect_thesis: false)`), so the choice is on record in `git log`.
+  If the two ever disagree, the next margi command stops and tells you to run `margi init`.
+  margi's own commands follow the human-writing rules either way.
 
 `git log -- margi/` is the complete AI audit trail for your advisors.
 
@@ -118,7 +130,6 @@ everything is enforced.
 skills/margi/            SKILL.md, commands/{grade,read,todos}.md, rubrics/default/, schema/
 skills/margi-propose/    SKILL.md, templates/ (the margi/docs files)
 skills/margi-challenge/  SKILL.md, lenses.md
-AGENTS.md                hard rules, merged into the thesis repo's AGENTS.md
 templates/               config, PROPOSAL.md, Typst skeleton, commit-msg hook, CI workflow, Claude settings,
                          dash/ (dashboard page and its Libertinus fonts, OFL)
 src/margi/               init, export + hidden helpers (finalize, guard, outline, dashboard, adapters/typst, …)

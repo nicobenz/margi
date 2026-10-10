@@ -2,6 +2,12 @@
 format: typst
 main: {{main}}               # entry file; #include "..." is followed
 
+# true: agents in this repo may not edit thesis sources (.typ, .bib, …) or run git
+# commit/push/reset/checkout, whatever you ask them. false: only margi's own commands keep to
+# the human-writing rules. After changing it, run `uv run margi init`: it updates
+# .claude/settings.json and commits both, so the switch stays visible in git history.
+protect_thesis: true
+
 # Optional aliases for `/margi grade <alias>`; otherwise use numbers (2.1) or titles.
 sections: {}
 #  prior-work: { heading: "Prior Work" }
