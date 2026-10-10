@@ -18,7 +18,7 @@ from pathlib import Path
 
 import yaml
 
-from . import __version__, docs_check
+from . import __version__, docs_check, readiness
 from .adapters import get_adapter
 from .adapters.base import slug
 from .config import MARGI_DIR, Config
@@ -149,7 +149,8 @@ def _sections(cfg: Config, records: list[dict]) -> tuple[list[dict], str | None]
             files = sorted({seg.file for sec in s.walk() for seg in sec.segments})
             out.append({"id": s.id, "title": s.title, "level": s.level, "chars": s.total_chars,
                         "share": round(s.total_chars / total, 4), "files": files,
-                        "range": [{"file": g.file, "start": g.line_start, "end": g.line_end} for g in s.full_range()]})
+                        "range": [{"file": g.file, "start": g.line_start, "end": g.line_end} for g in s.full_range()],
+                        "readiness": readiness.assess(s, cfg)})
         return out, problem
     outlines = [r for r in records if r.get("command") == "outline"]
     if outlines:
@@ -215,13 +216,20 @@ def collect(cfg: Config) -> dict:
         if s["id"] in targets:
             s["target"] = targets[s["id"]]
 
-    # grades, per section, oldest first
+    # grades, per section, oldest first; prechecks: the latest "not ready to grade" record per section
     grades: dict[str, list[dict]] = {}
+    prechecks: dict[str, dict] = {}
     for r in records:
         if r.get("command") != "grade":
             continue
         key = _section_key(r["scope"], sections, r.get("payload") or {})
         prov = r["provenance"]
+        ready = r.get("readiness") or {}
+        if ready.get("decision") == "not_ready":
+            prechecks[key] = {"timestamp": prov.get("timestamp"), "file": r["_file"], "mode": ready.get("mode"),
+                              "check_reasons": (ready.get("check") or {}).get("reasons") or [],
+                              "reasons": ready.get("reasons") or []}
+            continue
         files = {f["path"] for f in prov.get("files", [])}
         section_files = next((set(s["files"]) for s in sections if s["id"] == key), None)
         grades.setdefault(key, []).append({
@@ -237,10 +245,13 @@ def collect(cfg: Config) -> dict:
             "model": prov.get("model"),
             "rubric": (prov.get("rubric") or {}).get("version"),
             "changed": _changed_files(cfg, r, (section_files & files) if section_files else None),
+            "override": ready.get("decision") == "override",
+            "readiness_reasons": (ready.get("check") or {}).get("reasons") or [],
         })
     known = {s["id"] for s in sections}
-    for key in grades:
+    for key in list(grades) + list(prechecks):
         if key not in known:
+            known.add(key)
             sections.append({"id": key, "title": key, "level": 1, "chars": 0, "share": 0, "files": [], "range": [],
                              "orphan": True})
 
@@ -291,6 +302,8 @@ def collect(cfg: Config) -> dict:
         "rubric": rubric,
         "sections": sections,
         "grades": grades,
+        "prechecks": prechecks,
+        "grade_precheck": _precheck_mode(cfg),
         "docs": docs,
         "outline": outline,
         "literature": literature,
@@ -299,6 +312,13 @@ def collect(cfg: Config) -> dict:
     }
     data["next_steps"] = next_steps(data, records)
     return data
+
+
+def _precheck_mode(cfg: Config) -> str:
+    try:
+        return readiness.mode(cfg)
+    except readiness.ReadinessError:
+        return "ask"
 
 
 def _literature(cfg: Config, records: list[dict]) -> dict:
@@ -364,11 +384,13 @@ def next_steps(data: dict, records: list[dict]) -> list[dict]:
         add("/margi propose", f"Project docs are {docs['completeness']:.0%} complete (needs {docs['threshold']:.0%}); "
                               "until then every grade is low-confidence.")
     sections = [s for s in data["sections"] if not s.get("orphan")]
+    gated = data.get("grade_precheck") != "none"
+    ready = lambda s: not gated or (s.get("readiness") or {}).get("ready", True)
     for s in sections:
         runs = data["grades"].get(s["id"])
-        if runs and runs[-1]["changed"]:
+        if runs and runs[-1]["changed"] and ready(s):
             add(f"/margi grade {s['id']}", f"{s['title']} changed since it was graded on {_date(runs[-1]['timestamp'])}.")
-    ungraded = sorted((s for s in sections if s["id"] not in data["grades"] and s["chars"] > 0),
+    ungraded = sorted((s for s in sections if s["id"] not in data["grades"] and s["chars"] > 0 and ready(s)),
                       key=lambda s: (-s["chars"]))
     top_level_graded = any(k for k in data["grades"])
     for s in ungraded[:1]:

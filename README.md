@@ -52,7 +52,7 @@ All commands run inside Claude Code.
 |---|---|
 | `/margi propose [--from expose.md]` | Reads your `PROPOSAL.md` (or another file) and documents the research question, dataset, method, field, structure and constraints in `margi/docs/`, with gaps listed in `open-questions.md`. Every other command grades against these docs. |
 | `/margi challenge <aspect>` | A devil's-advocate dialogue about any aspect of the project. The refinements you confirm are written back into `margi/docs/`. |
-| `/margi grade <section>` | Rubric-based scores per category with comments anchored to file, lines and a verbatim quote. If the docs are incomplete, it asks before grading and marks the result low-confidence. |
+| `/margi grade <section>` | Rubric-based scores per category with comments anchored to file, lines and a verbatim quote. A section that isn't running prose yet (too few words, mostly bullet points, lorem ipsum) is recorded as *not ready to grade* instead of getting scores; `grade.precheck` in `thesis.config.yml` sets whether you can grade it anyway (`ask`, default), never (`strict`) or without the check (`none`). If the docs are incomplete, it asks before grading and marks the result low-confidence. |
 | `/margi outline` | Character counts and their distribution across sections and subsections, compared against targets from `structure.md`. No AI involved. |
 | `/margi read [pdf…]` | Rates literature PDFs for relevance to your research question and outline. |
 | `/margi todos` | Proposes todos as Markdown files and suggests closing issues that look done. You accept, reject or request changes, and only accepted items go to GitHub. |

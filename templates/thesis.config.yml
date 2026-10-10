@@ -26,6 +26,14 @@ rubric: default              # margi/rubrics/<id>/ overrides the bundled rubric
 docs:
   min_completeness: 0.7      # grade/read refuse below this share of documented fields
 
+grade:
+  precheck: ask              # strict | ask | none — what `/margi grade` does with a section that
+                             # isn't ready yet (too little running prose, mostly list items,
+                             # lorem ipsum): strict records it as not ready, ask lets you grade it
+                             # anyway (on record), none grades without asking
+  min_words: 150             # running prose below this counts as not ready
+  max_list_share: 0.5        # more list-item lines than this counts as not ready
+
 ai_identity:
   name: margi-bot
   email: margi-bot@users.noreply.github.com

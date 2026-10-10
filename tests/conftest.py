@@ -10,6 +10,7 @@ import pytest
 
 from margi.config import load
 from margi.init import init
+from margi.resources import templates_dir
 
 FIXTURE = Path(__file__).parent / "fixtures" / "typst-thesis"
 
@@ -42,6 +43,10 @@ def bare_repo(tmp_path) -> Path:
 
 @pytest.fixture
 def repo(bare_repo) -> Path:
+    # the fixture thesis is a few lines per section; tests not about the precheck grade it anyway
+    template = (templates_dir() / "thesis.config.yml").read_text()
+    (bare_repo / "thesis.config.yml").write_text(
+        template.replace("{{main}}", "main.typ").replace("{{bib}}", "null").replace("precheck: ask ", "precheck: none"))
     init(bare_repo, install=False)
     return bare_repo
 

@@ -2,6 +2,33 @@
 
 Grade one section against the rubric **and** against the documented project goals.
 
+## Readiness first
+
+A grade only helps once the section is running prose. Think of a peer asked to review bullet
+points, to-dos or lorem ipsum: they would say "write it first". Before anything else, run
+`uv run margi precheck <section>`. It reports whether the section is ready and why not (too little
+running prose, mostly list items, placeholder text), and prints `grade.precheck`:
+
+- **strict**: if it is not ready, do not grade. Record it as not ready (draft below) and tell the
+  user in one line why, in margi's terms. Don't suggest what to write.
+- **ask**: if it is not ready, say why in one line and ask through the question tool: "Grade
+  anyway" or "Not yet". Grade anyway → grade normally and set `"readiness": {"decision":
+  "override"}`. Not yet → record it as not ready.
+- **none**: grade normally; the check is still stored with the grade.
+
+Even when the precheck says ready, you may judge that the text is not yet a draft (notes to
+self, loose quotes, an outline in sentences). Then treat it as not ready under strict and ask
+(asking first under ask), with your reasons in `readiness.reasons`.
+
+A not-ready record has no scores and no comments:
+
+```json
+{"command": "grade", "scope": "2.1", "summary": "Not ready to grade yet.",
+ "readiness": {"decision": "not_ready", "reasons": ["mostly bullet points"]}}
+```
+
+Reasons are short and in margi's own words; they never propose text.
+
 ## Inputs
 
 1. `margi/docs/*.md`: research question, dataset, method, field, structure, constraints.

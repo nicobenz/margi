@@ -85,6 +85,21 @@
           }
         }
       },
+      "readiness": {
+        "description": "grade only. not_ready: the section isn't worth grading yet (no scores, no comments). override: the user chose to grade a section the precheck found not ready.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision"],
+        "properties": {
+          "decision": { "enum": ["not_ready", "override"] },
+          "reasons": {
+            "description": "Short reasons in margi's own words (e.g. \"notes, not yet prose\"); never thesis prose.",
+            "type": "array",
+            "maxItems": 5,
+            "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+          }
+        }
+      },
       "agent": {
         "description": "Self-reported by the agent; finalize records it with model_source=self-reported.",
         "type": "object",
@@ -92,6 +107,30 @@
         "properties": {
           "model": { "type": "string" },
           "harness": { "type": "string" }
+        }
+      }
+    },
+    "readiness_record": {
+      "description": "Set by finalize for grade records: the deterministic precheck, the configured mode and the outcome.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "decision"],
+      "properties": {
+        "mode": { "enum": ["strict", "ask", "none"] },
+        "decision": { "enum": ["graded", "not_ready", "override"] },
+        "reasons": { "$ref": "#/$defs/draft_properties/readiness/properties/reasons" },
+        "check": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["ready", "words", "list_share", "placeholder", "markers", "reasons"],
+          "properties": {
+            "ready": { "type": "boolean" },
+            "words": { "type": "integer", "minimum": 0 },
+            "list_share": { "type": "number", "minimum": 0, "maximum": 1 },
+            "placeholder": { "type": "boolean" },
+            "markers": { "type": "array", "items": { "type": "string" } },
+            "reasons": { "type": "array", "items": { "type": "string" } }
+          }
         }
       }
     },
@@ -108,6 +147,7 @@
         "comments": { "$ref": "#/$defs/draft_properties/comments" },
         "payload": { "$ref": "#/$defs/draft_properties/payload" },
         "next_steps": { "$ref": "#/$defs/draft_properties/next_steps" },
+        "readiness": { "$ref": "#/$defs/draft_properties/readiness" },
         "agent": { "$ref": "#/$defs/draft_properties/agent" }
       }
     },
@@ -178,6 +218,7 @@
         "comments": { "$ref": "#/$defs/draft_properties/comments" },
         "payload": { "$ref": "#/$defs/draft_properties/payload" },
         "next_steps": { "$ref": "#/$defs/draft_properties/next_steps" },
+        "readiness": { "$ref": "#/$defs/readiness_record" },
         "agent": { "$ref": "#/$defs/draft_properties/agent" }
       }
     }
