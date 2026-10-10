@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-The product is a Python CLI (`click`, `pyyaml`, `jsonschema`, `pypdf`; `pyproject.toml`) plus agent
+The product is a Python CLI (`click`, `pyyaml`, `jsonschema`, `pypdfium2`; `pyproject.toml`) plus agent
 skills in `skills/`. The planned dashboard is a **single self-contained HTML file** (user, 2026-10-09).
 
 Confirmed by the user on 2026-10-09:

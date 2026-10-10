@@ -25,7 +25,8 @@ Run `uv run margi finalize --check`. Stop if it fails.
 
 1. The source: the file passed with `--from <file>`, otherwise `propose.source` from
    `thesis.config.yml` (default `PROPOSAL.md`). Read it with line numbers. For a PDF, run
-   `uv run margi extract-pdfs <file>` and read the text file it prints.
+   `uv run margi extract-pdfs <file>` and read the text file it prints. If it flags pages
+   (third column, e.g. `3:no-text`), read those pages from the PDF itself.
 2. If the source has nothing beyond the template's headings and comments, stop and tell the
    user in one line to write their thoughts into it and commit first. No draft, no finalize.
 3. On a re-run: the current `margi/docs/*.md` and `CHANGELOG.md`, to see what changed.
