@@ -306,8 +306,51 @@ def collect(cfg: Config) -> dict:
         "todos": todos,
         "runs": runs,
     }
+    data["timeline"] = _timeline(cfg, records, sections, comments, data["thesis_commit"], outline["unit"])
     data["next_steps"] = next_steps(data, records)
     return data
+
+
+def _timeline(cfg: Config, records: list[dict], sections: list[dict], comments: list[dict],
+              thesis_commit: dict | None, unit: str) -> dict:
+    """Deadline, milestones and dated events for the timeline (see timeline.py)."""
+    from . import timeline as tl
+
+    plan, problems = tl.load_plan(cfg)
+    commits = tl.commit_days(cfg)
+    observed = (thesis_commit or {}).get("date", "")[:10] or None
+    grades, events = [], []
+    for r in records:
+        ts = r["provenance"].get("timestamp")
+        if r.get("command") == "grade":
+            key = _section_key(r["scope"], sections, r.get("payload") or {})
+            ready = r.get("readiness") or {}
+            grades.append({"key": key, "timestamp": ts, "readiness": ready})
+            events.append({"timestamp": ts, "kind": "not_ready" if ready.get("decision") == "not_ready" else "grade",
+                           "section": key, "file": r["_file"],
+                           "low_confidence": bool(r["provenance"].get("docs", {}).get("low_confidence"))})
+        elif r.get("command") == "respond":
+            refs = {x.get("ref") for x in (r.get("payload") or {}).get("responses", [])}
+            for sec in sorted({c["section"] for c in comments if c["ref"] in refs and c["section"]}):
+                events.append({"timestamp": ts, "kind": "respond", "section": sec, "file": r["_file"]})
+    ready = {s["id"]: bool((s.get("readiness") or {}).get("ready")) for s in sections if s.get("readiness")}
+    plan = plan or {"start": None, "deadline": None, "length": None, "milestones": []}
+    first_record = (records[0]["provenance"].get("timestamp") or "")[:10] if records else None
+    start, source = plan["start"], "doc"
+    if not start:
+        start, source = (commits[0][0], "commit") if commits else (first_record, "record") if first_record else (None, None)
+    return {
+        "start": start,
+        "start_source": source,
+        "deadline": plan["deadline"],
+        "length": plan["length"],
+        "unit": unit,
+        "milestones": tl.evaluate(plan, grades, comments, ready, observed),
+        "problem": "; ".join(problems) or None,
+        "reference": observed,
+        "commits": commits,
+        "events": events,
+    }
 
 
 def _comments(cfg: Config, records: list[dict], sections: list[dict]) -> list[dict]:
@@ -426,6 +469,17 @@ def _date(ts: str | None) -> str:
     return f"{int(m.group(3))} {MONTHS[int(m.group(2)) - 1]} {m.group(1)}" if m else (ts or "")
 
 
+def _common_parent(ids: list[str]) -> str:
+    """The deepest section containing all ``ids`` ("2.1", "2.3" -> "2"), or the first id."""
+    parts = [i.split(".") for i in ids]
+    common = []
+    for level in zip(*parts):
+        if len(set(level)) != 1:
+            break
+        common.append(level[0])
+    return ".".join(common) or ids[0]
+
+
 def _carried_out(command: str, later: list[dict]) -> bool:
     """A session step is done once a later run used the same command (and scope, if it names one)."""
     m = re.match(r"/margi[ -]([a-z-]+)\s*(\S*)", command)
@@ -457,6 +511,16 @@ def next_steps(data: dict, records: list[dict]) -> list[dict]:
         if n:
             add(f"/margi grade {s['id']}", f"{n} answered comment{'s' if n != 1 else ''} in {s['title']} "
                                            f"{'await' if n != 1 else 'awaits'} checking.")
+    from .timeline import due
+
+    timeline = data.get("timeline") or {}
+    for m in timeline.get("milestones", []):
+        if m["state"] in ("graded", "settled") and due(m, timeline.get("reference")):
+            names = m["label"] or f"{', '.join(m['sections'])} {m['state']}"
+            target = m["sections"][0] if len(m["sections"]) == 1 else _common_parent(m["sections"])
+            add(f"/margi grade {target}", f"Milestone \"{names}\" is due {_date(m['date'])}.")
+    if not timeline.get("deadline") and docs["completeness"] >= docs["threshold"]:
+        add("/margi challenge deadline", "No submission date documented yet.")
     gated = data.get("grade_precheck") != "none"
     ready = lambda s: not gated or (s.get("readiness") or {}).get("ready", True)
     for s in sections:
