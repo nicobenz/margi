@@ -1,6 +1,6 @@
 # Introducing the dashboard (design draft)
 
-Status: draft, not implemented.
+Status: implemented (`margi init`, `dashboard._setup`, the dashboard's Getting started panel).
 
 After `uvx margi init` the dashboard is never mentioned, and its first screen reads as a list of
 shortfalls ("Docs 0%", "low-confidence", rows of "no text yet"). This draft makes `init` open the
@@ -55,6 +55,14 @@ Six steps, each judged from the data, never by the agent:
 While setup is incomplete, `margi finalize` prints one more line:
 `dashboard  margi/dash.html  (setup 3 of 6)`. The skill tells the agent to end its report with
 that line whenever finalize prints it. When setup is done the line stops.
+
+## Decided while building
+
+- Under 1080px the checklist moves above the section table, so a phone's first screen is the list,
+  not rows of "no text yet".
+- During setup the timeline strip's "No submission date documented" stays hidden; step 4 asks for
+  it.
+- Whether to open the browser is one small function (`should_open_dashboard`) so it can be tested.
 
 ## Constraints
 

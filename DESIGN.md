@@ -248,6 +248,11 @@ The signature action: a typed command you can copy.
 - Below, the note: severity in 12px capitals (major: Rubricator Red 700; minor: second ink; note: faded ink), then category, comment id and file in faded ink, an em dash, and the comment body in Serif 16px.
 - Entries divided by Soft Hairlines.
 
+### Getting started (checklist)
+- Shown only while setup is incomplete. With nothing graded it is the Sections view's panel ("Getting started" headline, "N of 6 done" meta); otherwise a block under "Needs attention"; on the empty-project screen a padded sheet. Under 1080px the panel moves above the section table so the first screen leads with what to do.
+- An ordered list divided by Soft Hairlines: a 22px marker column (step number in Sans 13px faded ink, or a drawn 14px second-ink tick when done), the step in Serif 16px. Done steps: second ink, with their date in Sans 12px. The first open step: ink, 600, followed by its command chip and a Sans 13px hint. Later open steps: faded ink, no chip, so there is one next action.
+- During setup the status line's docs figure reads "· needed for grading: 70%" in faded ink instead of the low-confidence warning, and the strip's "No submission date documented" stays hidden (step 4 asks for it).
+
 ### Comment lifecycle (apparatus)
 - The section panel opens with a progress line in running prose under the meta line: "Since 3 Oct: **1 of 3** major comments resolved · 1 withdrawn · 1 open" (Serif 17px, second ink, figures in ink 600). No hue: progress is good news (The No Verdict Hue Rule).
 - *Open comments* lists every major and minor comment of the section and its subsections that isn't closed, across all grades, by severity, then age. Each apparatus entry adds, under the note, a thread and a state line.

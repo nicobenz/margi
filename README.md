@@ -20,6 +20,12 @@ PDFs, and `PROPOSAL.md`. In an existing Typst project it only adds what is missi
 (`PROPOSAL.md` and margi itself) and leaves your files alone. The literature folder gets its own
 `.gitignore`: papers stay on your machine and never go into the repository.
 
+At the end, `init` opens the dashboard (`margi/dash.html`) in your browser; pass `--no-open` to
+skip that. Until setup is done, the dashboard shows a *Getting started* checklist that ticks
+itself off from margi's records: plan committed, project docs, docs complete enough to grade,
+submission date, first length snapshot, first grade. Each open step comes with the command to
+copy, and margi's reports in Claude Code end with a link to the dashboard until the list is done.
+
 Then:
 
 1. Write your plan into `PROPOSAL.md`: title ideas, research question, data, method, outline,

@@ -47,6 +47,7 @@ class InitReport:
     kept: list[str] = field(default_factory=list)
     commits: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
+    first: bool = False  # no thesis.config.yml before this run: margi was just added
 
 
 def detect_main(root: Path) -> str:
@@ -199,7 +200,7 @@ def init(
     has_git = is_repo(root)
     if has_git and staged_changes(root):
         raise InitError("you have staged changes; commit or unstage them before running `margi init`")
-    report = InitReport()
+    report = InitReport(first=not (root / CONFIG_NAME).exists())
     installed = has_git and bool(git("ls-files", "--", CONFIG_NAME, cwd=root).strip())
 
     main = load(root)["main"] if (root / CONFIG_NAME).exists() else detect_main(root)

@@ -56,6 +56,9 @@ Work quietly and confidently; report results, not process.
   - Never invent an option that points elsewhere ("Answer below", "See chat") or that
     proposes plausible project content.
 - No hedging, no apologies, no justifying that you followed the skill.
+- While setup is incomplete, `margi finalize` prints a line like
+  `dashboard  margi/dash.html  (setup 3 of 6)`. End your report with it, as a link. When it
+  isn't printed, don't mention the dashboard.
 
 ## Commands
 

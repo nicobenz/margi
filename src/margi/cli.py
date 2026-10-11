@@ -6,6 +6,7 @@ the remaining commands are hidden plumbing that the skills, the commit hook and 
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -27,7 +28,7 @@ def _cfg() -> Config:
     return load(project_root(Path.cwd(), CONFIG_NAME))
 
 
-def _report(result: FinalizeResult) -> None:
+def _report(result: FinalizeResult, cfg: Config | None = None) -> None:
     for rec in result.records:
         click.echo(f"  wrote {rec.relative_to(rec.parents[2]).as_posix()}")
     if not result.has_git:
@@ -36,6 +37,12 @@ def _report(result: FinalizeResult) -> None:
         click.echo(f"  committed {result.commit[:7]}  {result.message}")
     elif not result.records:
         click.echo("  nothing to finalize")
+    if cfg is not None:
+        from .dashboard import DASH_HTML, setup_progress
+
+        progress = setup_progress(cfg)
+        if progress and progress["done"] < progress["total"]:
+            click.echo(f"  dashboard  {DASH_HTML}  (setup {progress['done']} of {progress['total']})")
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -57,12 +64,14 @@ def main() -> None:
 @click.option("--force-config", is_flag=True, help="Overwrite an existing thesis.config.yml.")
 @click.option("--no-install", is_flag=True, help="Do not add margi to the repo's pyproject.toml (uv).")
 @click.option("--spec", help="Requirement passed to `uv add --dev` (default: margi==<this version>; a path works too).")
+@click.option("--no-open", is_flag=True, help="Do not open the dashboard in a browser.")
 def init(
     no_commit: bool,
     no_claude_settings: bool,
     force_config: bool,
     no_install: bool,
     spec: str | None,
+    no_open: bool,
 ) -> None:
     """Bootstrap a Typst thesis with margi, or add margi to an existing one."""
     from .init import InitError, init as run_init
@@ -81,8 +90,25 @@ def init(
         click.echo(f"  commit {c}")
     for s in report.skipped:
         click.echo(f"  skip  {s}")
-    click.echo("\nmargi is ready. Write your plan into PROPOSAL.md, commit it, then run /margi propose "
-               "in your agent.")
+    from .dashboard import DASH_HTML
+
+    dash = (root / DASH_HTML).resolve()
+    opened = False
+    if should_open_dashboard(report.first, no_open, sys.stdout.isatty(), os.environ):
+        import webbrowser
+
+        try:
+            opened = webbrowser.open(dash.as_uri())
+        except webbrowser.Error:
+            opened = False
+    click.echo("\nmargi is ready.\n")
+    click.echo(f"  Dashboard  {dash.as_uri()}   ({'opened in your browser' if opened else 'open it in a browser'})")
+    click.echo("  Next       write your plan into PROPOSAL.md, commit it, then run /margi propose in Claude Code")
+
+
+def should_open_dashboard(first: bool, no_open: bool, interactive: bool, env) -> bool:
+    """Open the dashboard only when margi was just added, by a person at a terminal, outside CI."""
+    return first and not no_open and interactive and not env.get("CI")
 
 
 @main.command()
@@ -126,7 +152,7 @@ def outline(no_save: bool) -> None:
     except FinalizeError as e:
         raise click.ClickException(str(e)) from e
     click.echo("")
-    _report(result)
+    _report(result, cfg)
 
 
 @main.command(hidden=True)
@@ -274,7 +300,7 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
                               model_source="self-reported" if model else None)
     except FinalizeError as e:
         raise click.ClickException(str(e)) from e
-    _report(result)
+    _report(result, cfg)
 
 
 @main.command(hidden=True)

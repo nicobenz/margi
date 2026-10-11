@@ -313,6 +313,22 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .ms-state.missed { color: var(--red); }
 .ms-state.soon { color: var(--ink); }
 
+/* getting started ------------------------------------------------------------------ */
+.setup { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.setup li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 2px var(--s3); padding: var(--s3) 0; border-bottom: 1px solid var(--rule-soft); counter-increment: step; }
+.setup li:last-child { border-bottom: 0; }
+.setup .mark { font-family: var(--sans); font-size: 13px; color: var(--ink-3); padding-top: 2px; }
+.setup .mark::before { content: counter(step); }
+.setup .mark svg { width: 14px; height: 14px; color: var(--ink-2); }
+.setup li.done .mark::before { content: none; }
+.setup .st { font-size: 16px; }
+.setup li.done .st { color: var(--ink-2); }
+.setup li.later .st { color: var(--ink-3); }
+.setup li.now .st { color: var(--ink); font-weight: 600; }
+.setup .when { font-family: var(--sans); font-size: 12px; color: var(--ink-3); margin-left: 6px; }
+.setup .act { grid-column: 2; margin-top: 6px; }
+.setup .act .hint { display: block; font-family: var(--sans); font-size: 13px; color: var(--ink-3); margin-top: 4px; }
+
 /* comment lifecycle ------------------------------------------------------------------ */
 .progress { margin: var(--s3) 0 0; font-size: 17px; color: var(--ink-2); max-width: 68ch; }
 .progress b { color: var(--ink); font-weight: 600; }
@@ -410,6 +426,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 @media (max-width: 1080px) {
   .split { grid-template-columns: 1fr; }
   .apparatus { position: static; max-height: none; overflow: visible; }
+  .split.setup-first > .apparatus { order: -1; }
   .next .lead .src { display: none; }
 }
 @media (max-width: 720px) {
@@ -557,6 +574,30 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       : st === "missed" ? "missed" : st === "past" ? "passed" : left === 0 ? (st === "plain" ? "today" : "due today")
       : (st === "plain" ? "in " : "due in ") + dayWord(left);
   };
+  var SETUP = D.setup || null;
+  var setupOpen = !!SETUP && SETUP.done < SETUP.total;
+  var STEP_HINT = {
+    plan: "Title ideas, research question, data, method, outline, constraints: fragments are fine. Then commit it.",
+    propose: "margi turns your plan into sourced project docs and lists what is still unclear.",
+    docs: "Add to PROPOSAL.md and run /margi propose again, or settle open questions in a challenge.",
+    deadline: "Tell margi your submission date and milestones; the timeline counts down to it.",
+    outline: "Counts the length of every section, no AI involved.",
+    grade: "Rubric scores and anchored comments for one section."
+  };
+  var TICK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>';
+  function setupBlock(asPanel) {
+    if (!setupOpen) return '';
+    var next = SETUP.steps.filter(function (st) { return !st.done; })[0];
+    var items = SETUP.steps.map(function (st) {
+      var cls = st.done ? "done" : st === next ? "now" : "later";
+      return '<li class="' + cls + '"><span class="mark">' + (st.done ? TICK + '<span class="visually-hidden">done</span>' : '') + '</span>' +
+        '<div><span class="st">' + esc(st.title) + '</span>' + (st.done && st.date ? '<span class="when">' + fmtDate(st.date, false, true) + '</span>' : '') + '</div>' +
+        (st === next ? '<div class="act">' + (st.command ? cmdChip(st.command) : '') + '<span class="hint">' + esc(STEP_HINT[st.id] || "") + '</span></div>' : '') + '</li>';
+    }).join("");
+    var head = asPanel ? '<h2>Getting started</h2><div class="meta"><span>' + SETUP.done + ' of ' + SETUP.total + ' done. The list ticks itself off as margi\u2019s records come in.</span></div><div class="block" style="margin-top:24px">'
+      : '<div class="block"><h3><span class="caps">Getting started</span><span class="muted" style="font-size:14px">' + SETUP.done + ' of ' + SETUP.total + '</span></h3>';
+    return head + '<ol class="setup">' + items + '</ol></div>';
+  }
   var shareTarget = function (t) { var m = /target\s+([\d.]+)\s*%/.exec(t || ""); return m ? Number(m[1]) / 100 : null; };
 
   function copyText(text, btn) {
@@ -644,7 +685,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   function renderStatus() {
     var d = D.docs, parts = [];
     var docsTxt = '<span>Docs <b>' + Math.round(d.completeness * 100) + '%</b>' +
-      (d.completeness < d.threshold ? ' <span class="muted">(grades are low-confidence until ' + Math.round(d.threshold * 100) + '%)</span>' : '') + '</span>';
+      (d.completeness < d.threshold ? (setupOpen && !gradedIds.length ? ' <span class="muted">· needed for grading: ' + Math.round(d.threshold * 100) + '%</span>'
+        : ' <span class="muted">(grades are low-confidence until ' + Math.round(d.threshold * 100) + '%)</span>') : '') + '</span>';
     parts.push(docsTxt);
     var real = sections.filter(function (s) { return !s.orphan; });
     if (real.length) parts.push('<span><b>' + gradedIds.length + '</b> of ' + real.length + ' sections graded</span>');
@@ -674,6 +716,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     if (!TL) { el.innerHTML = ""; return; }
     var warn = TL.problem ? '<p class="warn" style="margin:0 0 8px">The dates in <code>constraints.md</code> have a problem: ' + esc(TL.problem) + '.</p>' : '';
     if (!TL.deadline) {
+      if (setupOpen) { el.innerHTML = warn; return; } // the checklist already asks for the date
       el.innerHTML = warn + '<div class="tl"><p class="tl-sum"><span>No submission date documented.</span>' + cmdChip("/margi challenge deadline") + '</p></div>';
       return;
     }
@@ -773,7 +816,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       }).join("") : '<td class="catcol ungraded" colspan="' + cats.length + '"' + (draft ? ' title="' + esc(draft.reasons.join("; ")) + '"' : '') + '>' +
         (!s.chars ? 'no text yet' : draft ? 'draft · not ready to grade' : 'not graded') + '</td>';
       var lowN = g ? Object.keys(g.scores).filter(function (k) { return isLow(g.scores[k]); }).length : 0;
-      var catsum = '<td class="c catsum">' + (g ? (lowN ? '<span class="score low">' + lowN + ' low</span>' : '<span class="muted">ok</span>') : '<span class="muted">' + (draft ? 'draft' : 'not graded') + '</span>') + '</td>';
+      var catsum = '<td class="c catsum">' + (g ? (lowN ? '<span class="score low">' + lowN + ' low</span>' : '<span class="muted">ok</span>') : '<span class="muted">' + (!s.chars ? 'no text yet' : draft ? 'draft' : 'not graded') + '</span>') + '</td>';
       var maj = g ? majorsOf(openIn(s.id, true)).length : null;
       var changed = g && g.changed.length ? '<span class="flag red" title="Changed since grading: ' + esc(g.changed.join(", ")) + '">changed</span>' : '';
       var graded = g ? '<span class="muted" title="' + esc(fmtDate(g.timestamp, true)) + '">' + fmtDate(g.timestamp, false, true) + '</span>' : '';
@@ -798,15 +841,15 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var legend = '<p class="legend">' + cats.map(function (c) { return '<span class="key"><b>' + esc(abbr(c.id)) + '</b> ' + esc(c.title) + '</span>'; }).join("") +
       '<span class="key"><b>Δ</b> mean change since the previous grade</span><span>Scores of ' + Math.floor(lowCut) + ' or below in <span class="red">red</span></span>' +
       (anyLc ? '<span><i>Italic</i> scores were graded while the project docs were incomplete</span>' : '') + '</p>';
-    return '<div class="split"><div class="sheet">' + bar + '<table class="grid" aria-label="Sections and their latest scores"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>' + legend + problem + '</div>' +
+    return '<div class="split' + (setupOpen && !state.sel ? ' setup-first' : '') + '"><div class="sheet">' + bar + '<table class="grid" aria-label="Sections and their latest scores"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>' + legend + problem + '</div>' +
       '<aside class="sheet apparatus" id="apparatus" aria-label="Section detail" tabindex="-1">' + apparatus() + '</aside></div>';
   }
 
   function emptyProject() {
     return '<div class="sheet empty"><h2>No sections found yet</h2><p>margi reads the section tree from <code>' + esc(D.project.main) + '</code>.' +
       (D.project.section_problem ? ' ' + esc(D.project.section_problem) + '.' : '') + '</p>' +
-      '<ol><li>Write your plan into <code>PROPOSAL.md</code> and commit it.</li><li>Run ' + cmdChip("/margi propose") + ' in your agent to turn it into project docs.</li>' +
-      '<li>Add headings to your thesis, then run ' + cmdChip("/margi outline") + ' and ' + cmdChip("/margi grade 1") + '.</li></ol></div>';
+      (setupOpen ? '</div><div class="sheet pad" style="margin-top:24px">' + setupBlock(false) + '</div>'
+        : '<ol><li>Add headings to your thesis, then run ' + cmdChip("/margi outline") + '.</li></ol></div>');
   }
 
   function apparatus() {
@@ -1027,11 +1070,12 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     });
     weakest.sort(function (a, b) { return a.min - b.min; });
     var title = function (id) { var s = sections.filter(function (x) { return x.id === id; })[0]; return s ? s.title : id; };
+    if (!gradedIds.length && setupOpen) return setupBlock(true);
     if (!gradedIds.length) {
       return '<div class="empty" style="padding:0"><h2>Nothing graded yet</h2><p>Scores and anchored comments appear here once a section is graded. Select a section to see its details.</p>' +
         ((D.next_steps || [])[0] ? '<p>' + cmdChip(D.next_steps[0].command) + '</p><p class="muted">' + esc(D.next_steps[0].reason) + '</p>' : '') + '</div>';
     }
-    return '<h2>Needs attention</h2><div class="meta"><span>Select a section to open its scores, history and comments.</span></div>' +
+    return '<h2>Needs attention</h2><div class="meta"><span>Select a section to open its scores, history and comments.</span></div>' + setupBlock(false) +
       '<div class="block"><h3><span class="caps">Scores of ' + Math.floor(lowCut) + ' or below</span><span class="muted" style="font-size:14px">' + plural(weakest.length, "section") + '</span></h3>' +
       (weakest.length ? '<ul class="list">' + weakest.slice(0, 12).map(function (w) {
         return '<li><a href="#tab=sections&s=' + encodeURIComponent(w.id) + '" data-goto="' + esc(w.id) + '"><span class="sid">' + esc(w.id) + '</span> ' + esc(title(w.id)) + '</a> <span class="muted">· ' +
