@@ -22,7 +22,7 @@ from . import __version__, docs_check, readiness
 from .adapters import get_adapter
 from .adapters.base import slug
 from .config import MARGI_DIR, Config
-from .gitutil import file_at_head, sha256
+from .gitutil import GitError, file_at_head, git, sha256
 from .resources import templates_dir
 from .todos_sync import list_items
 
@@ -66,16 +66,9 @@ def render_page() -> str:
 
 
 def _load_records(cfg: Config) -> list[dict]:
-    out = []
-    for p in sorted((cfg.root / MARGI_DIR / "feedback").glob("*.json")):
-        try:
-            rec = json.loads(p.read_text(encoding="utf-8"))
-        except ValueError:
-            continue
-        if isinstance(rec, dict) and "provenance" in rec:
-            rec["_file"] = p.name
-            out.append(rec)
-    return sorted(out, key=lambda r: (r["provenance"].get("timestamp", ""), r["_file"]))
+    from .lifecycle import load_records
+
+    return load_records(cfg)
 
 
 def _current_sha(cfg: Config, path: str) -> str | None:
@@ -288,6 +281,7 @@ def collect(cfg: Config) -> dict:
 
     literature = _literature(cfg, records)
     todos = _todos(cfg)
+    comments = _comments(cfg, records, sections)
 
     runs = [{"timestamp": r["provenance"].get("timestamp"), "command": r.get("command"), "scope": r.get("scope"),
              "summary": r.get("summary", ""), "model": r["provenance"].get("model"), "file": r["_file"]}
@@ -299,10 +293,12 @@ def collect(cfg: Config) -> dict:
         "project": {"title": _title(cfg), "main": cfg["main"], "format": cfg["format"], "git": cfg.has_git,
                     "section_problem": section_problem},
         "updated": records[-1]["provenance"].get("timestamp") if records else None,
+        "thesis_commit": _thesis_commit(cfg),
         "rubric": rubric,
         "sections": sections,
         "grades": grades,
         "prechecks": prechecks,
+        "comments": comments,
         "grade_precheck": _precheck_mode(cfg),
         "docs": docs,
         "outline": outline,
@@ -312,6 +308,34 @@ def collect(cfg: Config) -> dict:
     }
     data["next_steps"] = next_steps(data, records)
     return data
+
+
+def _comments(cfg: Config, records: list[dict], sections: list[dict]) -> list[dict]:
+    """Every major and minor grade comment with its state and history (see lifecycle.py)."""
+    from .lifecycle import comments
+
+    known = {s["id"] for s in sections}
+    out = []
+    for c in comments(cfg, records):
+        section = c["section"] if c["section"] in known else _section_key(c["scope"] or "", sections, {})
+        out.append({"ref": c["ref"], "id": c["id"], "section": section, "severity": c["severity"],
+                    "category": c["category"], "body": c["body"], "anchor": c["anchor"], "now": c.get("now"),
+                    "signal": c["signal"], "state": c["state"], "created": c["created"], "history": c["history"]})
+    return out
+
+
+def _thesis_commit(cfg: Config) -> dict | None:
+    """The newest commit that touched the thesis (anything outside margi/): what the data reflects."""
+    if not cfg.has_git:
+        return None
+    try:
+        out = git("log", "-1", "--format=%H%x00%cI", "--", ".", f":(exclude){MARGI_DIR}", cwd=cfg.root).strip()
+    except GitError:
+        return None
+    if not out:
+        return None
+    sha, date = out.split("\0")
+    return {"sha": sha, "date": date}
 
 
 def _precheck_mode(cfg: Config) -> str:
@@ -424,6 +448,15 @@ def next_steps(data: dict, records: list[dict]) -> list[dict]:
         add("/margi propose", f"Project docs are {docs['completeness']:.0%} complete (needs {docs['threshold']:.0%}); "
                               "until then every grade is low-confidence.")
     sections = [s for s in data["sections"] if not s.get("orphan")]
+    awaiting: dict[str, int] = {}
+    for c in data.get("comments", []):
+        if c["state"] in ("addressed", "disputed"):
+            awaiting[c["section"]] = awaiting.get(c["section"], 0) + 1
+    for s in sections:
+        n = awaiting.get(s["id"])
+        if n:
+            add(f"/margi grade {s['id']}", f"{n} answered comment{'s' if n != 1 else ''} in {s['title']} "
+                                           f"{'await' if n != 1 else 'awaits'} checking.")
     gated = data.get("grade_precheck") != "none"
     ready = lambda s: not gated or (s.get("readiness") or {}).get("ready", True)
     for s in sections:

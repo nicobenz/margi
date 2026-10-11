@@ -269,6 +269,43 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .note .mono { white-space: nowrap; }
 .anchor-state { font-family: var(--sans); font-size: 12px; color: var(--red-ink); margin-left: 6px; }
 
+/* comment lifecycle ------------------------------------------------------------------ */
+.progress { margin: var(--s3) 0 0; font-size: 17px; color: var(--ink-2); max-width: 68ch; }
+.progress b { color: var(--ink); font-weight: 600; }
+.ref { font-family: var(--sans); color: var(--ink-2); }
+.thread { list-style: none; margin: var(--s2) 0 0; padding: 0 0 0 var(--s3); border-left: 1px solid var(--rule); max-width: 64ch; }
+.thread li { font-size: 15px; color: var(--ink-2); padding: 2px 0; }
+.thread .who { font-size: 11px; margin-right: 6px; }
+.thread .who.you { color: var(--ink-2); }
+.said { font-style: italic; color: var(--ink); quotes: "\201C" "\201D"; }
+.cstate { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px var(--s3); margin-top: 6px; }
+.cstate .caps { font-size: 11px; }
+.cstate .sig { font-family: var(--sans); font-size: 12px; color: var(--ink-3); }
+.cstate .sig.changed { color: var(--red-ink); }
+.pick { display: inline-flex; align-items: center; gap: 6px; font-family: var(--sans); font-size: 13px; color: var(--ink-2); cursor: pointer; padding: 2px 0; }
+.pick input { margin: 0; width: 14px; height: 14px; accent-color: var(--ink); cursor: pointer; }
+.pick:hover { color: var(--ink); }
+.entry.picked { background: color-mix(in srgb, var(--sel) 55%, transparent); }
+.closed > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); padding-bottom: var(--s2); border-bottom: 1px solid var(--ink); }
+.closed > summary::-webkit-details-marker { display: none; }
+.closed > summary .caps { color: var(--ink); }
+.closed > summary .tog { font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
+.closed > summary:hover .tog { color: var(--ink); }
+.closed[open] > summary { margin-bottom: var(--s3); }
+.closed .entry .lemma-line, .closed .entry .note { color: var(--ink-2); }
+.closed .sev.major { color: var(--ink-2); }
+.respond {
+  position: sticky; bottom: calc(-1 * var(--s6)); z-index: 2; /* the scrollport excludes the panel's padding */
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3);
+  margin: var(--s5) calc(-1 * var(--s5)) calc(-1 * var(--s6)); padding: var(--s3) var(--s5);
+  background: var(--page); border-top: 1px solid var(--ink);
+  font-family: var(--sans); font-size: 13px; color: var(--ink-2);
+}
+.respond[hidden] { display: none; }
+.respond .hint { flex: 1 1 16ch; }
+.respond .clear { border: 0; background: none; padding: 2px 4px; cursor: pointer; color: var(--ink-3); font-size: 13px; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.respond .clear:hover { color: var(--ink); text-decoration-color: var(--red); }
+
 /* literature passages ---------------------------------------------------------------- */
 .ptitle { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .ptitle:focus-visible { outline-offset: 3px; }
@@ -346,13 +383,15 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   .grid .catcol { display: none; }
   .grid td.catsum, .grid th.catsum { display: table-cell; }
   .apparatus { padding: var(--s4); }
+  .respond { bottom: 0; margin: var(--s5) calc(-1 * var(--s4)) calc(-1 * var(--s4)); padding: var(--s3) var(--s4); }
+  .respond .hint { flex-basis: 100%; }
   .entry { grid-template-columns: 3.4em minmax(0, 1fr); gap: var(--s2); }
   .legend .key { display: none; }
 }
 
 @media print {
   .head { position: static; }
-  .tabs, .filters, .copy, .steps { display: none; }
+  .tabs, .filters, .copy, .steps, .pick, .respond { display: none; }
   .split { grid-template-columns: 1fr; }
   .apparatus { position: static; max-height: none; overflow: visible; }
   .excerpt { -webkit-mask-image: none; mask-image: none; }
@@ -441,6 +480,14 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     if (!keys.length) return null;
     return meanOf(b, keys) - meanOf(a, keys);
   };
+  // comment lifecycle: every major and minor grade comment, its state and history (see lifecycle.py)
+  var CM = D.comments || [];
+  var byFull = {};
+  CM.forEach(function (c) { byFull[c.id] = c; });
+  var AWAIT = { open: 1, addressed: 1, disputed: 1 };
+  var covers = function (sid, sec) { return sec === sid || String(sec || "").indexOf(sid + ".") === 0; };
+  var openIn = function (sid, exact) { return CM.filter(function (c) { return AWAIT[c.state] && (exact ? c.section === sid : covers(sid, c.section)); }); };
+  var majorsOf = function (list) { return list.filter(function (c) { return c.severity === "major"; }); };
   var shareTarget = function (t) { var m = /target\s+([\d.]+)\s*%/.exec(t || ""); return m ? Number(m[1]) / 100 : null; };
 
   function copyText(text, btn) {
@@ -466,7 +513,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   });
 
   // ------------------------------------------------------------------ state + hash
-  var state = { tab: "sections", sel: null, paper: null, sev: "all", cat: "all", run: null, show: "all" };
+  var state = { tab: "sections", sel: null, paper: null, sev: "all", cat: "all", run: null, show: "all", pick: [], closedOpen: false };
   function readHash() {
     var h = location.hash.replace(/^#/, "").split("&");
     if (h.some(function (kv) { return kv.indexOf("tab=") === 0; })) { state.sel = null; state.paper = null; }
@@ -487,15 +534,18 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   // ------------------------------------------------------------------ head + status line
   var sections = D.sections;
   var gradedIds = sections.filter(function (s) { return latest(s.id); }).map(function (s) { return s.id; });
-  var majors = gradedIds.reduce(function (n, id) {
-    return n + latest(id).comments.filter(function (c) { return c.severity === "major"; }).length;
-  }, 0);
+  var majors = majorsOf(CM.filter(function (c) { return AWAIT[c.state]; })).length;
+  var awaitingN = CM.filter(function (c) { return c.state === "addressed" || c.state === "disputed"; }).length;
 
   function renderHead() {
     $("title").textContent = D.project.title;
     $("title").title = D.project.title;
     document.title = D.project.title + " · margi";
     $("updated").textContent = D.updated ? "Updated " + fmtDate(D.updated) : "No runs yet";
+    if (D.thesis_commit) {
+      $("updated").innerHTML = esc($("updated").textContent) + ' · <span class="mono">' + esc(D.thesis_commit.sha.slice(0, 7)) + '</span>';
+      $("updated").title = "Thesis as of commit " + D.thesis_commit.sha.slice(0, 7) + " (" + fmtDate(D.thesis_commit.date, true) + "). After new commits, /margi status refreshes this page.";
+    }
     var steps = D.next_steps || [];
     var el = $("next");
     if (!steps.length) { el.innerHTML = '<span class="muted">Nothing pending</span>'; return; }
@@ -529,7 +579,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     parts.push(docsTxt);
     var real = sections.filter(function (s) { return !s.orphan; });
     if (real.length) parts.push('<span><b>' + gradedIds.length + '</b> of ' + real.length + ' sections graded</span>');
-    if (gradedIds.length) parts.push('<span><b' + (majors ? ' class="red"' : '') + '>' + majors + '</b> major ' + (majors === 1 ? "comment" : "comments") + ' in latest grades</span>');
+    if (gradedIds.length) parts.push('<span><b' + (majors ? ' class="red"' : '') + '>' + majors + '</b> open major ' + (majors === 1 ? "comment" : "comments") +
+      (awaitingN ? ' · <b>' + awaitingN + '</b> answered, awaiting a grade' : '') + '</span>');
     if (D.outline.total) parts.push('<span><b>' + fmtN(D.outline.total) + '</b> ' + esc(unitName(D.outline.unit)) + '</span>');
     $("status").innerHTML = parts.join("");
   }
@@ -570,7 +621,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   };
   var needsAttention = function (sid) {
     var g = latest(sid);
-    return !!g && (g.changed.length > 0 || g.comments.some(function (c) { return c.severity === "major"; }) ||
+    return !!g && (g.changed.length > 0 || majorsOf(openIn(sid, true)).length > 0 ||
       Object.keys(g.scores).some(function (k) { return isLow(g.scores[k]); }));
   };
   function sectionsView() {
@@ -581,7 +632,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       cats.map(function (c) { return '<th scope="col" class="cat-h catcol" title="' + esc(c.title) + '"><abbr title="' + esc(c.title) + '" style="text-decoration:none">' + esc(abbr(c.id)) + '</abbr></th>'; }).join("") +
       '<th scope="col" class="caps c catsum">Scores</th>' +
       '<th scope="col" class="caps num" title="Mean change since the previous grade">Δ</th>' +
-      '<th scope="col" class="caps num" title="Major comments in the latest grade">Maj.</th>' +
+      '<th scope="col" class="caps num" title="Open major comments: not resolved, withdrawn or closed by you">Maj.</th>' +
       '<th scope="col" class="caps hide-s date">Graded</th></tr>';
     // length bars share one scale: the longest section (or target) fills the column
     var scale = sections.reduce(function (m, s) { return Math.max(m, s.share || 0, shareTarget(s.target) || 0); }, 0) || 1;
@@ -603,7 +654,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
         (!s.chars ? 'no text yet' : draft ? 'draft · not ready to grade' : 'not graded') + '</td>';
       var lowN = g ? Object.keys(g.scores).filter(function (k) { return isLow(g.scores[k]); }).length : 0;
       var catsum = '<td class="c catsum">' + (g ? (lowN ? '<span class="score low">' + lowN + ' low</span>' : '<span class="muted">ok</span>') : '<span class="muted">' + (draft ? 'draft' : 'not graded') + '</span>') + '</td>';
-      var maj = g ? g.comments.filter(function (c) { return c.severity === "major"; }).length : null;
+      var maj = g ? majorsOf(openIn(s.id, true)).length : null;
       var changed = g && g.changed.length ? '<span class="flag red" title="Changed since grading: ' + esc(g.changed.join(", ")) + '">changed</span>' : '';
       var graded = g ? '<span class="muted" title="' + esc(fmtDate(g.timestamp, true)) + '">' + fmtDate(g.timestamp, false, true) + '</span>' : '';
       var sel = state.sel === s.id;
@@ -683,16 +734,20 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       var an = anchorOf(sc);
       return '<li><details><summary><span class="cname">' + esc(catTitle(k)) + '</span><span><span class="score' + (isLow(sc) ? " low" : "") + '">' + fmtScore(sc.score) + '</span><span class="muted">/' + sc.max + '</span>' + (an ? '<span class="aw">' + esc(an.word) + '</span>' : '') + '</span><span class="num" style="text-align:right">' + dTxt + '</span></summary>' +
         '<p class="rat">' + (an ? '<span class="adef">' + esc(fmtScore(sc.score)) + ' on the rubric: ' + esc(an.text) + '</span>' : '') + esc(sc.rationale) +
-        (sc.comment_ids.length ? ' <span class="refs">→ ' + sc.comment_ids.map(function (id) { var c = id.split(":").pop(); return '<a href="#c-' + esc(c) + '" data-ref="' + esc(c) + '">' + esc(c) + '</a>'; }).join(", ") + '</span>' : '') + '</p></details></li>';
+        (sc.comment_ids.length ? ' <span class="refs">→ ' + sc.comment_ids.map(function (id) {
+          var t = byFull[id], el = t ? "c-" + t.ref : "n-" + id.split(":").pop(), label = t ? t.ref : id.split(":").pop();
+          return '<a href="#' + esc(el) + '" data-ref="' + esc(el) + '">' + esc(label) + '</a>';
+        }).join(", ") + '</span>' : '') + '</p></details></li>';
     }).join("") + '</ul>';
 
     var history = runs.length > 1 ? '<div class="block"><h3><span class="caps">Score history</span><span class="muted" style="font-size:14px">' + plural(runs.length, "grade") + '</span></h3><div class="multiples">' +
       catIds.map(function (k) { return multiple(runs, k); }).join("") + '</div></div>' : '';
 
-    return head + meta + warns +
+    var mine = CM.filter(function (c) { return covers(s.id, c.section); });
+    return head + meta + progress(mine) + warns +
       (g.summary ? '<p class="summary">' + esc(g.summary) + '</p>' : '') +
       '<div class="block"><h3><span class="caps">Scores</span><span class="muted" style="font-size:14px">open a category for its rationale</span></h3>' + cats + '</div>' +
-      comments(g) + history;
+      openComments(mine, runs.length) + notes(g, idx, runs.length) + closedComments(mine) + history + respondBar();
   }
 
   var tsNum = function (ts) { var t = Date.parse(ts); return isNaN(t) ? 0 : t; };
@@ -725,39 +780,121 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       '<div class="tip" role="presentation"></div></figure>';
   }
 
-  function comments(g) {
-    var list = g.comments.slice();
-    var order = { major: 0, minor: 1, note: 2 };
-    list.sort(function (a, b) {
-      return (order[a.severity] - order[b.severity]) || ((a.anchor ? a.anchor.file : "~").localeCompare(b.anchor ? b.anchor.file : "~")) ||
-        ((a.anchor ? a.anchor.line_start : 1e9) - (b.anchor ? b.anchor.line_start : 1e9));
-    });
-    var counts = { all: list.length, major: 0, minor: 0, note: 0 };
+  var SEV = { major: 0, minor: 1, note: 2 };
+  var bySeverity = function (a, b) {
+    return (SEV[a.severity] - SEV[b.severity]) || String(a.created).localeCompare(String(b.created)) ||
+      ((a.anchor ? a.anchor.line_start : 1e9) - (b.anchor ? b.anchor.line_start : 1e9));
+  };
+  var lastBy = function (c, by) { var h = c.history.filter(function (x) { return x.by === by; }); return h[h.length - 1]; };
+  var VERDICT = { resolved: "resolved", open: "still open", withdrawn: "withdrawn" };
+  var ANSWER = { addressed: "addressed", disputed: "disputed", wont_fix: "won’t fix" };
+
+  // "Since 3 Oct: 4 of 6 major comments resolved · 1 awaiting a grade · 1 open"
+  function progress(mine) {
+    if (!mine.some(function (c) { return c.history.length; })) return '';
+    var maj = majorsOf(mine), base = maj.length ? maj : mine;
+    var n = function (st) { return base.filter(function (c) { return st.indexOf(c.state) >= 0; }).length; };
+    var done = n(["resolved"]), withdrawn = n(["withdrawn"]), waiting = n(["addressed", "disputed"]), open = n(["open"]), kept = n(["wont_fix"]);
+    var first = base.map(function (c) { return c.created; }).sort()[0];
+    var parts = [];
+    if (withdrawn) parts.push(withdrawn + ' withdrawn');
+    if (waiting) parts.push(waiting + ' answered, awaiting a grade');
+    if (open) parts.push(open + ' open');
+    if (kept) parts.push(kept + ' kept as is');
+    return '<p class="progress">Since ' + fmtDate(first, false, true) + ': <b>' + done + ' of ' + base.length + '</b> ' +
+      (maj.length ? 'major ' : '') + (base.length === 1 ? 'comment' : 'comments') + ' resolved' + (parts.length ? ' · ' + parts.join(' · ') : '') + '</p>';
+  }
+
+  function stateLine(c) {
+    var v = lastBy(c, "margi"), y = lastBy(c, "student"), last = c.history[c.history.length - 1];
+    var txt = c.state === "open" ? (v && v.value === "open" ? 'Still open · checked ' + fmtDate(v.timestamp, false, true) : 'Open since ' + fmtDate(c.created, false, true))
+      : c.state === "addressed" ? 'Addressed · awaiting a grade'
+      : c.state === "disputed" ? 'Disputed · awaiting a grade'
+      : (c.state === "wont_fix" ? 'Won’t fix · your call, ' : (c.state === "resolved" ? 'Resolved ' : 'Withdrawn ')) + fmtDate(last ? last.timestamp : c.created, false, true);
+    var sig = AWAIT[c.state] && c.signal ? '<span class="sig ' + esc(c.signal) + '">passage ' + esc(c.signal) + '</span>' : '';
+    var pick = AWAIT[c.state] ? '<label class="pick"><input type="checkbox" data-pick="' + esc(c.ref) + '"' + (state.pick.indexOf(c.ref) >= 0 ? ' checked' : '') +
+      ' aria-label="Answer ' + esc(c.ref) + '"><span aria-hidden="true">Answer</span></label>' : '';
+    return '<div class="cstate"><span><span class="caps">' + esc(txt) + '</span>' + (sig ? ' · ' + sig : '') + '</span>' + pick + '</div>';
+  }
+
+  function thread(c) {
+    if (!c.history.length) return '';
+    return '<ol class="thread">' + c.history.map(function (h) {
+      if (h.by === "student") {
+        return '<li><span class="who you caps">You, ' + fmtDate(h.timestamp, false, true) + '</span>' + esc(ANSWER[h.value] || h.value) +
+          (h.reason ? ' — <q class="said">' + esc(h.reason) + '</q>' : '') + '</li>';
+      }
+      return '<li><span class="who caps">margi, ' + fmtDate(h.timestamp, false, true) + '</span>' + esc(VERDICT[h.value] || h.value) +
+        (h.reason ? ' — ' + esc(h.reason) : '') + '</li>';
+    }).join("") + '</ol>';
+  }
+
+  // one apparatus entry: locator, lemma ] , note; tracked comments add their thread and state line
+  function entry(c, elId) {
+    var a = c.anchor, lemma, tracked = !!c.ref;
+    if (a) {
+      var at = tracked && c.now && c.signal !== "changed" ? c.now : a;
+      var lines = at.line_start === at.line_end ? at.line_start : at.line_start + "–" + at.line_end;
+      var st = tracked ? '' : a.anchor_status === "unresolved" ? '<span class="anchor-state">passage not found</span>' : a.anchor_status === "relocated" ? '<span class="anchor-state">moved</span>' : '';
+      lemma = '<span class="loc" title="' + esc(a.file) + (tracked && c.signal === "changed" ? ' (lines when graded)' : '') + '">' + lines + '</span><div><div class="lemma-line"><span class="lemma">' + esc(a.quote) + '</span><span class="br">]</span>' + st + '</div>';
+    } else {
+      lemma = '<span class="loc">—</span><div><div class="lemma-line"><span class="muted">not tied to a passage</span><span class="br">]</span></div>';
+    }
+    var label = tracked ? '<span class="ref">' + esc(c.ref) + '</span>' : esc(c.id.split(":").pop());
+    var picked = tracked && state.pick.indexOf(c.ref) >= 0;
+    return '<li class="entry' + (picked ? ' picked' : '') + '" id="' + esc(elId) + '"' + (a ? ' title="' + esc(a.file) + '"' : '') + '>' + lemma +
+      '<div class="note"><span class="sev ' + esc(c.severity) + '">' + esc(c.severity) + '</span> <span class="muted">· ' + esc(catTitle(c.category)) + ' · ' + label +
+      (a ? ' · <span class="mono">' + esc(a.file.replace(/^.*\//, "")) + '</span>' : '') + '</span> — ' + esc(c.body) + '</div>' +
+      (tracked ? thread(c) + stateLine(c) : '') + '</div></li>';
+  }
+
+  function openComments(mine, nRuns) {
+    var list = mine.filter(function (c) { return AWAIT[c.state]; }).sort(bySeverity);
+    var counts = { all: list.length, major: 0, minor: 0 };
     list.forEach(function (c) { counts[c.severity]++; });
     var catsPresent = [];
     list.forEach(function (c) { if (catsPresent.indexOf(c.category) < 0) catsPresent.push(c.category); });
+    if (state.cat !== "all" && catsPresent.indexOf(state.cat) < 0) state.cat = "all";
     var shown = list.filter(function (c) { return (state.sev === "all" || c.severity === state.sev) && (state.cat === "all" || c.category === state.cat); });
-    var seg = ["all", "major", "minor", "note"].map(function (k) {
+    var seg = ["all", "major", "minor"].map(function (k) {
       return '<button type="button" data-sev="' + k + '" aria-pressed="' + (state.sev === k) + '">' + (k === "all" ? "All" : k[0].toUpperCase() + k.slice(1)) + ' ' + counts[k] + '</button>';
     }).join("");
-    var catSel = '<label><span class="visually-hidden">Category</span><select id="catsel"><option value="all">All categories</option>' +
-      catsPresent.map(function (c) { return '<option value="' + esc(c) + '"' + (state.cat === c ? " selected" : "") + '>' + esc(catTitle(c)) + '</option>'; }).join("") + '</select></label>';
-    var entries = shown.map(function (c) {
-      var a = c.anchor, lemma;
-      if (a) {
-        var lines = a.line_start === a.line_end ? a.line_start : a.line_start + "–" + a.line_end;
-        var st = a.anchor_status === "unresolved" ? '<span class="anchor-state">passage not found</span>' : a.anchor_status === "relocated" ? '<span class="anchor-state">moved</span>' : '';
-        lemma = '<span class="loc" title="' + esc(a.file) + '">' + lines + '</span><div><div class="lemma-line"><span class="lemma">' + esc(a.quote) + '</span><span class="br">]</span>' + st + '</div>';
-      } else {
-        lemma = '<span class="loc">\u2014</span><div><div class="lemma-line"><span class="muted">not tied to a passage</span><span class="br">]</span></div>';
-      }
-      var id = c.id.split(":").pop();
-      return '<li class="entry" id="c-' + esc(id) + '"' + (a ? ' title="' + esc(a.file) + '"' : '') + '>' + lemma +
-        '<div class="note"><span class="sev ' + esc(c.severity) + '">' + esc(c.severity) + '</span> <span class="muted">· ' + esc(catTitle(c.category)) + ' · ' + esc(id) + (c.anchor ? ' · <span class="mono">' + esc(c.anchor.file.replace(/^.*\//, "")) + '</span>' : '') + '</span> — ' + esc(c.body) + '</div></div></li>';
-    }).join("");
-    return '<div class="block"><h3><span class="caps">Apparatus</span><span class="muted" style="font-size:14px">' + plural(list.length, "comment") + '</span></h3>' +
+    var catSel = catsPresent.length > 1 ? '<label><span class="visually-hidden">Category</span><select id="catsel"><option value="all">All categories</option>' +
+      catsPresent.map(function (c) { return '<option value="' + esc(c) + '"' + (state.cat === c ? " selected" : "") + '>' + esc(catTitle(c)) + '</option>'; }).join("") + '</select></label>' : '';
+    var closedN = mine.length - list.length;
+    var sub = nRuns > 1 || closedN ? 'from ' + plural(nRuns, "grade") : plural(list.length, "comment");
+    return '<div class="block"><h3><span class="caps">Open comments</span><span class="muted" style="font-size:14px">' + sub + '</span></h3>' +
       (list.length ? '<div class="filters"><div class="seg" role="group" aria-label="Severity">' + seg + '</div>' + catSel + '</div>' : '') +
-      (shown.length ? '<ol class="entries">' + entries + '</ol>' : '<p class="muted">' + (list.length ? 'No comments match these filters.' : 'This grade has no comments.') + '</p>') + '</div>';
+      (shown.length ? '<ol class="entries">' + shown.map(function (c) { return entry(c, "c-" + c.ref); }).join("") + '</ol>'
+        : '<p class="muted">' + (list.length ? 'No open comments match these filters.' : mine.length ? 'Every comment on this section is closed.' : 'This section has no major or minor comments.') + '</p>') +
+      (list.length ? '<p class="lcnote">Tick the comments you want to answer: addressed, disputed or won’t fix. The next grade checks addressed and disputed ones.</p>' : '') + '</div>';
+  }
+
+  function notes(g, idx, nRuns) {
+    var list = g.comments.filter(function (c) { return c.severity === "note"; });
+    if (!list.length) return '';
+    return '<div class="block"><h3><span class="caps">Noted strengths</span><span class="muted" style="font-size:14px">' + (nRuns > 1 ? 'grade ' + (idx + 1) + ' · ' : '') + fmtDate(g.timestamp, false, true) + '</span></h3>' +
+      '<ol class="entries">' + list.sort(bySeverity).map(function (c) { return entry(c, "n-" + c.id.split(":").pop()); }).join("") + '</ol></div>';
+  }
+
+  function closedComments(mine) {
+    var list = mine.filter(function (c) { return !AWAIT[c.state]; }).sort(bySeverity);
+    if (!list.length) return '';
+    return '<details class="block closed" id="closed"' + (state.closedOpen ? ' open' : '') + '><summary><span class="caps">Closed</span><span class="tog">' +
+      plural(list.length, "comment") + '</span></summary><ol class="entries">' + list.map(function (c) { return entry(c, "c-" + c.ref); }).join("") + '</ol></details>';
+  }
+
+  function respondBar() {
+    var refs = state.pick;
+    return '<div class="respond" id="respond"' + (refs.length ? '' : ' hidden') + '><span class="hint">' + (refs.length ? plural(refs.length, "comment") + ' to answer in your agent' : '') + '</span>' +
+      (refs.length ? cmdChip("/margi respond " + refs.join(" ")) + '<button type="button" class="clear" data-unpick>Clear</button>' : '') + '</div>';
+  }
+  function updatePicks() {
+    var bar = $("respond"); if (bar) bar.outerHTML = respondBar();
+    document.querySelectorAll("[data-pick]").forEach(function (b) {
+      var on = state.pick.indexOf(b.getAttribute("data-pick")) >= 0;
+      b.checked = on; var li = b.closest(".entry"); if (li) li.classList.toggle("picked", on);
+    });
   }
 
   function overviewPanel() {
@@ -784,8 +921,17 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
         var ch = gradedIds.filter(function (id) { return latest(id).changed.length; });
         return ch.length ? '<ul class="list">' + ch.map(function (id) {
           return '<li><a href="#tab=sections&s=' + encodeURIComponent(id) + '" data-goto="' + esc(id) + '"><span class="sid">' + esc(id) + '</span> ' + esc(title(id)) + '</a> ' + cmdChip("/margi grade " + id) + '</li>';
-        }).join("") + '</ul>' : '<p class="muted">Every graded section matches its latest grade.</p>';
-      })() + '</div>';
+        }).join("") + '</ul>' : '<p class="muted">Every graded section matches its latest grade' +
+          (D.thesis_commit ? ' as of commit <span class="mono">' + esc(D.thesis_commit.sha.slice(0, 7)) + '</span>' : '') + '.</p>';
+      })() + '</div>' + (function () {
+        var by = {};
+        CM.forEach(function (c) { if (c.state === "addressed" || c.state === "disputed") by[c.section] = (by[c.section] || 0) + 1; });
+        var ids = sections.map(function (s) { return s.id; }).filter(function (id) { return by[id]; });
+        return ids.length ? '<div class="block"><h3><span class="caps">Answered, awaiting a grade</span><span class="muted" style="font-size:14px">' + plural(awaitingN, "comment") + '</span></h3><ul class="list">' +
+          ids.map(function (id) {
+            return '<li><a href="#tab=sections&s=' + encodeURIComponent(id) + '" data-goto="' + esc(id) + '"><span class="sid">' + esc(id) + '</span> ' + esc(title(id)) + '</a> <span class="muted">· ' + by[id] + '</span> ' + cmdChip("/margi grade " + id) + '</li>';
+          }).join("") + '</ul></div>' : '';
+      })();
   }
 
   // ------------------------------------------------------------------ secondary views
@@ -939,7 +1085,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
   function select(sid, focusPanel) {
     var moved = state.sel !== sid;
-    if (moved) { state.run = null; state.sev = "all"; state.cat = "all"; }
+    if (moved) { state.run = null; state.sev = "all"; state.cat = "all"; state.pick = []; state.closedOpen = false; }
     state.sel = sid; state.tab = "sections";
     render({ enter: true, push: moved && focusPanel });
     var a = $("apparatus");
@@ -961,6 +1107,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     if (go) { e.preventDefault(); select(go.getAttribute("data-goto"), true); return; }
     var ref = e.target.closest("[data-ref]");
     if (ref) { e.preventDefault(); showEntry(ref.getAttribute("data-ref")); return; }
+    if (e.target.closest("[data-unpick]")) { state.pick = []; updatePicks(); return; }
+    if (e.target.closest("[data-pick], .pick")) return;
     var sev = e.target.closest("[data-sev]");
     if (sev) { state.sev = sev.getAttribute("data-sev"); rerenderPanel(); return; }
     var show = e.target.closest("[data-show]");
@@ -974,6 +1122,12 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     if (tr) { select(tr.getAttribute("data-sid"), true); var b = document.querySelector('.stitle[data-sid="' + CSS.escape(state.sel) + '"]'); if (b) b.focus({ preventScroll: true }); }
   });
   $("view").addEventListener("change", function (e) {
+    var pk = e.target.getAttribute && e.target.getAttribute("data-pick");
+    if (pk) {
+      state.pick = state.pick.filter(function (r) { return r !== pk; });
+      if (e.target.checked) state.pick.push(pk);
+      updatePicks(); return;
+    }
     if (e.target.id === "catsel") { state.cat = e.target.value; rerenderPanel(); }
     if (e.target.id === "runsel") { state.run = Number(e.target.value); rerenderPanel(); }
   });
@@ -1009,6 +1163,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     tip.style.top = (svg.offsetTop + Number(hit.getAttribute("data-y")) / 72 * svg.clientHeight) + "px";
     tip.classList.add("on");
   });
+  $("view").addEventListener("toggle", function (e) { if (e.target.id === "closed") state.closedOpen = e.target.open; }, true);
   function rerenderPanel() {
     var a = $("apparatus"); if (!a) return;
     // keep keyboard focus on the control that triggered the re-render
@@ -1019,8 +1174,9 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
   function showEntry(id) {
     var a = $("apparatus"); if (!a) return;
-    var el = $("c-" + id);
-    if (!el) { state.sev = "all"; state.cat = "all"; rerenderPanel(); el = $("c-" + id); }
+    var el = $(id);
+    if (!el) { state.sev = "all"; state.cat = "all"; state.closedOpen = true; rerenderPanel(); el = $(id); }
+    var box = el && el.closest("details.closed"); if (box && !box.open) { box.open = true; state.closedOpen = true; }
     if (!el) return;
     el.setAttribute("tabindex", "-1"); el.classList.add("hl");
     el.scrollIntoView({ block: "nearest" }); el.focus({ preventScroll: true });

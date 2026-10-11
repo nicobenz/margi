@@ -152,8 +152,15 @@ def precheck(section: str) -> None:
 
 @main.command(hidden=True)
 def status() -> None:
-    """[plumbing] Overview: docs completeness, latest grades, outline, todos, recent runs."""
-    click.echo(status_mod.render(_cfg()))
+    """[plumbing] Overview: docs completeness, latest grades, outline, todos, recent runs.
+
+    Also refreshes the dashboard data, so it reflects commits made since the last margi run.
+    """
+    from .dashboard import refresh
+
+    cfg = _cfg()
+    refresh(cfg)
+    click.echo(status_mod.render(cfg))
 
 
 @main.command(hidden=True)

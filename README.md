@@ -66,7 +66,11 @@ All commands run inside Claude Code.
 
 Open `margi/dash.html` in a browser. It shows every section in thesis order with its latest
 rubric scores, what changed since it was graded, the anchored comments, how scores developed
-over time, project docs, literature, todos and the run log. The header always shows the next
+over time, project docs, literature, todos and the run log. Each section's comments stay open across grades
+until they are closed: the panel opens with how many were resolved since the first grade, shows
+your answers and margi's verdicts under each comment, and builds the `/margi respond …` command
+from the comments you tick. The header names the thesis commit the page reflects; after you
+commit, `/margi status` refreshes it. The header always shows the next
 margi command to run, with a copy button.
 
 In the Literature view, select a paper to see its key passages where they sit in the PDF: the

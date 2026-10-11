@@ -192,3 +192,35 @@ def test_cli_comments_and_respond(repo, cfg, monkeypatch):
     assert "student" in out.output and "won't fix: Kept on purpose." in out.output
     out = CliRunner().invoke(main, ["respond", "c1"])
     assert out.exit_code != 0 and "REF=STATUS" in out.output
+
+
+def dash(repo):
+    text = (repo / "margi/dash/data.js").read_text()
+    return json.loads(text[text.index("{"):text.rindex("}") + 1])
+
+
+def test_dashboard_carries_states_and_suggests_a_regrade(repo, cfg):
+    first_grade(repo, cfg)
+    respond(cfg, [("c1", "disputed")], {"c1": "The term is defined in 1.2."})
+    d = dash(repo)
+    by_ref = {c["ref"]: c for c in d["comments"]}
+    assert by_ref["c1"]["state"] == "disputed" and by_ref["c1"]["section"] == "2.1"
+    assert by_ref["c1"]["history"][0]["reason"] == "The term is defined in 1.2."
+    assert by_ref["c2"]["state"] == "open" and by_ref["c2"]["signal"] == "unchanged"
+    step = next(s for s in d["next_steps"] if s["command"] == "/margi grade 2.1")
+    assert "1 answered comment" in step["reason"]
+    head = run_git(repo, "log", "-1", "--format=%H", "--", ".", ":(exclude)margi").stdout.strip()
+    assert d["thesis_commit"]["sha"] == head
+
+
+def test_status_refreshes_the_dashboard(repo, cfg, monkeypatch):
+    first_grade(repo, cfg)
+    (repo / FILE).write_text((repo / FILE).read_text() + "\nMore text.\n")
+    run_git(repo, "commit", "-qam", "write more")
+    monkeypatch.chdir(repo)
+    out = CliRunner().invoke(main, ["status"])
+    assert out.exit_code == 0, out.output
+    assert "Comments       2 open (1 major, 0 answered" in out.output
+    d = dash(repo)
+    assert d["thesis_commit"]["sha"] == run_git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert d["grades"]["2.1"][-1]["changed"] == [FILE]

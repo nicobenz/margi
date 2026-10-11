@@ -241,6 +241,9 @@ def init(
             subject += f" (protect_thesis: {str(bool(load(root)['protect_thesis'])).lower()})"
         git("commit", "-q", "-m", subject, cwd=root)
         report.commits.append(git("rev-parse", "--short", "HEAD", cwd=root).strip())
+    from .dashboard import refresh
+
+    refresh(load(root))  # the data names the thesis commit, which the commit above just moved
     sha = bot_commit(load(root), "init")
     if sha:
         report.commits.append(sha[:7])

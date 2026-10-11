@@ -1,7 +1,7 @@
 # Comment lifecycle (design draft)
 
-Status: records and commands implemented (`src/margi/lifecycle.py`); dashboard not yet. New
-command: `/margi respond <ids…>`.
+Status: implemented (`src/margi/lifecycle.py`, the dashboard's section panel). New command:
+`/margi respond <ids…>`.
 
 Today a grade comment lives in exactly one record. A regrade numbers its comments from `c1` again,
 so nobody can see whether last week's major comments were fixed. This draft gives every grade
@@ -61,8 +61,9 @@ files differ from the grade's SHA.
 These are evidence only. Deleting a sentence doesn't prove the problem is solved, so a signal
 never closes a comment.
 
-Signals are only as fresh as the last refresh, so this ships together with a
-"data as of commit … · N commits since" line on the page.
+Signals are only as fresh as the last refresh. The page names the thesis commit it reflects (the
+newest commit outside `margi/`), and `margi status` refreshes the data, so `/margi status` after a
+commit brings it up to date. The page can't count commits made since; it has no git.
 
 ## Regrade
 
@@ -129,7 +130,7 @@ record. `git log -- margi/` shows who said what.
 ## Dashboard
 
 - **Apparatus panel** opens on a progress line, e.g. *Since 3 Oct: 4 of 6 major comments
-  resolved · 1 disputed · 1 open*.
+  resolved · 1 withdrawn · 1 open*. Withdrawn comments are counted apart from resolved ones.
 - **Two lists:** *Open* (Open, Addressed, Disputed) shown by default, ordered by severity, then
   age, keeping the lemma `]` notation; *Closed* (Resolved, Withdrawn, Won't fix) collapsed, with a
   count.
@@ -141,7 +142,9 @@ record. `git log -- margi/` shows who said what.
   the panel shows `/margi respond c17 c18` with the existing copy chip. On mobile the bar sits at
   the bottom of the viewport.
 - **Sections table:** MAJ. counts open major comments across all grades, not only the latest.
-- **Status line:** "N open major comments · M awaiting check".
+- **Status line:** "N open major comments · M answered, awaiting a grade".
+- **Overview panel** (no section selected): an *Answered, awaiting a grade* list with a grade
+  command per section.
 - **Next steps:**
   - Addressed or Disputed comments in a section → `/margi grade 2.1`, "2 comments await checking".
   - Open major comments whose passage changed → the same suggestion, ranked lower.

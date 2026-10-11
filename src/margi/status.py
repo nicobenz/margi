@@ -34,7 +34,7 @@ def render(cfg: Config) -> str:
     records = load_records(cfg)
     grades: dict[str, dict] = {}
     for r in records:
-        if r.get("command") == "grade":
+        if r.get("command") == "grade" and (r.get("readiness") or {}).get("decision") != "not_ready":
             grades[r["scope"]] = r
     lines.append("")
     lines.append("Latest grades" if grades else "Latest grades  none yet — /margi grade <section>")
@@ -45,6 +45,17 @@ def render(cfg: Config) -> str:
         low = " [low confidence]" if r["provenance"].get("docs", {}).get("low_confidence") else ""
         n_major = sum(1 for c in r.get("comments", []) if c.get("severity") == "major")
         lines.append(f"  {scope:<10} {date}  {', '.join(parts)}  ({len(r.get('comments', []))} comments, {n_major} major){low}")
+
+    from .lifecycle import AWAITING, comments
+
+    tracked = comments(cfg)
+    if tracked:
+        not_closed = [c for c in tracked if c["state"] in AWAITING]
+        majors = sum(1 for c in not_closed if c["severity"] == "major")
+        waiting = sum(1 for c in not_closed if c["state"] != "open")
+        closed = len(tracked) - len(not_closed)
+        lines.append(f"Comments       {len(not_closed)} open ({majors} major, {waiting} answered, awaiting a grade), "
+                     f"{closed} closed — uv run margi comments")
 
     outlines = [r for r in records if r.get("command") == "outline"]
     lines.append("")

@@ -68,7 +68,7 @@ Work quietly and confidently; report results, not process.
 | `/margi propose [--from <file>]` | Follow `../margi-propose/SKILL.md` |
 | `/margi challenge <aspect>` | Follow `../margi-challenge/SKILL.md` |
 | `/margi outline` | Run `uv run margi outline` and show the output. No draft is needed. |
-| `/margi status` | Run `uv run margi status` and show the output. |
+| `/margi status` | Run `uv run margi status` and show the output. It also refreshes the dashboard. |
 
 `margi finalize` also refreshes the dashboard (`margi/dash.html`, data in `margi/dash/data.js`).
 Never edit either file by hand.
