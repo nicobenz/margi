@@ -37,4 +37,5 @@ ai_identity:
   email: margi-bot@users.noreply.github.com
 
 github:
+  sync: false               # true: accepted todos also become GitHub issues (needs `gh`)
   label: margi

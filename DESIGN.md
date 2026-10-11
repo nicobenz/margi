@@ -253,6 +253,11 @@ The signature action: a typed command you can copy.
 - An ordered list divided by Soft Hairlines: a 22px marker column (step number in Sans 13px faded ink, or a drawn 14px second-ink tick when done), the step in Serif 16px. Done steps: second ink, with their date in Sans 12px. The first open step: ink, 600, followed by its command chip and a Sans 13px hint. Later open steps: faded ink, no chip, so there is one next action.
 - During setup the status line's docs figure reads "· needed for grading: 70%" in faded ink instead of the low-confidence warning, and the strip's "No submission date documented" stays hidden (step 4 asks for it).
 
+### Todos tab
+- A split: *Open* (and a collapsed *Done*) on the left sheet, *Waiting for your review* on the right. Open todos are apparatus entries: the short id as locator (Mono), the title in Serif 16px, a Sans 13px meta line (section link · "from c17 resolved" · "#12" when mirrored to GitHub), and a state line with "Its comments are closed" in capitals when all source comments are closed, and a "Done" checkbox.
+- Ticking builds `/margi todos done t… t…` in the same sticky command bar as comment answers. Done todos show date and who closed them ("by you", "on margi's evidence", "closed on GitHub"); the student's note is set like their other words (italic, curly quotes).
+- A comment with an open todo ends its note with "→ todo: <title>" in Sans 13px second ink, linking to the tab.
+
 ### Comment lifecycle (apparatus)
 - The section panel opens with a progress line in running prose under the meta line: "Since 3 Oct: **1 of 3** major comments resolved · 1 withdrawn · 1 open" (Serif 17px, second ink, figures in ink 600). No hue: progress is good news (The No Verdict Hue Rule).
 - *Open comments* lists every major and minor comment of the section and its subsections that isn't closed, across all grades, by severity, then age. Each apparatus entry adds, under the note, a thread and a state line.

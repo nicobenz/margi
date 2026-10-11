@@ -25,7 +25,7 @@ DEFAULTS: dict[str, Any] = {
     "docs": {"min_completeness": 0.7},
     "grade": {"precheck": "ask", "min_words": 150, "max_list_share": 0.5},
     "ai_identity": {"name": "margi-bot", "email": "margi-bot@users.noreply.github.com"},
-    "github": {"label": "margi"},
+    "github": {"label": "margi"},  # "sync" absent: see todos_sync.github_sync
 }
 
 

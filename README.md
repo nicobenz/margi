@@ -63,7 +63,7 @@ All commands run inside Claude Code.
 | `/margi respond <c17 …>` | Your answer to grade comments: *addressed*, *disputed* or *won't fix*, with an optional reason in your own words. margi records it word for word and commits it under your name. The next `/margi grade` of that section checks every comment that isn't closed and marks it resolved, still open, or (for a dispute it accepts) withdrawn. *Won't fix* closes a comment for good. |
 | `/margi outline` | Character counts and their distribution across sections and subsections, compared against targets from `structure.md`. No AI involved. |
 | `/margi read [pdf…]` | Rates literature PDFs for relevance to your research question and outline. |
-| `/margi todos` | Proposes todos as Markdown files and suggests closing issues that look done. You accept, reject or request changes, and only accepted items go to GitHub. |
+| `/margi todos` | Proposes todos from your open comments and other feedback, and proposes closing todos that look done. You accept, reject or change each one. Accepted todos live in `margi/todos/`; set `github.sync: true` in `thesis.config.yml` to mirror them to GitHub issues. `/margi todos done <id>` marks todos you finished, with an optional note in your own words. |
 | `/margi status` | Shows docs completeness, latest grades, outline, todos and recent runs. |
 
 `/margi-propose` and `/margi-challenge <aspect>` work as shortcuts too.

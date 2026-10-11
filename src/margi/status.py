@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import docs_check
 from .config import MARGI_DIR, Config
-from .todos_sync import list_items
+from .todos_sync import github_sync, todo_items
 
 
 def load_records(cfg: Config) -> list[dict]:
@@ -70,12 +70,11 @@ def render(cfg: Config) -> str:
         lines.append("Outline        no snapshot yet — /margi outline")
 
     lines.append("")
-    proposed = list_items(cfg, "proposed")
-    close = list_items(cfg, "close")
-    synced = list_items(cfg, "synced")
-    accepted = sum(1 for _, m, _ in proposed if m.get("status") == "accepted")
-    lines.append(f"Todos          {len(proposed)} proposed ({accepted} accepted, not synced), "
-                 f"{len(close)} closure proposals, {len(synced)} synced")
+    items = todo_items(cfg)
+    count = lambda st: sum(1 for t in items if t["state"] == st)
+    waiting = sum(1 for t in items if t["kind"] in ("proposed", "close") and t["status"] != "accepted")
+    lines.append(f"Todos          {count('open')} open, {count('done')} done, {waiting} waiting for your review"
+                 + (" (mirrored to GitHub)" if github_sync(cfg) else ""))
 
     lines.append("")
     lines.append("Recent runs")
