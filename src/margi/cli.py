@@ -152,8 +152,72 @@ def precheck(section: str) -> None:
 
 @main.command(hidden=True)
 def status() -> None:
-    """[plumbing] Overview: docs completeness, latest grades, outline, todos, recent runs."""
-    click.echo(status_mod.render(_cfg()))
+    """[plumbing] Overview: docs completeness, latest grades, outline, todos, recent runs.
+
+    Also refreshes the dashboard data, so it reflects commits made since the last margi run.
+    """
+    from .dashboard import refresh
+
+    cfg = _cfg()
+    refresh(cfg)
+    click.echo(status_mod.render(cfg))
+
+
+@main.command(hidden=True)
+@click.argument("scope", required=False)
+@click.option("--all", "show_all", is_flag=True, help="Also list closed comments.")
+def comments(scope: str | None, show_all: bool) -> None:
+    """[plumbing] Comments that aren't closed; with SCOPE, those a grade of SCOPE must give a verdict on."""
+    from . import lifecycle
+
+    cfg = _cfg()
+    if scope:
+        sid, entries = lifecycle.pending(cfg, scope)
+        if not entries:
+            click.echo(f"no open comments in {sid}; the grade gives no verdicts")
+            return
+        click.echo(f"{len(entries)} comment{'s' if len(entries) != 1 else ''} in {sid} need a verdict in this grade:\n")
+    else:
+        entries = [c for c in lifecycle.comments(cfg) if show_all or c["state"] in lifecycle.AWAITING]
+        if not entries:
+            click.echo("no open comments")
+            return
+    click.echo(lifecycle.render(entries))
+
+
+@main.command(hidden=True)
+@click.argument("answers", nargs=-1, required=True)
+@click.option("--reason", "reasons", nargs=2, multiple=True, metavar="REF TEXT",
+              help="The student's own words for one comment, stored verbatim. Repeat per comment.")
+def respond(answers: tuple[str, ...], reasons: tuple[tuple[str, str], ...]) -> None:
+    """[plumbing] Record the student's answers, e.g. `c17=addressed c18=disputed --reason c18 "..."`.
+
+    Statuses: addressed, disputed, wont_fix. The record is committed under the student's git identity.
+    """
+    from .lifecycle import LifecycleError
+    from .lifecycle import respond as run_respond
+
+    pairs = []
+    for a in answers:
+        ref, sep, status = a.partition("=")
+        if not sep:
+            raise click.ClickException(f"{a!r}: write REF=STATUS, e.g. c17=addressed")
+        pairs.append((ref.strip(), status.strip().replace("-", "_").replace("won't_fix", "wont_fix")))
+    given: dict[str, str] = {}
+    for ref, text in reasons:
+        if ref in given:
+            raise click.ClickException(f"{ref}: more than one --reason")
+        given[ref] = text
+    cfg = _cfg()
+    try:
+        path, sha = run_respond(cfg, pairs, given)
+    except LifecycleError as e:
+        raise click.ClickException(str(e)) from e
+    click.echo(f"  wrote {path.relative_to(cfg.root).as_posix()}")
+    if sha:
+        click.echo(f"  committed {sha[:7]}  margi: respond {' '.join(r for r, _ in pairs)}")
+    elif not cfg.has_git:
+        click.echo(f"  not committed ({NO_GIT})")
 
 
 @main.command(name="sync-todos", hidden=True)

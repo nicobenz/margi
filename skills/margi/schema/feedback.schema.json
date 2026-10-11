@@ -5,7 +5,7 @@
   "description": "Draft = what the agent writes to margi/.staging/. Record = draft + run + provenance, written only by `margi finalize`.",
   "$defs": {
     "command": {
-      "enum": ["propose", "challenge", "grade", "outline", "read", "todos"]
+      "enum": ["propose", "challenge", "grade", "outline", "read", "todos", "respond"]
     },
     "anchor": {
       "type": "object",
@@ -28,6 +28,11 @@
       "required": ["id", "category", "severity", "body"],
       "properties": {
         "id": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]+$" },
+        "ref": {
+          "description": "Set by finalize only: the comment's thesis-wide number (major and minor grade comments).",
+          "type": "string",
+          "pattern": "^c[1-9][0-9]*$"
+        },
         "anchor": { "$ref": "#/$defs/anchor" },
         "category": { "type": "string", "minLength": 1 },
         "severity": { "enum": ["major", "minor", "note"] },
@@ -82,6 +87,20 @@
           "properties": {
             "command": { "type": "string", "pattern": "^/margi[ -][a-z]", "maxLength": 120 },
             "reason": { "type": "string", "minLength": 1, "maxLength": 300 }
+          }
+        }
+      },
+      "verdicts": {
+        "description": "grade only. A verdict on every earlier comment in the graded section (and its subsections) that isn't closed: resolved, still open, or withdrawn (a disputed comment whose dispute is accepted). The reason names evidence (file and lines) or the problem; never thesis prose.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ref", "verdict", "reason"],
+          "properties": {
+            "ref": { "type": "string", "pattern": "^c[1-9][0-9]*$" },
+            "verdict": { "enum": ["resolved", "open", "withdrawn"] },
+            "reason": { "type": "string", "minLength": 1, "maxLength": 600 }
           }
         }
       },
@@ -147,6 +166,7 @@
         "comments": { "$ref": "#/$defs/draft_properties/comments" },
         "payload": { "$ref": "#/$defs/draft_properties/payload" },
         "next_steps": { "$ref": "#/$defs/draft_properties/next_steps" },
+        "verdicts": { "$ref": "#/$defs/draft_properties/verdicts" },
         "readiness": { "$ref": "#/$defs/draft_properties/readiness" },
         "agent": { "$ref": "#/$defs/draft_properties/agent" }
       }
@@ -193,6 +213,16 @@
         "model": { "type": ["string", "null"] },
         "model_source": { "enum": ["wrapper", "self-reported", "none"] },
         "harness": { "type": ["string", "null"] },
+        "author": {
+          "description": "respond records only: the student who wrote the answers (their git identity).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "email"],
+          "properties": {
+            "name": { "type": ["string", "null"] },
+            "email": { "type": ["string", "null"] }
+          }
+        },
         "margi_version": { "type": "string" },
         "timestamp": { "type": "string" }
       }
@@ -218,6 +248,7 @@
         "comments": { "$ref": "#/$defs/draft_properties/comments" },
         "payload": { "$ref": "#/$defs/draft_properties/payload" },
         "next_steps": { "$ref": "#/$defs/draft_properties/next_steps" },
+        "verdicts": { "$ref": "#/$defs/draft_properties/verdicts" },
         "readiness": { "$ref": "#/$defs/readiness_record" },
         "agent": { "$ref": "#/$defs/draft_properties/agent" }
       }

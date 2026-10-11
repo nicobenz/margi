@@ -248,6 +248,14 @@ The signature action: a typed command you can copy.
 - Below, the note: severity in 12px capitals (major: Rubricator Red 700; minor: second ink; note: faded ink), then category, comment id and file in faded ink, an em dash, and the comment body in Serif 16px.
 - Entries divided by Soft Hairlines.
 
+### Comment lifecycle (apparatus)
+- The section panel opens with a progress line in running prose under the meta line: "Since 3 Oct: **1 of 3** major comments resolved · 1 withdrawn · 1 open" (Serif 17px, second ink, figures in ink 600). No hue: progress is good news (The No Verdict Hue Rule).
+- *Open comments* lists every major and minor comment of the section and its subsections that isn't closed, across all grades, by severity, then age. Each apparatus entry adds, under the note, a thread and a state line.
+- Thread: a 1px hairline rule on the left, 15px second ink; each line starts with an 11px capitals speaker label ("You, 5 Oct" / "margi, 10 Oct"). The student's own words are set like the lemma (italic in curly quotes) because both are the student's text; margi's verdict reasons stay roman.
+- State line: 11px capitals ("Open since 3 Oct", "Addressed · awaiting a grade", "Still open · checked 10 Oct"), then the passage signal in Sans 12px ("passage changed" in Deep Rubric, "unchanged" / "moved" in faded ink), and on the right an "Answer" checkbox (ink accent). A ticked entry takes Pencil Shade at 55%.
+- Ticking one or more comments shows a bar at the foot of the panel: hint text, the `/margi respond c3 c5` command chip and a "Clear" text button. It sticks to the bottom of the panel (of the viewport on phones), with an ink rule above it and no shadow.
+- *Noted strengths* lists the note comments of the selected grade. *Closed* (resolved, withdrawn, won't fix) is a collapsed disclosure under an ink rule; its entries are second ink and a closed major is no longer red.
+
 ### Passage entry (Literature apparatus)
 - The Literature view uses the Sections split: the rated-literature table left (selected row: Pencil Shade, relevance figure in red), the apparatus panel right for one paper: name as headline, a meta line (relevance, role, thesis sections, cited or not, rating date), the PDF path with an "open the PDF" link, the rating's why as summary, caveats as an italic-led note.
 - Each key passage is an apparatus entry: locator `p. N` in Mono 12px; the paper's own section path in Sans 13px faded ink with › separators; the page crop; the lemma line (italic quote, faded bracket, anchor state in Deep Rubric: "found on p. N, not p. M", "passage not found in the PDF"; "read from the page image" in faded ink); the passage's why as the note; "Open p. N in the PDF" in Sans 13px with a drawn 11px external-link icon.

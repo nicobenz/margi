@@ -1,6 +1,6 @@
 ---
 name: margi
-description: AI feedback in the margins of a human-written thesis. Use for /margi grade, read, todos, outline, status, propose and challenge. Writes only to margi/ and never writes thesis text.
+description: AI feedback in the margins of a human-written thesis. Use for /margi grade, read, todos, respond, outline, status, propose and challenge. Writes only to margi/ and never writes thesis text.
 ---
 
 # margi
@@ -64,10 +64,11 @@ Work quietly and confidently; report results, not process.
 | `/margi grade <section>` | Follow `commands/grade.md` |
 | `/margi read [pdf…]` | Follow `commands/read.md` |
 | `/margi todos` | Follow `commands/todos.md` |
+| `/margi respond <c17 c18 …>` | Follow `commands/respond.md` |
 | `/margi propose [--from <file>]` | Follow `../margi-propose/SKILL.md` |
 | `/margi challenge <aspect>` | Follow `../margi-challenge/SKILL.md` |
 | `/margi outline` | Run `uv run margi outline` and show the output. No draft is needed. |
-| `/margi status` | Run `uv run margi status` and show the output. |
+| `/margi status` | Run `uv run margi status` and show the output. It also refreshes the dashboard. |
 
 `margi finalize` also refreshes the dashboard (`margi/dash.html`, data in `margi/dash/data.js`).
 Never edit either file by hand.

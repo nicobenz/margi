@@ -42,8 +42,22 @@ Reasons are short and in margi's own words; they never propose text.
    heading of the same or higher level, possibly across `#include`d files.
 4. Recent records for this section in `margi/feedback/*_grade_<section>*.json`, if any.
    Note what improved since then.
+5. The earlier comments you must judge: `uv run margi comments <section>`. It lists every major
+   and minor comment in this section and its subsections that isn't closed, with its number
+   (`c17`), state (open, addressed, disputed), the quoted passage, whether that passage is
+   still in the text (*passage unchanged / moved / changed*), and the student's answers.
 
 ## Procedure
+
+0. **Judge the earlier comments first.** For each comment from `uv run margi comments
+   <section>`, read the passage where it is now and decide:
+   - `resolved`: the problem is gone. The reason names the evidence: file and lines.
+   - `open`: the problem is still there. The reason says why, in one or two sentences.
+     A changed passage alone doesn't resolve a comment; a disputed comment you don't accept
+     stays `open`, and the reason answers the student's argument.
+   - `withdrawn`: only for a *disputed* comment whose dispute you accept. The reason says why.
+   Take the student's reason seriously; it is their thesis. Never propose text in a reason.
+   Don't repeat a comment that stays open as a new comment: it keeps its number.
 
 1. For each rubric category, decide a score on the rubric's scale using its descriptors.
    Always judge against what the docs say this thesis is trying to do (its research question,
@@ -75,9 +89,23 @@ Reasons are short and in margi's own words; they never propose text.
      "body": "...", "anchor": {"file": "chapters/02-prior-work.typ", "line_start": 41,
      "line_end": 43, "quote": "verbatim text from those lines"}}
   ],
+  "verdicts": [
+    {"ref": "c12", "verdict": "resolved", "reason": "The claim now cites Underwood 2019 (chapters/02-prior-work.typ:41-44)."},
+    {"ref": "c13", "verdict": "open", "reason": "The jump from corpus to genre is still unexplained."}
+  ],
   "payload": {"section_title": "Prior Work", "previous_record": "<file name or null>"}
 }
 ```
 
-Then run `uv run margi finalize` and show the user a compact table of the scores plus the major
-comments as one line each with a file:line link. Nothing else.
+`verdicts` holds exactly one entry for every comment `uv run margi comments <section>` lists, and
+nothing else; finalize refuses the draft otherwise. Leave it out when the list is empty, and in a
+not-ready record (those judge nothing). Never give the new comments a `ref`: finalize numbers them.
+
+Then run `uv run margi finalize` and report, in this order:
+
+1. The verdicts in one line, if there were any: `Since 3 Oct: c12, c14 resolved · c13 still open ·
+   your dispute of c15 accepted`.
+2. A compact table of the scores.
+3. The new major comments as one line each with their number and a file:line link.
+
+Nothing else.
