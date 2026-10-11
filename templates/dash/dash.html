@@ -362,6 +362,11 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   font-family: var(--sans); font-size: 13px; color: var(--ink-2);
 }
 .respond[hidden] { display: none; }
+.respond.standalone { margin: var(--s5) calc(-1 * var(--s5)) calc(-1 * var(--s5)); bottom: 0; }
+.todos .loc { font-size: 11px; }
+.ttitle { font-size: 16px; }
+.tmeta { margin-top: 2px; font-family: var(--sans); font-size: 13px; color: var(--ink-2); }
+.tlink { font-family: var(--sans); font-size: 13px; color: var(--ink-2); margin-left: 6px; white-space: nowrap; }
 .respond .hint { flex: 1 1 16ch; }
 .respond .clear { border: 0; background: none; padding: 2px 4px; cursor: pointer; color: var(--ink-3); font-size: 13px; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
 .respond .clear:hover { color: var(--ink); text-decoration-color: var(--red); }
@@ -623,7 +628,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   });
 
   // ------------------------------------------------------------------ state + hash
-  var state = { tab: "sections", sel: null, paper: null, sev: "all", cat: "all", run: null, show: "all", pick: [], closedOpen: false };
+  var state = { tab: "sections", sel: null, paper: null, sev: "all", cat: "all", run: null, show: "all", pick: [], tpick: [], closedOpen: false };
   function readHash() {
     var h = location.hash.replace(/^#/, "").split("&");
     if (h.some(function (kv) { return kv.indexOf("tab=") === 0; })) { state.sel = null; state.paper = null; }
@@ -754,7 +759,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     ["timeline", "Timeline", TL && TL.milestones && TL.milestones.length || null],
     ["docs", "Project docs", D.docs.open_questions.length || null],
     ["literature", "Literature", D.literature.rated.length + D.literature.unrated.length || null],
-    ["todos", "Todos", D.todos.length || null],
+    ["todos", "Todos", D.todos.filter(function (t) { return t.state === "open"; }).length || null],
     ["runs", "Runs", D.runs.length || null]
   ];
   function renderTabs() {
@@ -1007,7 +1012,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var picked = tracked && state.pick.indexOf(c.ref) >= 0;
     return '<li class="entry' + (picked ? ' picked' : '') + '" id="' + esc(elId) + '"' + (a ? ' title="' + esc(a.file) + '"' : '') + '>' + lemma +
       '<div class="note"><span class="sev ' + esc(c.severity) + '">' + esc(c.severity) + '</span> <span class="muted">· ' + esc(catTitle(c.category)) + ' · ' + label +
-      (a ? ' · <span class="mono">' + esc(a.file.replace(/^.*\//, "")) + '</span>' : '') + '</span> — ' + esc(c.body) + '</div>' +
+      (a ? ' · <span class="mono">' + esc(a.file.replace(/^.*\//, "")) + '</span>' : '') + '</span> — ' + esc(c.body) +
+      (tracked ? todosFor(c.ref).map(function (t) { return ' <a class="tlink" href="#tab=todos" data-tabgo="todos">→ todo: ' + esc(t.title) + '</a>'; }).join("") : '') + '</div>' +
       (tracked ? thread(c) + stateLine(c) : '') + '</div></li>';
   }
 
@@ -1048,14 +1054,16 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
 
   function respondBar() {
-    var refs = state.pick;
-    return '<div class="respond" id="respond"' + (refs.length ? '' : ' hidden') + '><span class="hint">' + (refs.length ? plural(refs.length, "comment") + ' to answer in your agent' : '') + '</span>' +
-      (refs.length ? cmdChip("/margi respond " + refs.join(" ")) + '<button type="button" class="clear" data-unpick>Clear</button>' : '') + '</div>';
+    var todo = state.tab === "todos", refs = todo ? state.tpick : state.pick;
+    var hint = todo ? plural(refs.length, "todo") + ' to mark done in your agent' : plural(refs.length, "comment") + ' to answer in your agent';
+    return '<div class="respond' + (todo ? ' standalone' : '') + '" id="respond"' + (refs.length ? '' : ' hidden') + '><span class="hint">' + (refs.length ? hint : '') + '</span>' +
+      (refs.length ? cmdChip((todo ? "/margi todos done " : "/margi respond ") + refs.join(" ")) + '<button type="button" class="clear" data-unpick>Clear</button>' : '') + '</div>';
   }
   function updatePicks() {
     var bar = $("respond"); if (bar) bar.outerHTML = respondBar();
+    var list = state.tab === "todos" ? state.tpick : state.pick;
     document.querySelectorAll("[data-pick]").forEach(function (b) {
-      var on = state.pick.indexOf(b.getAttribute("data-pick")) >= 0;
+      var on = list.indexOf(b.getAttribute("data-pick")) >= 0;
       b.checked = on; var li = b.closest(".entry"); if (li) li.classList.toggle("picked", on);
     });
   }
@@ -1357,21 +1365,44 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     fig.remove();
   };
 
+  var TODO_BY = { student: "by you", margi: "on margi's evidence", github: "closed on GitHub" };
+  var todosFor = function (ref) { return D.todos.filter(function (t) { return t.state === "open" && t.comments.some(function (c) { return c.ref === ref; }); }); };
+  function todoMeta(t) {
+    var bits = [];
+    if (t.section) bits.push('<a href="#tab=sections&s=' + encodeURIComponent(t.section) + '" data-goto="' + esc(t.section) + '">' + esc(t.section) + '</a>');
+    if (t.comments.length) bits.push('from ' + t.comments.map(function (c) { return esc(c.ref) + (c.state ? ' <span class="muted">' + esc(STATE_LABEL_JS[c.state] || c.state) + '</span>' : ''); }).join(', '));
+    if (t.issue) bits.push('#' + esc(t.issue));
+    return bits.length ? '<div class="tmeta">' + bits.join(' · ') + '</div>' : '';
+  }
+  var STATE_LABEL_JS = { open: "open", addressed: "addressed", disputed: "disputed", wont_fix: "won’t fix", resolved: "resolved", withdrawn: "withdrawn" };
   function todosView() {
     var T = D.todos;
-    if (!T.length) return '<div class="sheet empty"><h3>No todos</h3><p>margi proposes todos from grades and ratings; you accept, reject or change them before anything reaches GitHub.</p><p>' + cmdChip("/margi todos") + '</p></div>';
-    var groups = [
-      ["Accepted, not on GitHub yet", function (t) { return t.kind !== "synced" && t.status === "accepted"; }],
-      ["Proposed, waiting for your review", function (t) { return t.kind === "proposed" && t.status !== "accepted"; }],
-      ["Closures proposed", function (t) { return t.kind === "close" && t.status !== "accepted"; }],
-      ["On GitHub", function (t) { return t.kind === "synced"; }]
-    ];
-    return '<div class="cols">' + groups.map(function (g) {
-      var items = T.filter(g[1]);
-      if (!items.length) return '';
-      return '<section class="sheet pad"><h3 class="caps" style="margin:0 0 8px;color:var(--ink)">' + g[0] + ' <span class="muted">' + items.length + '</span></h3><ul class="list">' +
-        items.map(function (t) { return '<li>' + esc(t.title) + (t.issue ? ' <span class="muted">#' + esc(t.issue) + '</span>' : '') + '<div class="muted mono" style="font-size:12px">' + esc(t.file) + '</div></li>'; }).join("") + '</ul></section>';
-    }).join("") + '</div>' + (T.some(function (t) { return t.status === "accepted" && t.kind !== "synced"; }) ? '<p>' + cmdChip("/margi todos") + '</p>' : '');
+    if (!T.length) return '<div class="sheet empty"><h3>No todos</h3><p>margi proposes todos from your comments and ratings; you accept, reject or change them. ' +
+      (D.todo_sync ? 'Accepted todos also become GitHub issues.' : 'They stay in <code>margi/todos/</code>; GitHub is optional.') + '</p><p>' + cmdChip("/margi todos") + '</p></div>';
+    var open = T.filter(function (t) { return t.state === "open"; });
+    var waiting = T.filter(function (t) { return t.kind === "proposed" || t.kind === "close"; });
+    var done = T.filter(function (t) { return t.state === "done"; }).sort(function (a, b) { return String(b.done_at).localeCompare(String(a.done_at)); });
+    var titleOf = function (id) { var t = T.filter(function (x) { return x.id === id; })[0]; return t ? t.title : id; };
+    var openList = open.length ? '<ol class="entries todos">' + open.map(function (t) {
+      var picked = state.tpick.indexOf(t.id) >= 0;
+      return '<li class="entry' + (picked ? ' picked' : '') + '"><span class="loc">' + esc(t.id.replace(/^t\d{4}/, "")) + '</span><div>' +
+        '<div class="ttitle">' + esc(t.title) + '</div>' + todoMeta(t) +
+        '<div class="cstate"><span>' + (t.comments_closed ? '<span class="caps">Its comments are closed</span>' : '') + '</span>' +
+        '<label class="pick"><input type="checkbox" data-pick="' + esc(t.id) + '"' + (picked ? ' checked' : '') + ' aria-label="Mark ' + esc(t.title) + ' done"><span aria-hidden="true">Done</span></label></div></div></li>';
+    }).join("") + '</ol>' : '<p class="muted">No open todos.</p>';
+    var waitList = waiting.length ? '<ul class="list">' + waiting.map(function (t) {
+      var what = t.kind === "close" ? 'Close: ' + esc(titleOf(t.todo || t.id)) : esc(t.title);
+      return '<li>' + what + ' <span class="muted">· ' + (t.status === "accepted" ? 'accepted, not applied yet' : t.kind === "close" ? 'margi found evidence' : 'proposed') + '</span></li>';
+    }).join("") + '</ul><p>' + cmdChip("/margi todos") + '</p>' : '';
+    var doneList = done.length ? '<details class="block closed"' + (state.todoDoneOpen ? ' open' : '') + ' id="tdone"><summary><span class="caps">Done</span><span class="tog">' + plural(done.length, "todo") + '</span></summary><ul class="list">' +
+      done.map(function (t) {
+        return '<li>' + esc(t.title) + ' <span class="muted">· ' + (t.done_at ? fmtDate(t.done_at, false, true) + ' ' : '') + esc(TODO_BY[t.done_by] || "") + '</span>' +
+          (t.note ? '<div class="thread" style="margin-top:4px"><span class="who you caps">You</span> <q class="said">' + esc(t.note) + '</q></div>' : '') + '</li>';
+      }).join("") + '</ul></details>' : '';
+    return '<div class="split"><section class="sheet pad"><div class="block" style="margin-top:0"><h3><span class="caps">Open</span><span class="muted" style="font-size:14px">' + open.length +
+      (D.todo_sync ? ' · mirrored to GitHub' : '') + '</span></h3>' + openList +
+      (open.length ? '<p class="lcnote">Tick what you have finished; margi records it under your name.</p>' : '') + '</div>' + doneList + respondBar() + '</section>' +
+      (waitList ? '<section class="sheet pad"><div class="block" style="margin-top:0"><h3><span class="caps">Waiting for your review</span><span class="muted" style="font-size:14px">' + waiting.length + '</span></h3>' + waitList + '</div></section>' : '<div></div>') + '</div>';
   }
 
   function runsView() {
@@ -1423,7 +1454,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     if (go) { e.preventDefault(); select(go.getAttribute("data-goto"), true); return; }
     var ref = e.target.closest("[data-ref]");
     if (ref) { e.preventDefault(); showEntry(ref.getAttribute("data-ref")); return; }
-    if (e.target.closest("[data-unpick]")) { state.pick = []; updatePicks(); return; }
+    if (e.target.closest("[data-unpick]")) { state[state.tab === "todos" ? "tpick" : "pick"] = []; updatePicks(); return; }
     if (e.target.closest("[data-pick], .pick")) return;
     var sev = e.target.closest("[data-sev]");
     if (sev) { state.sev = sev.getAttribute("data-sev"); rerenderPanel(); return; }
@@ -1440,8 +1471,9 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   $("view").addEventListener("change", function (e) {
     var pk = e.target.getAttribute && e.target.getAttribute("data-pick");
     if (pk) {
-      state.pick = state.pick.filter(function (r) { return r !== pk; });
-      if (e.target.checked) state.pick.push(pk);
+      var key = state.tab === "todos" ? "tpick" : "pick";
+      state[key] = state[key].filter(function (r) { return r !== pk; });
+      if (e.target.checked) state[key].push(pk);
       updatePicks(); return;
     }
     if (e.target.id === "catsel") { state.cat = e.target.value; rerenderPanel(); }
@@ -1489,7 +1521,10 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     tip.style.top = (svg.offsetTop + Number(hit.getAttribute("data-y")) / 72 * svg.clientHeight) + "px";
     tip.classList.add("on");
   });
-  $("view").addEventListener("toggle", function (e) { if (e.target.id === "closed") state.closedOpen = e.target.open; }, true);
+  $("view").addEventListener("toggle", function (e) {
+    if (e.target.id === "closed") state.closedOpen = e.target.open;
+    if (e.target.id === "tdone") state.todoDoneOpen = e.target.open;
+  }, true);
   function rerenderPanel() {
     var a = $("apparatus"); if (!a) return;
     // keep keyboard focus on the control that triggered the re-render

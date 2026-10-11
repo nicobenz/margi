@@ -24,7 +24,7 @@ from .adapters.base import slug
 from .config import MARGI_DIR, Config
 from .gitutil import GitError, file_at_head, git, sha256
 from .resources import templates_dir
-from .todos_sync import list_items
+from .todos_sync import github_sync, todo_items
 
 DASH_HTML = f"{MARGI_DIR}/dash.html"
 DASH_DATA = f"{MARGI_DIR}/dash/data.js"
@@ -292,8 +292,8 @@ def collect(cfg: Config) -> dict:
     }
 
     literature = _literature(cfg, records)
-    todos = _todos(cfg)
     comments = _comments(cfg, records, sections)
+    todos = _todos(cfg, comments)
 
     runs = [{"timestamp": r["provenance"].get("timestamp"), "command": r.get("command"), "scope": r.get("scope"),
              "summary": r.get("summary", ""), "model": r["provenance"].get("model"), "file": r["_file"]}
@@ -316,6 +316,7 @@ def collect(cfg: Config) -> dict:
         "outline": outline,
         "literature": literature,
         "todos": todos,
+        "todo_sync": github_sync(cfg),
         "runs": runs,
     }
     data["timeline"] = _timeline(cfg, records, sections, comments, data["thesis_commit"], outline["unit"])
@@ -515,18 +516,18 @@ def _inline_crops(cfg: Config, data: dict) -> None:
                     c.pop("src", None)
 
 
-def _todos(cfg: Config) -> list[dict]:
+def _todos(cfg: Config, comments: list[dict]) -> list[dict]:
+    """Todos with their state and the current state of the comments they came from."""
+    state_of = {c["ref"]: c["state"] for c in comments}
     out = []
-    for kind in ("proposed", "close", "synced"):
-        for path, meta, _body in list_items(cfg, kind):
-            out.append({
-                "kind": kind,
-                "id": str(meta.get("id") or path.stem),
-                "title": str(meta.get("title") or path.stem),
-                "status": str(meta.get("status") or kind),
-                "issue": meta.get("issue"),
-                "file": path.relative_to(cfg.root).as_posix(),
-            })
+    for t in todo_items(cfg):
+        refs = [{"ref": r, "state": state_of.get(r)} for r in t["comments"]]
+        known = [r for r in refs if r["state"]]
+        out.append({k: t[k] for k in ("kind", "state", "id", "title", "status", "section", "issue", "todo",
+                                      "done_at", "done_by", "note", "file")}
+                   | {"comments": refs,
+                      "comments_closed": bool(known) and t["state"] == "open"
+                      and all(r["state"] in ("resolved", "withdrawn", "wont_fix") for r in known)})
     return out
 
 
@@ -610,9 +611,13 @@ def next_steps(data: dict, records: list[dict]) -> list[dict]:
     if data["literature"]["unrated"]:
         n = len(data["literature"]["unrated"])
         add("/margi read", f"{n} PDF{'s' if n != 1 else ''} in the literature folder not rated yet.")
-    accepted = [t for t in data["todos"] if t["status"] == "accepted"]
+    accepted = [t for t in data["todos"] if t["kind"] in ("proposed", "close") and t["status"] == "accepted"]
+    moot = [t for t in data["todos"] if t.get("comments_closed")]
     if accepted:
-        add("/margi todos", f"{len(accepted)} accepted todo{'s' if len(accepted) != 1 else ''} not on GitHub yet.")
+        add("/margi todos", f"{len(accepted)} accepted item{'s' if len(accepted) != 1 else ''} not applied yet.")
+    elif moot:
+        add("/margi todos", f"{len(moot)} todo{'s' if len(moot) != 1 else ''} look{'s' if len(moot) == 1 else ''} done: "
+                            "the comments they came from are closed.")
     if docs["open_questions"] and docs["completeness"] >= docs["threshold"]:
         n, aspect = len(docs["open_questions"]), docs.get("challenge_aspect")
         add(f"/margi challenge {aspect}" if aspect else "/margi challenge",

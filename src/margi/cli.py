@@ -248,7 +248,7 @@ def respond(answers: tuple[str, ...], reasons: tuple[tuple[str, str], ...]) -> N
 
 @main.command(name="sync-todos", hidden=True)
 def sync_todos() -> None:
-    """[plumbing] Push accepted todos/closures to GitHub (no AI)."""
+    """[plumbing] Apply accepted todos and closures; with github.sync, mirror them to issues (no AI)."""
     from .todos_sync import SyncError, sync_accepted
 
     cfg = _cfg()
@@ -256,14 +256,38 @@ def sync_todos() -> None:
         report = sync_accepted(cfg)
     except SyncError as e:
         raise click.ClickException(str(e)) from e
+    for tid in report.opened:
+        click.echo(f"  open    {tid}")
     for tid, n in report.created:
         click.echo(f"  created #{n}  {tid}")
     for tid, n in report.reused:
         click.echo(f"  exists  #{n}  {tid}")
     for n in report.closed:
         click.echo(f"  closed  #{n}")
-    if not (report.created or report.reused or report.closed):
-        click.echo("  no accepted todos or closures to sync")
+    for tid in report.done:
+        click.echo(f"  done    {tid}")
+    if not (report.opened or report.closed or report.done):
+        click.echo("  nothing accepted to apply")
+
+
+@main.command(name="todo-done", hidden=True)
+@click.argument("ids", nargs=-1, required=True)
+@click.option("--note", help="The student's own words, stored verbatim (at most 600 characters).")
+def todo_done(ids: tuple[str, ...], note: str | None) -> None:
+    """[plumbing] The student marks open todos done; committed under their name."""
+    from .todos_sync import SyncError, todo_done as run_done
+
+    cfg = _cfg()
+    try:
+        moved, sha = run_done(cfg, list(ids), note)
+    except SyncError as e:
+        raise click.ClickException(str(e)) from e
+    for p in moved:
+        click.echo(f"  done    {p.relative_to(cfg.root).as_posix()}")
+    if sha:
+        click.echo(f"  committed {sha[:7]}  margi: todo done {' '.join(dict.fromkeys(ids))}")
+    elif not cfg.has_git:
+        click.echo(f"  not committed ({NO_GIT})")
 
 
 @main.command(hidden=True)
