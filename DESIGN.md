@@ -233,7 +233,7 @@ The signature action: a typed command you can copy.
 - **Internal Padding:** 24px for padded sheets; tables run edge to edge with 16px row-end padding.
 
 ### Navigation (running head)
-- **Style:** sticky, Desk Grey, double ink rule below. Wordmark, title, then the next-step strip: a "Next" capitals label, the first command chip, its reason in faded ink, and a "N steps" disclosure (Sans 14px, Pencil Shade on hover and when open) that opens the popover listing every step with its source ("from checks" / "from your session").
+- **Style:** sticky, Desk Grey, double ink rule below. Wordmark, title, then the next-step strip: a "Next" capitals label, the first command chip, its reason in faded ink, and a "N steps" disclosure (Sans 14px, Pencil Shade on hover and when open) that opens the popover listing every step with its source ("from checks" / "from your session"). At most five steps, in this order: a docs shortfall, the steps the student asked for in the session, the checks, then asked-for steps that the docs or the readiness check would refuse, each with a faded note saying why (an "on hold" flag if one leads the strip).
 - **Mobile:** wraps to two lines; the next-step strip spans the full width; date and spacer hide.
 
 ### Section table (signature)
