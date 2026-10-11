@@ -54,6 +54,7 @@ All commands run inside Claude Code.
 | `/margi propose [--from expose.md]` | Reads your `PROPOSAL.md` (or another file) and documents the research question, dataset, method, field, structure and constraints in `margi/docs/`, with gaps listed in `open-questions.md`. Every other command grades against these docs. |
 | `/margi challenge <aspect>` | A devil's-advocate dialogue about any aspect of the project. The refinements you confirm are written back into `margi/docs/`. |
 | `/margi grade <section>` | Rubric-based scores per category with comments anchored to file, lines and a verbatim quote. A section that isn't running prose yet (too few words, mostly bullet points, lorem ipsum) is recorded as *not ready to grade* instead of getting scores; `grade.precheck` in `thesis.config.yml` sets whether you can grade it anyway (`ask`, default), never (`strict`) or without the check (`none`). If the docs are incomplete, it asks before grading and marks the result low-confidence. |
+| `/margi respond <c17 …>` | Your answer to grade comments: *addressed*, *disputed* or *won't fix*, with an optional reason in your own words. margi records it word for word and commits it under your name. The next `/margi grade` of that section checks every comment that isn't closed and marks it resolved, still open, or (for a dispute it accepts) withdrawn. *Won't fix* closes a comment for good. |
 | `/margi outline` | Character counts and their distribution across sections and subsections, compared against targets from `structure.md`. No AI involved. |
 | `/margi read [pdf…]` | Rates literature PDFs for relevance to your research question and outline. |
 | `/margi todos` | Proposes todos as Markdown files and suggests closing issues that look done. You accept, reject or request changes, and only accepted items go to GitHub. |
@@ -85,7 +86,7 @@ uv run margi export          # writes margi/dash/export.html, one self-contained
 ```
  In the background,
 the skills call a few hidden `uv run margi …` helpers (`finalize`, `outline`, `status`,
-`extract-pdfs`, `sync-todos`); you never need to run them yourself.
+`comments`, `respond`, `extract-pdfs`, `sync-todos`); you never need to run them yourself.
 
 ## How the separation works
 
@@ -116,7 +117,9 @@ margi commits  → only margi/                   ("margi: grade 2.1", author mar
   If the two ever disagree, the next margi command stops and tells you to run `margi init`.
   margi's own commands follow the human-writing rules either way.
 
-`git log -- margi/` is the complete AI audit trail for your advisors.
+`git log -- margi/` is the complete AI audit trail for your advisors. Besides margi's own records,
+`margi/` holds one kind of text by you: your answers to comments (`/margi respond`), committed
+under your name, so the log shows who said what.
 
 ### Without git
 
@@ -135,7 +138,7 @@ everything is enforced.
 ## Layout
 
 ```
-skills/margi/            SKILL.md, commands/{grade,read,todos}.md, rubrics/default/, schema/
+skills/margi/            SKILL.md, commands/{grade,read,respond,todos}.md, rubrics/default/, schema/
 skills/margi-propose/    SKILL.md, templates/ (the margi/docs files)
 skills/margi-challenge/  SKILL.md, lenses.md
 templates/               config, PROPOSAL.md, Typst skeleton, commit-msg hook, CI workflow, Claude settings,

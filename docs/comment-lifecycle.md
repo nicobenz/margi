@@ -1,6 +1,7 @@
 # Comment lifecycle (design draft)
 
-Status: draft, not implemented. New command: `/margi respond <ids…>`.
+Status: records and commands implemented (`src/margi/lifecycle.py`); dashboard not yet. New
+command: `/margi respond <ids…>`.
 
 Today a grade comment lives in exactly one record. A regrade numbers its comments from `c1` again,
 so nobody can see whether last week's major comments were fixed. This draft gives every grade
@@ -120,9 +121,10 @@ Record payload:
 
 ## Guard
 
-Today the guard accepts `margi:` commits that touch only `margi/`, from anyone. It should accept a
-non-bot author **only** for commits that add `respond` records, and only the bot for everything
-else in `margi/`. `git log -- margi/` then shows who said what.
+No change. The guard already accepts `margi:` commits inside `margi/` from people as well as the
+bot (fixing docs by hand is allowed), so a `respond` commit under the student's name passes as it
+is. Who wrote an answer is recorded twice: as the commit author and as `provenance.author` in the
+record. `git log -- margi/` shows who said what.
 
 ## Dashboard
 
@@ -144,6 +146,12 @@ else in `margi/`. `git log -- margi/` then shows who said what.
   - Addressed or Disputed comments in a section → `/margi grade 2.1`, "2 comments await checking".
   - Open major comments whose passage changed → the same suggestion, ranked lower.
 
+## Ordering
+
+Records are ordered by their timestamp, which has one-second resolution. Finalize and respond
+stamp a new record at least one second after the newest existing one, so a respond and a grade
+in the same second can't swap places.
+
 ## Ranges
 
 - Typical section: 3–12 comments per grade, 1–4 grades.
@@ -160,4 +168,3 @@ else in `margi/`. `git log -- margi/` then shows who said what.
 
 - `read` comments and todos stay outside the lifecycle.
 - A comment whose anchor spans two sections belongs to the section of its first line.
-- Two grades committed in the same second are ordered by file name, as today.

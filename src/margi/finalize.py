@@ -6,6 +6,7 @@ The agent never writes provenance. This module is the only place that does.
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 import os
 import re
@@ -196,6 +197,11 @@ def load_drafts(cfg: Config) -> list[tuple[Path, dict]]:
         errs = schema.errors(obj, "draft")
         if errs:
             raise FinalizeError(f"{path.name}: draft does not match schema:\n  " + "\n  ".join(errs))
+        if obj["command"] == "respond":
+            raise FinalizeError(f"{path.name}: answers to comments are the student's; record them with "
+                                "`uv run margi respond`, not as a draft")
+        if any("ref" in c for c in obj.get("comments", [])):
+            raise FinalizeError(f"{path.name}: comments must not carry a ref — margi numbers them")
         drafts.append((path, obj))
     return drafts
 
@@ -209,7 +215,9 @@ def build_record(
     model: str | None,
     harness: str | None,
     model_source: str | None,
+    refs=None,
 ) -> dict:
+    """``refs`` yields the next comment numbers (an iterator of ints) for major and minor grade comments."""
     record = {"schema": "margi/record@1", "run": {"id": run_id}}
     record.update(draft)
     if draft["command"] == "grade":
@@ -224,6 +232,8 @@ def build_record(
     comments = []
     for c in draft.get("comments", []):
         c = dict(c, id=f"{run_id}:{c['id']}")
+        if refs is not None and draft["command"] == "grade" and c["severity"] in ("major", "minor"):
+            c["ref"] = f"c{next(refs)}"
         if "anchor" in c:
             content, _ = _read_source(cfg, c["anchor"]["file"])
             c["anchor"] = verify_anchor(c["anchor"], content)
@@ -287,15 +297,24 @@ def finalize(
     ensure_clean(cfg)
     drafts = load_drafts(cfg)  # validates all drafts before anything is written
 
-    now = datetime.now(timezone.utc)
+    from .lifecycle import after_latest, check_verdicts, load_records, next_number
+
+    existing = load_records(cfg)
+    now = after_latest(existing, datetime.now(timezone.utc).replace(microsecond=0))
     stamp = now.strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{stamp}-{secrets.token_hex(3)}"
     feedback = cfg.root / FEEDBACK
     feedback.mkdir(parents=True, exist_ok=True)
 
+    for path, draft in drafts:
+        problems = check_verdicts(cfg, draft, existing)
+        if problems:
+            raise FinalizeError(f"{path.name}: verdicts on earlier comments:\n  " + "\n  ".join(problems))
+    refs = itertools.count(next_number(existing))
+
     result = FinalizeResult(has_git=cfg.has_git)
     records = [build_record(cfg, draft, run_id if len(drafts) == 1 else f"{run_id}-{i + 1}", now,
-                            model=model, harness=harness, model_source=model_source)
+                            model=model, harness=harness, model_source=model_source, refs=refs)
                for i, (_, draft) in enumerate(drafts)]  # every draft must pass before anything is written
     for (path, draft), record in zip(drafts, records):
         out = feedback / f"{stamp}_{draft['command']}_{_slug(draft['scope'])}.json"

@@ -5,6 +5,7 @@
       "Bash(uv run margi finalize:*)",
       "Bash(uv run margi outline:*)",
       "Bash(uv run margi status:*)",
+      "Bash(uv run margi comments:*)",
       "Bash(uv run margi extract-pdfs:*)",
       "Bash(uv run margi export:*)",
       "Bash(git status:*)",
