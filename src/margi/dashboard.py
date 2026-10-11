@@ -197,6 +197,17 @@ def _open_questions(cfg: Config) -> list[str]:
     return items
 
 
+def _challenge_aspect(questions: list[str]) -> str | None:
+    """The doc heading most open questions belong to ("- **Method** (date): …" -> "method")."""
+    counts: dict[str, int] = {}
+    for q in questions:
+        m = re.match(r"\*\*(.+?)\*\*", q)
+        if m:
+            key = slug(m.group(1))
+            counts[key] = counts.get(key, 0) + 1
+    return max(counts, key=lambda k: (counts[k], -list(counts).index(k))) if counts else None
+
+
 # --------------------------------------------------------------------------- data
 
 
@@ -269,6 +280,7 @@ def collect(cfg: Config) -> dict:
         "missing": report.missing,
         "open_questions": _open_questions(cfg),
     }
+    docs["challenge_aspect"] = _challenge_aspect(docs["open_questions"])
 
     outlines = [r for r in records if r.get("command") == "outline"]
     outline = {
@@ -543,22 +555,57 @@ def next_steps(data: dict, records: list[dict]) -> list[dict]:
     if accepted:
         add("/margi todos", f"{len(accepted)} accepted todo{'s' if len(accepted) != 1 else ''} not on GitHub yet.")
     if docs["open_questions"] and docs["completeness"] >= docs["threshold"]:
-        n = len(docs["open_questions"])
-        add("/margi challenge", f"{n} open question{'s' if n != 1 else ''} in the project docs.")
+        n, aspect = len(docs["open_questions"]), docs.get("challenge_aspect")
+        add(f"/margi challenge {aspect}" if aspect else "/margi challenge",
+            f"{n} open question{'s' if n != 1 else ''} in the project docs"
+            + (f", most of them about {aspect.replace('-', ' ')}." if aspect else "."))
 
-    checks = steps[:MAX_STEPS]
     at = next((i for i in range(len(records) - 1, -1, -1) if records[i].get("next_steps")), None)
-    session = []
+    session, held = [], []
     if at is not None:
         agent, later = records[at], records[at + 1:]
         for s in agent["next_steps"][:MAX_STEPS]:
             if _carried_out(s["command"], later):
                 continue
-            session.append({"command": s["command"], "reason": s.get("reason", ""), "source": "session",
-                            "timestamp": agent["provenance"].get("timestamp")})
-    # session steps reflect what the student asked for, so they lead; checks follow without duplicates
-    merged = session + [c for c in checks if not any(c["command"] == s["command"] for s in session)]
-    return merged
+            step = {"command": s["command"], "reason": s.get("reason", ""), "source": "session",
+                    "timestamp": agent["provenance"].get("timestamp")}
+            why = _held(step["command"], docs, sections, gated, ready)
+            if why:
+                held.append(dict(step, held=why))
+            else:
+                session.append(step)
+    # a docs shortfall blocks everything else, so it leads; then what the student asked for, then the
+    # checks; asked-for steps that the docs or the readiness check would refuse come last, saying why
+    lead = [c for c in steps if c["command"] == "/margi propose"]
+    rest = [c for c in steps if c["command"] != "/margi propose"]
+    def unique(items: list[dict], taken: list[dict]) -> list[dict]:
+        out: list[dict] = []
+        for step in items:
+            if not any(t["command"] == step["command"] for t in taken + out):
+                out.append(step)
+        return out
+
+    # what the student asked for always stays visible; the checks fill the remaining places
+    kept = unique(lead + session + held, [])[:MAX_STEPS]
+    checks = unique(rest, kept)[:MAX_STEPS - len(kept)]
+    first = [k for k in kept if k not in held]
+    return first + checks + [k for k in kept if k in held]
+
+
+def _held(command: str, docs: dict, sections: list[dict], gated: bool, ready) -> str | None:
+    """Why a step the agent suggested can't run usefully right now, or None."""
+    m = re.match(r"/margi[ -](grade|read)\b\s*(.*)$", command.strip())
+    if not m:
+        return None
+    if docs["completeness"] < docs["threshold"]:
+        return f"Project docs are below {docs['threshold']:.0%}, so the result would be low-confidence."
+    name, scope = m.groups()
+    if name == "grade" and scope and gated:
+        target = next((s for s in sections if s["id"] == scope or slug(s["title"]) == slug(scope)), None)
+        if target and not ready(target):
+            reasons = (target.get("readiness") or {}).get("reasons") or []
+            return f"{target['title']} isn't ready to grade yet" + (f" ({'; '.join(reasons)})." if reasons else ".")
+    return None
 
 
 # --------------------------------------------------------------------------- write

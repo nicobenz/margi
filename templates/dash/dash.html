@@ -623,13 +623,13 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var lcGrade = function (s) { return docsLow && /^\/margi[ -]grade\b/.test(s.command); };
     var LC_WHY = "Project docs are below " + Math.round(D.docs.threshold * 100) + "%, so this grade will be marked low-confidence.";
     var html = '<div class="lead"><span class="caps">Next</span>' + cmdChip(first.command) +
-      (lcGrade(first) ? '<span class="flag" title="' + esc(LC_WHY) + '">low-confidence</span>' : '') +
+      (first.held ? '<span class="flag" title="' + esc(first.held) + '">on hold</span>' : lcGrade(first) ? '<span class="flag" title="' + esc(LC_WHY) + '">low-confidence</span>' : '') +
       '<span class="src caps">' + esc(tag(first)) + '</span>' +
       '<span class="reason" title="' + esc(first.reason) + '">' + esc(first.reason) + '</span></div>';
     html += '<details class="steps"><summary>' + (steps.length > 1 ? plural(steps.length, "step") : "Why") + '</summary><div class="panel">' +
       steps.map(function (s) {
         return '<div class="step">' + cmdChip(s.command) + '<span class="src caps">' + esc(tag(s)) + '</span><div class="why">' + esc(s.reason) +
-          (lcGrade(s) ? ' <span class="muted">' + esc(LC_WHY) + '</span>' : '') + '</div></div>';
+          (s.held ? ' <span class="muted">' + esc(s.held) + '</span>' : lcGrade(s) ? ' <span class="muted">' + esc(LC_WHY) + '</span>' : '') + '</div></div>';
       }).join("") + '</div></details>';
     el.innerHTML = html;
   }
@@ -1213,7 +1213,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       }).join("") + '</dl><p style="margin-top:16px">' + cmdChip("/margi propose") + '</p>' : '<p class="muted">Every required field is documented.</p>') + '</section>' +
       '<section class="sheet pad"><h3 class="caps" style="margin:0 0 12px;color:var(--ink)">Open questions <span class="muted">' + d.open_questions.length + '</span></h3>' +
       (d.open_questions.length ? '<ol class="list" style="list-style:decimal;padding-left:1.4em">' + d.open_questions.map(function (q) { return '<li>' + esc(q) + '</li>'; }).join("") + '</ol>' +
-        '<p style="margin-top:16px">' + cmdChip("/margi challenge") + '</p>' : '<p class="muted">No open questions in <code>margi/docs/open-questions.md</code>.</p>') + '</section></div>';
+        '<p style="margin-top:16px">' + cmdChip("/margi challenge" + (d.challenge_aspect ? " " + d.challenge_aspect : "")) + '</p>' : '<p class="muted">No open questions in <code>margi/docs/open-questions.md</code>.</p>') + '</section></div>';
   }
 
   var OPEN_ICON = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M5 2.5H2.5v7h7V7M7 2.5h2.5V5M9.5 2.5 5.5 6.5"/></svg>';
