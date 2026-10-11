@@ -320,7 +320,66 @@ def collect(cfg: Config) -> dict:
     }
     data["timeline"] = _timeline(cfg, records, sections, comments, data["thesis_commit"], outline["unit"])
     data["next_steps"] = next_steps(data, records)
+    data["setup"] = _setup(cfg, records, data)
     return data
+
+
+def _plan_written(cfg: Config) -> bool:
+    """Does the proposal (committed, if there is git) say more than the bundled template?"""
+    source = str((cfg.get("propose") or {}).get("source") or "PROPOSAL.md")
+    if cfg.has_git:
+        content = file_at_head(cfg.root, source)
+    else:
+        p = cfg.root / source
+        content = p.read_bytes() if p.is_file() else None
+    if content is None:
+        return False
+    norm = lambda t: re.sub(r"\s+", " ", re.sub(r"<!--.*?-->", "", t, flags=re.S)).strip()
+    template = (templates_dir() / "PROPOSAL.md").read_text(encoding="utf-8")
+    return norm(content.decode("utf-8", errors="replace")) != norm(template)
+
+
+def _setup(cfg: Config, records: list[dict], data: dict) -> dict:
+    """The getting-started checklist: six steps judged from the data, in order."""
+    def first(pred) -> str | None:
+        r = next((r for r in records if pred(r)), None)
+        return r["provenance"].get("timestamp") if r else None
+
+    docs = data["docs"]
+    proposed = first(lambda r: r.get("command") == "propose")
+    graded = first(lambda r: r.get("command") == "grade" and (r.get("readiness") or {}).get("decision") != "not_ready")
+    outlined = first(lambda r: r.get("command") == "outline")
+    real = [s for s in data["sections"] if not s.get("orphan") and s["chars"] > 0]
+    ready = [s for s in real if (s.get("readiness") or {}).get("ready", True)]
+    target = (ready or real or [None])[0]
+    aspect = docs.get("challenge_aspect")
+    steps = [
+        {"id": "plan", "title": "Write your plan into PROPOSAL.md and commit it", "done": _plan_written(cfg),
+         "command": None},
+        {"id": "propose", "title": "Turn the plan into project docs", "done": bool(proposed), "date": proposed,
+         "command": "/margi propose"},
+        {"id": "docs", "title": f"Document enough to grade ({docs['threshold']:.0%} of the docs)",
+         "done": docs["completeness"] >= docs["threshold"],
+         "command": f"/margi challenge {aspect}" if proposed and aspect else "/margi propose"},
+        {"id": "deadline", "title": "Set the submission date", "done": bool((data.get("timeline") or {}).get("deadline")),
+         "command": "/margi challenge deadline"},
+        {"id": "outline", "title": "Take a first length snapshot", "done": bool(outlined), "date": outlined,
+         "command": "/margi outline"},
+        {"id": "grade", "title": "Grade a first section", "done": bool(graded), "date": graded,
+         "command": f"/margi grade {target['id']}" if target else "/margi grade 1"},
+    ]
+    done = sum(1 for st in steps if st["done"])
+    return {"steps": steps, "done": done, "total": len(steps)}
+
+
+def setup_progress(cfg: Config) -> dict | None:
+    """The checklist as last written to dash/data.js (no recomputation), or None."""
+    path = cfg.root / DASH_DATA
+    try:
+        text = path.read_text(encoding="utf-8")
+        return json.loads(text[text.index("{"):text.rindex("}") + 1]).get("setup")
+    except (OSError, ValueError):
+        return None
 
 
 def _timeline(cfg: Config, records: list[dict], sections: list[dict], comments: list[dict],
