@@ -1,6 +1,6 @@
 # Timeline and deadline (design draft)
 
-Status: draft, not implemented.
+Status: implemented (`src/margi/timeline.py`, the dashboard's strip and Timeline tab).
 
 The dashboard has no sense of time beyond one section's score history. This draft adds a
 submission date, milestones and a timeline: a slim strip on every view and a Timeline tab. It
@@ -105,7 +105,10 @@ stays readable.
 - DESIGN.md holds: Libertinus type, red only for missed milestones and a passed deadline, no
   green, no new shadows, tabular figures. The visual language extends the score history charts.
 
-## Open
+## Decided while building
 
-- Whether the strip appears in print.
-- The "due soon" window: 14 days unless decided otherwise.
+- The strip appears in print, like the status line.
+- "Due soon" is 14 days (`DUE_SOON_DAYS` in `timeline.py`, mirrored in the page).
+- A `drafted` milestone for a section that is ready now but was never checked counts as met on the
+  date of the latest thesis commit: the first date margi can vouch for.
+- Plain dates (no sections) read "in 101 days", never "due".

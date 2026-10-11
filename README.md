@@ -70,7 +70,14 @@ over time, project docs, literature, todos and the run log. Each section's comme
 until they are closed: the panel opens with how many were resolved since the first grade, shows
 your answers and margi's verdicts under each comment, and builds the `/margi respond …` command
 from the comments you tick. The header names the thesis commit the page reflects; after you
-commit, `/margi status` refreshes it. The header always shows the next
+commit, `/margi status` refreshes it.
+
+Under the status line, a strip shows the days left until submission, the next milestone and any
+milestone that was missed. The Timeline tab sets your writing (length snapshots and commits),
+grades and answers against the plan, with a table of every milestone and its state. Dates come
+from `margi/docs/constraints.md`: tell `/margi propose` or `/margi challenge deadline` your
+submission date and milestones such as "chapter 2 drafted by 1 Dec", and margi checks those
+against its records (drafted, graded, or settled with no open major comments). The header always shows the next
 margi command to run, with a copy button.
 
 In the Literature view, select a paper to see its key passages where they sit in the PDF: the

@@ -1,6 +1,5 @@
 import json
 
-
 from margi.finalize import finalize
 from margi.lifecycle import respond
 from margi.timeline import due, load_plan
