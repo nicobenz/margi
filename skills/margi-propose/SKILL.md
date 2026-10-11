@@ -53,6 +53,14 @@ Fill the templates in `margi/docs/`. The files already exist with fixed `## ` he
   (`target: 15%`). Titles must match the thesis headings for `uv run margi outline`; if the
   planned chapters differ from the headings in the thesis, record the plan and raise it
   as an open question.
+- Dates: record the submission date, a start date and milestones in `constraints.md` inside
+  the fenced YAML block marked `# margi-timeline` (see the commented example in the template),
+  next to the prose and its citation. Only dates the user actually gives, as `YYYY-MM-DD`; a
+  vague date ("end of March") stays in the prose and becomes an open question. A milestone
+  gets `sections` and a `state` (`drafted`, `graded` or `settled`) only when the user ties it
+  to chapters ("chapter 2 drafted by December"); otherwise it is a plain date with a `label`.
+  `length` is the overall length limit or goal, in the unit of `count` in
+  `thesis.config.yml`, only if the user gives one in that unit.
 
 ## 3. Open questions
 
