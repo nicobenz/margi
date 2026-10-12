@@ -18,7 +18,8 @@ Closing message:
 margi is ready.
 
   Dashboard  file:///…/margi/dash.html   (opened in your browser)
-  Next       write your plan into PROPOSAL.md, commit it, then run /margi propose in Claude Code
+  Versions   saves stay on this computer until you add a remote repository
+  Next       write your plan into PROPOSAL.md, then run /margi propose in Claude Code
 ```
 
 - `init` opens `margi/dash.html` with Python's `webbrowser`, only when stdout is an interactive
@@ -33,7 +34,7 @@ Six steps, each judged from the data, never by the agent:
 
 | # | Step | Done when | Command |
 |---|---|---|---|
-| 1 | Write your plan | `PROPOSAL.md` at HEAD differs from the template | — (edit and commit) |
+| 1 | Write your plan | `PROPOSAL.md` at HEAD differs from the template | — (edit; `/margi propose` offers to save it) |
 | 2 | Turn it into project docs | a `propose` record exists | `/margi propose` |
 | 3 | Docs complete enough to grade | completeness ≥ the threshold | `/margi propose`, or `/margi challenge <aspect>` |
 | 4 | Set the submission date | the timeline has a deadline | `/margi challenge deadline` |

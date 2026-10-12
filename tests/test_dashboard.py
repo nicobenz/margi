@@ -40,6 +40,7 @@ def test_grade_shows_up_and_goes_stale(repo, cfg):
     d = data(repo)
     run = d["grades"]["2.1"][-1]
     assert run["scores"]["argument"]["score"] == 3 and run["changed"] == []
+    assert run["saved"][:10] == d["thesis_commit"]["date"][:10]  # "graded the version saved …"
     # the docs are incomplete, so their shortfall leads and the asked-for grade waits, saying why
     assert d["next_steps"][0]["command"] == "/margi propose"
     asked = next(s for s in d["next_steps"] if s["source"] == "session")

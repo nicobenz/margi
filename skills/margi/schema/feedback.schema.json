@@ -214,7 +214,7 @@
         "model_source": { "enum": ["wrapper", "self-reported", "none"] },
         "harness": { "type": ["string", "null"] },
         "author": {
-          "description": "respond records only: the student who wrote the answers (their git identity).",
+          "description": "respond records only: the student who wrote the answers (`author` in thesis.config.yml).",
           "type": "object",
           "additionalProperties": false,
           "required": ["name", "email"],

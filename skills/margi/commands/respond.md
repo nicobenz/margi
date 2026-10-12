@@ -4,7 +4,7 @@ Record the student's answers to grade comments. The answers are **theirs**: you 
 and pass them on unchanged. You don't judge the comments here; the next grade does.
 
 This command writes no draft and doesn't run `margi finalize`. The helper `uv run margi respond`
-writes the record and commits it under the student's git identity.
+writes the record and commits it under the student's name (`author` in `thesis.config.yml`).
 
 ## 1. Show the comments
 

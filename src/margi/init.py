@@ -9,8 +9,10 @@ Produces two commits so human and margi files never mix:
                                                 dependency (pyproject.toml, uv.lock)
   2. "margi: init"           (margi bot)      — the margi/ directory with doc templates
 
-Without git, the files are scaffolded but the hook setup and both commits are skipped;
-run `git init` and `margi init` again to enable them.
+margi keeps versions of the thesis with git, so init creates the repository when there is none
+(`git_init=False` scaffolds without one; hooks and commits are then skipped until `git init` and
+`margi init` run again). Without git installed it stops with GitMissing; the CLI offers to install it.
+The GitHub workflow is written only when the repository has a GitHub remote.
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import __version__
-from .config import CONFIG_NAME, MARGI_DIR, load
+from .config import CONFIG_NAME, MARGI_DIR, load, set_author
 from .dashboard import refresh
 from .docs_check import ALL_DOCS, templates_dir
 from .finalize import bot_commit
@@ -41,6 +43,10 @@ class InitError(RuntimeError):
     pass
 
 
+class GitMissing(InitError):
+    pass
+
+
 @dataclass
 class InitReport:
     written: list[str] = field(default_factory=list)
@@ -48,6 +54,7 @@ class InitReport:
     commits: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
     first: bool = False  # no thesis.config.yml before this run: margi was just added
+    remote: str | None = None  # where saves upload to, e.g. github.com/user/thesis
 
 
 def detect_main(root: Path) -> str:
@@ -170,6 +177,12 @@ def _bootstrap(root: Path, main: str, report: InitReport) -> list[str]:
     return created
 
 
+GITIGNORE = """# Written by margi init. Files here are never saved as versions of your thesis.
+.venv/
+.DS_Store
+Thumbs.db
+/{pdf}
+"""
 LIT_GITIGNORE = "# Papers stay on this machine: margi reads them here, but they don't belong in git.\n*\n!.gitignore\n"
 
 
@@ -196,8 +209,17 @@ def init(
     force_config: bool = False,
     install: bool = True,
     spec: str | None = None,
+    git_init: bool = True,
+    author: tuple[str | None, str | None] | None = None,
 ) -> InitReport:
+    """``author``: (name, email) the student gave at the prompt; only used when the config is new."""
     has_git = is_repo(root)
+    if not has_git and git_init:
+        if not shutil.which("git"):
+            raise GitMissing("margi needs git to keep versions of your thesis, and git is not installed")
+        git("init", "-q", cwd=root)
+        git("symbolic-ref", "HEAD", "refs/heads/main", cwd=root)
+        has_git = True
     if has_git and staged_changes(root):
         raise InitError("you have staged changes; commit or unstage them before running `margi init`")
     report = InitReport(first=not (root / CONFIG_NAME).exists())
@@ -208,7 +230,13 @@ def init(
     bib = "refs.bib" if (root / "refs.bib").exists() else "null"
     config = (tool_templates() / "thesis.config.yml").read_text(encoding="utf-8")
     config = config.replace("{{main}}", main).replace("{{bib}}", bib)
+    new_config = force_config or not (root / CONFIG_NAME).exists()
     _write(root, CONFIG_NAME, config, report, overwrite=force_config)
+    if author and new_config:
+        set_author(root, *author)
+    if not (root / ".gitignore").exists():
+        _write(root, ".gitignore", GITIGNORE.format(pdf=Path(main).with_suffix(".pdf").as_posix()), report, overwrite=False)
+        created.append(".gitignore")
     lit_ignore = f"{(load(root).get('literature') or {}).get('dir') or 'lit'}/.gitignore"
     if not (root / lit_ignore).exists():
         _write(root, lit_ignore, LIT_GITIGNORE, report, overwrite=False)
@@ -216,13 +244,22 @@ def init(
     _vendor_skills(root, report)
     _retire_agents_md(root, report)
     _hook(root, report, has_git=has_git)
-    _write(root, ".github/workflows/margi-guard.yml", (tool_templates() / "margi-guard.yml").read_text(encoding="utf-8"),
-           report, overwrite=True)
+    workflow = root / ".github/workflows/margi-guard.yml"
+    if workflow.exists() or (has_git and "github.com" in git("remote", "-v", cwd=root, check=False)):
+        _write(root, workflow.relative_to(root).as_posix(),
+               (tool_templates() / "margi-guard.yml").read_text(encoding="utf-8"), report, overwrite=True)
     if claude_settings:
         _claude_settings(root, report)
+        for rule in agent_settings.remove_consent_overrides(root):
+            report.written.append(f"{agent_settings.LOCAL}: removed {rule!r} (saving must stay behind a question)")
     if install:
         _install(root, spec or f"margi=={__version__}", report)
     _margi_dir(root, report)
+    if has_git:
+        from .save import remote
+
+        r = remote(load(root))
+        report.remote = r[1] if r else None
 
     if not commit:
         return report
@@ -240,7 +277,7 @@ def init(
         subject = f"chore: update margi {__version__}" if installed else f"chore: install margi {__version__}"
         if claude_settings:
             subject += f" (protect_thesis: {str(bool(load(root)['protect_thesis'])).lower()})"
-        git("commit", "-q", "-m", subject, cwd=root)
+        git("commit", "-q", "-m", subject, cwd=root, env=load(root).author_env())
         report.commits.append(git("rev-parse", "--short", "HEAD", cwd=root).strip())
     from .dashboard import refresh
 

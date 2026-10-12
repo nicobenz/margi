@@ -583,7 +583,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   var SETUP = D.setup || null;
   var setupOpen = !!SETUP && SETUP.done < SETUP.total;
   var STEP_HINT = {
-    plan: "Title ideas, research question, data, method, outline, constraints: fragments are fine. Then commit it.",
+    plan: "Title ideas, research question, data, method, outline, constraints: fragments are fine. margi offers to save it when you run /margi propose.",
     propose: "margi turns your plan into sourced project docs and lists what is still unclear.",
     docs: "Add to PROPOSAL.md and run /margi propose again, or settle open questions in a challenge.",
     deadline: "Tell margi your submission date and milestones; the timeline counts down to it.",
@@ -660,7 +660,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     $("updated").textContent = D.updated ? "Updated " + fmtDate(D.updated) : "No runs yet";
     if (D.thesis_commit) {
       $("updated").innerHTML = esc($("updated").textContent) + ' · <span class="mono">' + esc(D.thesis_commit.sha.slice(0, 7)) + '</span>';
-      $("updated").title = "Thesis as of commit " + D.thesis_commit.sha.slice(0, 7) + " (" + fmtDate(D.thesis_commit.date, true) + "). After new commits, /margi status refreshes this page.";
+      $("updated").title = "Thesis as saved " + fmtDate(D.thesis_commit.date, true) + " (version " + D.thesis_commit.sha.slice(0, 7) + "). Any margi command refreshes this page.";
     }
     var steps = D.next_steps || [];
     var el = $("next");
@@ -888,6 +888,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var runSel = runs.length > 1 ? '<label><span class="visually-hidden">Grade run</span><select id="runsel">' + runs.map(function (r, i) {
       return '<option value="' + i + '"' + (i === idx ? " selected" : "") + '>Grade ' + (i + 1) + ' · ' + fmtDate(r.timestamp, true) + (i === runs.length - 1 ? " (latest)" : "") + '</option>';
     }).join("") + '</select></label>' : '<span>' + fmtDate(g.timestamp, true) + '</span>';
+    if (g.saved) runSel += '<span>graded the version saved ' + fmtDate(g.saved, true) + '</span>';
     var meta = '<div class="meta">' + runSel + (g.model ? '<span>' + esc(g.model) + '</span>' : '') + '<span>rubric ' + esc(rub.id) + (g.rubric ? ' ' + esc(g.rubric) : '') + '</span>' +
       '<span>' + plural(runs.length, "grade") + '</span></div>';
     var warns = '';
@@ -1097,7 +1098,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
         return ch.length ? '<ul class="list">' + ch.map(function (id) {
           return '<li><a href="#tab=sections&s=' + encodeURIComponent(id) + '" data-goto="' + esc(id) + '"><span class="sid">' + esc(id) + '</span> ' + esc(title(id)) + '</a> ' + cmdChip("/margi grade " + id) + '</li>';
         }).join("") + '</ul>' : '<p class="muted">Every graded section matches its latest grade' +
-          (D.thesis_commit ? ' as of commit <span class="mono">' + esc(D.thesis_commit.sha.slice(0, 7)) + '</span>' : '') + '.</p>';
+          (D.thesis_commit ? ' as of the version saved ' + fmtDate(D.thesis_commit.date, true) : '') + '.</p>';
       })() + '</div>' + (function () {
         var by = {};
         CM.forEach(function (c) { if (c.state === "addressed" || c.state === "disputed") by[c.section] = (by[c.section] || 0) + 1; });
@@ -1120,7 +1121,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
   function timelineView() {
     if (!TL || (!TL.deadline && !(TL.events || []).length && !(TL.commits || []).length)) {
-      return '<div class="sheet empty"><h3>No timeline yet</h3><p>Document the submission date and milestones, and margi sets them against your grades, writing and commits.</p><p>' + cmdChip("/margi challenge deadline") + '</p></div>';
+      return '<div class="sheet empty"><h3>No timeline yet</h3><p>Document the submission date and milestones, and margi sets them against your grades, writing and saved versions.</p><p>' + cmdChip("/margi challenge deadline") + '</p></div>';
     }
     var wrapW = Math.max(720, Math.min(1472, ($("view").clientWidth || 1200) - 34));
     return '<div class="sheet"><div class="tlwrap" id="tlwrap">' + timelineChart(wrapW) + '<div class="tip" role="presentation"></div></div>' + timelineKey() +
@@ -1166,7 +1167,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       var last = hist[hist.length - 1];
       if (last) out.push('<line x1="' + x(last.d).toFixed(1) + '" y1="' + ly(last.v).toFixed(1) + '" x2="' + x(nowD).toFixed(1) + '" y2="' + ly(nowV).toFixed(1) + '" stroke="var(--chart)" stroke-width="1" stroke-dasharray="2 3"/>');
       out.push('<circle cx="' + x(nowD).toFixed(1) + '" cy="' + ly(nowV).toFixed(1) + '" r="3.2" fill="var(--page)" stroke="var(--chart)" stroke-width="1.5"/>');
-      tip(x(nowD), ly(nowV), "Now (thesis at its latest commit): " + fmtN(nowV) + " " + unitName(TL.unit));
+      tip(x(nowD), ly(nowV), "Now (thesis as last saved): " + fmtN(nowV) + " " + unitName(TL.unit));
     }
     // section rows
     var y0 = top + lenH + 10;
@@ -1214,11 +1215,11 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var cy0 = y0 + rows.length * rowH + comH - 6, cmax = Math.max.apply(null, (TL.commits || []).map(function (c) { return c[1]; }).concat([1]));
     var ncommits = (TL.commits || []).reduce(function (n, c) { return n + c[1]; }, 0);
     out.push('<line x1="0" x2="' + (W - R) + '" y1="' + (y0 + rows.length * rowH) + '" y2="' + (y0 + rows.length * rowH) + '" stroke="var(--ink)"/>' +
-      '<text class="cap" x="0" y="' + (cy0 - 4) + '">Commits</text><text class="tick" x="72" y="' + (cy0 - 4) + '">' + ncommits + '</text>');
+      '<text class="cap" x="0" y="' + (cy0 - 4) + '">Saves</text><text class="tick" x="72" y="' + (cy0 - 4) + '">' + ncommits + '</text>');
     (TL.commits || []).forEach(function (c) {
       var cx = x(c[0]), h = 4 + c[1] / cmax * 12;
       out.push('<line x1="' + cx.toFixed(1) + '" x2="' + cx.toFixed(1) + '" y1="' + cy0 + '" y2="' + (cy0 - h).toFixed(1) + '" stroke="var(--ink-3)" stroke-width="1.4"/>');
-      tip(cx, cy0 - h / 2, fmtDay(c[0]) + ": " + plural(c[1], "commit"));
+      tip(cx, cy0 - h / 2, fmtDay(c[0]) + ": " + plural(c[1], "saved version"));
     });
     // today and the deadline run through every row
     var ty = top - 6, tx = x(today);
@@ -1241,7 +1242,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
   function milestoneTable() {
     var ms = TL.milestones || [];
-    var start = TL.start_source === "doc" ? "documented" : TL.start_source === "commit" ? "first thesis commit" : TL.start_source === "record" ? "first margi run" : "";
+    var start = TL.start_source === "doc" ? "documented" : TL.start_source === "commit" ? "first saved version" : TL.start_source === "record" ? "first margi run" : "";
     var head = '<div class="sheet" style="margin-top:24px"><table class="plain" aria-label="Milestones"><thead><tr><th class="caps">Date</th><th class="caps">Milestone</th><th class="caps hide-s">Sections</th><th class="caps">State</th></tr></thead><tbody>';
     var rows = (TL.start ? '<tr><td style="white-space:nowrap">' + fmtDay(TL.start) + '</td><td>Start <span class="muted">(' + start + ')</span></td><td class="hide-s"></td><td></td></tr>' : '') +
       ms.map(function (m) {
@@ -1294,7 +1295,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     }
     var qs = C.quotes || [], issues = qs.filter(function (q) { return q.status !== "match"; }), ok = qs.filter(function (q) { return q.status === "match"; });
     issues.sort(function (a, b) { return ((QSTATE[b.status] || [])[1] ? 1 : 0) - ((QSTATE[a.status] || [])[1] ? 1 : 0); });
-    var head = '<p class="tl-sum" style="margin:0 0 12px"><span>Checked ' + fmtDate(C.timestamp, false, true) + (C.commit ? ' at commit <span class="mono">' + esc(C.commit.slice(0, 7)) + '</span>' : '') + '</span>' +
+    var head = '<p class="tl-sum" style="margin:0 0 12px"><span>Checked ' + fmtDate(C.timestamp, false, true) + (C.commit ? ' at version <span class="mono">' + esc(C.commit.slice(0, 7)) + '</span>' : '') + '</span>' +
       '<span><b>' + C.counts.findings + '</b> ' + (C.counts.findings === 1 ? 'finding' : 'findings') + (C.counts.attention ? ', <span class="late">' + C.counts.attention + ' need' + (C.counts.attention === 1 ? 's' : '') + ' attention</span>' : '') + '</span>' +
       (S.stale ? '<span class="warn" style="margin:0">The thesis changed since this check.</span>' : '') + cmdChip("/margi submit-check") + '</p>';
     var quotes = '<section class="sheet pad"><div class="block" style="margin-top:0"><h3><span class="caps">Quotations</span><span class="muted" style="font-size:14px">' + qs.length + ' checked · ' + ok.length + ' match</span></h3>' +
@@ -1505,7 +1506,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     ["/margi read [pdf …]", "Rates literature PDFs for relevance and traces key passages into the PDF.", true],
     ["/margi todos", "Proposes todos and closures for you to accept; /margi todos done <id> marks yours done.", true],
     ["/margi outline", "Counts the length of every section against your targets.", false],
-    ["/margi status", "Plain-text overview; also refreshes this page after you commit.", false],
+    ["/margi status", "Plain-text overview; also refreshes this page.", false],
     ["/margi submit-check", "Before submission: quotations against PDFs, bibliography, length, what is still open.", false],
     ["/margi ai-report", "A factual appendix of every margi run and the separation check.", false],
     ["/margi defend [chapter]", "Examiner questions over the finished thesis; margi only asks.", true]

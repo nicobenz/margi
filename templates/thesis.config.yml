@@ -32,6 +32,12 @@ grade:
   min_words: 150             # running prose below this counts as not ready
   max_list_share: 0.5        # more list-item lines than this counts as not ready
 
+# Who your saved versions are recorded as. Stays in this project; change it here any time
+# (later saves use the new value) or ask your agent to.
+author:
+  name: User
+  email: null
+
 ai_identity:
   name: margi-bot
   email: margi-bot@users.noreply.github.com

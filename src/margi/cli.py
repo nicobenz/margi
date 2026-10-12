@@ -24,6 +24,17 @@ from .guard import check_range, check_staged, commit_msg_from_file
 NO_GIT = "no git repository: margi works, but commits, the clean-tree check and the guard are skipped"
 
 
+def _clean_or_exit(cfg: Config) -> None:
+    """Start-of-run check. Unsaved work prints margi's save summary as is (no "Error:"), exit 1."""
+    try:
+        ensure_clean(cfg)
+    except FinalizeError as e:
+        if str(e).startswith("Your thesis has changes"):
+            click.echo(str(e))
+            sys.exit(1)
+        raise click.ClickException(str(e)) from e
+
+
 def _cfg() -> Config:
     return load(project_root(Path.cwd(), CONFIG_NAME))
 
@@ -74,12 +85,24 @@ def init(
     no_open: bool,
 ) -> None:
     """Bootstrap a Typst thesis with margi, or add margi to an existing one."""
-    from .init import InitError, init as run_init
+    from .init import GitMissing, InitError, init as run_init
 
+    root = project_root(Path.cwd(), CONFIG_NAME)
+    interactive = sys.stdin.isatty() and sys.stdout.isatty() and not os.environ.get("CI")
+    import shutil
+
+    if not shutil.which("git"):  # before asking anything: without git there is nothing to set up
+        offer_git_install("margi needs git to keep versions of your thesis, and git is not installed", interactive)
+        sys.exit(1)
+    author = None
+    if interactive and (force_config or not (root / CONFIG_NAME).exists()):
+        author = ask_author()
     try:
-        root = project_root(Path.cwd(), CONFIG_NAME)
         report = run_init(root, commit=not no_commit, claude_settings=not no_claude_settings, force_config=force_config,
-                         install=not no_install, spec=spec)
+                         install=not no_install, spec=spec, author=author)
+    except GitMissing as e:
+        offer_git_install(str(e), interactive)
+        sys.exit(1)
     except InitError as e:
         raise click.ClickException(str(e)) from e
     for w in report.written:
@@ -103,7 +126,42 @@ def init(
             opened = False
     click.echo("\nmargi is ready.\n")
     click.echo(f"  Dashboard  {dash.as_uri()}   ({'opened in your browser' if opened else 'open it in a browser'})")
-    click.echo("  Next       write your plan into PROPOSAL.md, commit it, then run /margi propose in Claude Code")
+    click.echo("  Versions   " + (f"saves upload to {report.remote}" if report.remote else
+                                 "saves stay on this computer until you add a remote repository"))
+    click.echo("  Next       write your plan into PROPOSAL.md, then run /margi propose in Claude Code")
+
+
+def ask_author() -> tuple[str | None, str | None]:
+    """Ask who saves are recorded as; Enter keeps the placeholder. Runs in the terminal, before any AI."""
+    from .config import PLACEHOLDER
+
+    click.echo("Your saved versions are recorded under a name.")
+    name = click.prompt("  Name", default=PLACEHOLDER[0], show_default=True).strip()
+    email = click.prompt("  Email (optional)", default="", show_default=False).strip()
+    click.echo("  You can change this later in thesis.config.yml, or ask your agent to do it.\n")
+    return (name if name and name != PLACEHOLDER[0] else None), (email or None)
+
+
+def git_install_command() -> tuple[list[str] | None, str]:
+    """(command margi may run without admin rights, or None; the instruction to show)."""
+    if sys.platform == "darwin":
+        return ["xcode-select", "--install"], "xcode-select --install"
+    if sys.platform == "win32":
+        return ["winget", "install", "--id", "Git.Git", "-e"], "winget install --id Git.Git -e"
+    return None, "install it with your package manager, e.g. `sudo apt install git` or `sudo dnf install git`"
+
+
+def offer_git_install(message: str, interactive: bool) -> None:
+    import shutil
+    import subprocess
+
+    cmd, hint = git_install_command()
+    click.echo(f"{message}.", err=True)
+    if cmd and interactive and shutil.which(cmd[0]) and click.confirm("Install it now?", default=True):
+        subprocess.run(cmd)
+        click.echo("When the installation has finished, open a new terminal and run `uvx margi init` again.")
+        return
+    click.echo(f"To install git: {hint}. Then run `uvx margi init` again.", err=True)
 
 
 def should_open_dashboard(first: bool, no_open: bool, interactive: bool, env) -> bool:
@@ -144,7 +202,8 @@ def outline(no_save: bool) -> None:
     if no_save:
         return
     if preflight(cfg):
-        click.echo("\n(snapshot not saved: uncommitted changes outside margi/ — commit first so counts match HEAD)")
+        click.echo("\n(snapshot not recorded: the thesis has unsaved changes, and margi records counts only for a "
+                   "saved version)")
         return
     outline_mod.write_snapshot(cfg, outline_mod.snapshot_draft(tree, rows, unit))
     try:
@@ -218,7 +277,7 @@ def comments(scope: str | None, show_all: bool) -> None:
 def respond(answers: tuple[str, ...], reasons: tuple[tuple[str, str], ...]) -> None:
     """[plumbing] Record the student's answers, e.g. `c17=addressed c18=disputed --reason c18 "..."`.
 
-    Statuses: addressed, disputed, wont_fix. The record is committed under the student's git identity.
+    Statuses: addressed, disputed, wont_fix. The record is committed under the student's name (`author` in thesis.config.yml).
     """
     from .lifecycle import LifecycleError
     from .lifecycle import respond as run_respond
@@ -255,10 +314,7 @@ def submit_check() -> None:
     from .finalize import STAGING
 
     cfg = _cfg()
-    try:
-        ensure_clean(cfg)
-    except FinalizeError as e:
-        raise click.ClickException(str(e)) from e
+    _clean_or_exit(cfg)
     payload = submission.run(cfg)
     lines = submission.summary(payload)
     for line in lines:
@@ -284,10 +340,7 @@ def ai_report() -> None:
     from . import ai_report as report_mod
 
     cfg = _cfg()
-    try:
-        ensure_clean(cfg)
-    except FinalizeError as e:
-        raise click.ClickException(str(e)) from e
+    _clean_or_exit(cfg)
     _, rep = report_mod.write(cfg)
     click.echo(f"  wrote {report_mod.MD} ({len(rep['rows'])} runs) and {report_mod.HTML} (printable, not committed)")
     if rep["violations"]:
@@ -355,10 +408,7 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
 
     cfg = _cfg()
     if check:
-        try:
-            ensure_clean(cfg)
-        except FinalizeError as e:
-            raise click.ClickException(str(e)) from e
+        _clean_or_exit(cfg)
         from .agent_settings import drift
 
         mismatch = drift(cfg)
@@ -407,6 +457,52 @@ def guard(msg_file: str | None, rev_range: str | None) -> None:
         click.echo("margi guard: all commits ok")
         return
     raise click.UsageError("pass --staged <msg-file> or --range <rev-range>")
+
+
+@main.command(hidden=True)
+@click.option("--expect", required=True, metavar="HASH",
+              help="The hash from the summary margi printed; nothing is saved if the files changed since.")
+def save(expect: str) -> None:
+    """[plumbing] Save the student's work as a version under their name, after they approved it.
+
+    The agent runs this only with the hash from margi's own summary; Claude Code asks the student
+    first (`ask` in .claude/settings.json). Never prints the student's name.
+    """
+    from .save import SaveError, save as run_save
+
+    cfg = _cfg()
+    try:
+        result = run_save(cfg, expect.strip())
+    except SaveError as e:
+        raise click.ClickException(str(e)) from e
+    from datetime import datetime
+
+    line = f"Saved as yours · {datetime.now().strftime('%H:%M')} · {result.files} file{'s' if result.files != 1 else ''}"
+    if result.pushed:
+        line += f" · uploaded to {result.remote}"
+    click.echo(line)
+    if result.push_error:
+        click.echo(f"Saved on this computer; upload to {result.remote} failed: {result.push_error}. "
+                   "It will go up with the next save.")
+    from .dashboard import refresh
+
+    refresh(cfg)
+
+
+@main.command(hidden=True)
+@click.option("--name", help="Your name as it appears on your saved versions.")
+@click.option("--email", help="Optional email for your saved versions.")
+def author(name: str | None, email: str | None) -> None:
+    """[plumbing] Set who saves are recorded as (`author` in thesis.config.yml). Never echoes it."""
+    from .config import set_author
+
+    if name is None and email is None:
+        raise click.UsageError("pass --name and/or --email")
+    cfg = _cfg()
+    current = cfg.get("author") or {}
+    set_author(cfg.root, name if name is not None else current.get("name"),
+               email if email is not None else current.get("email"))
+    click.echo(f"  updated author in {CONFIG_NAME}; later saves use it (earlier saves keep theirs)")
 
 
 @main.command(name="extract-pdfs", hidden=True)

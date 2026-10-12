@@ -221,7 +221,8 @@ def todo_done(cfg: Config, ids: list[str], note: str | None = None, *, commit: b
         return moved, None
     try:
         git("add", "-A", "--", MARGI_DIR, cwd=cfg.root)
-        git("commit", "-q", "-m", f"{PREFIX} todo done {' '.join(dict.fromkeys(ids))}", cwd=cfg.root)
+        git("commit", "-q", "-m", f"{PREFIX} todo done {' '.join(dict.fromkeys(ids))}", cwd=cfg.root,
+            env=cfg.author_env())
     except GitError as e:
         raise SyncError(f"the todos were moved but not committed:\n  {e}") from e
     return moved, git("rev-parse", "HEAD", cwd=cfg.root).strip()

@@ -104,7 +104,7 @@ Since 3 Oct: c3, c5 resolved · c4 still open · your dispute of c6 accepted
    deterministic helper `uv run margi respond`. The agent never edits, shortens or paraphrases a
    reason.
 4. The helper writes `margi/feedback/<timestamp>_respond_<scope>.json` and commits it as
-   `margi: respond c17 c18` under the **student's** git identity, not the bot's.
+   `margi: respond c17 c18` under the **student's** name (`author` in `thesis.config.yml`), not the bot's.
 
 Record payload:
 

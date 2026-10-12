@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,8 +13,11 @@ class GitError(RuntimeError):
     pass
 
 
-def git(*args: str, cwd: Path | str | None = None, check: bool = True, input: bytes | None = None) -> str:
-    proc = subprocess.run(["git", *args], cwd=cwd, capture_output=True, input=input)
+def git(*args: str, cwd: Path | str | None = None, check: bool = True, input: bytes | None = None,
+        env: dict[str, str] | None = None) -> str:
+    """Run git; ``env`` adds to (does not replace) the inherited environment."""
+    proc = subprocess.run(["git", *args], cwd=cwd, capture_output=True, input=input,
+                          env={**os.environ, **env} if env else None)
     if check and proc.returncode != 0:
         raise GitError(f"git {' '.join(args)} failed: {proc.stderr.decode(errors='replace').strip()}")
     return proc.stdout.decode(errors="replace")

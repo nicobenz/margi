@@ -39,6 +39,7 @@ def _what(r: dict) -> str:
 
 def build(cfg: Config) -> dict:
     from .guard import check_range
+    from .save import counts
     from .lifecycle import load_records
 
     records = load_records(cfg)
@@ -60,6 +61,7 @@ def build(cfg: Config) -> dict:
         "models": sorted({r["model"] for r in rows if r["model"] not in ("student",) and not r["model"].startswith("none")}),
         "has_git": cfg.has_git,
         "violations": violations,
+        "saves": counts(cfg),
     }
 
 
@@ -71,8 +73,13 @@ def _verdict(rep: dict) -> str:
         n = len(rep["violations"])
         return (f"**The guard found {n} commit{'s' if n != 1 else ''} that break the separation** "
                 "(listed at the end). The statement that margi wrote no text outside `margi/` can't be made for this history.")
-    return ("The guard checked every commit in this repository's history: margi wrote nothing outside `margi/`, "
+    text = ("The guard checked every commit in this repository's history: margi wrote nothing outside `margi/`, "
             "and no commit mixes the student's files with margi's.")
+    via, total = rep.get("saves") or (0, 0)
+    if via:
+        text += (f" {via} of {total} versions of the thesis were saved through margi, each approved by the student "
+                 "in Claude Code's permission prompt" + ("; the student committed the others directly." if via < total else "."))
+    return text
 
 
 def markdown(cfg: Config, rep: dict) -> str:
@@ -96,9 +103,12 @@ def markdown(cfg: Config, rep: dict) -> str:
               "## Separation", "",
               _verdict(rep), "",
               ("How it is enforced: every AI run ends in `margi finalize`, which refuses to run if anything outside "
-              "`margi/` changed and commits only `margi/`, as the margi bot. A commit hook and a CI check "
-              "(`margi guard`) reject commits that mix the two. To verify: `git log -- margi/` lists every AI "
-              "contribution; `git log -- . ':(exclude)margi'` lists the student's own."), "",
+              "`margi/` changed and commits only `margi/`, as the margi bot. "
+              + ("A commit hook and a CI check (`margi guard`) reject" if (cfg.root / ".github/workflows/margi-guard.yml").exists()
+                 else "A commit hook (`margi guard`) rejects") + " commits that mix the two. margi saves the student's own files only after the "
+              "student approves each save, under the student's name and never as the bot. To verify: "
+              "`git log -- margi/` lists every AI contribution; `git log -- . ':(exclude)margi'` lists the "
+              "student's own."), "",
               "## Every run", "",
               "| Date | Command | Scope | Model | What it produced | Record |",
               "|---|---|---|---|---|---|"]
