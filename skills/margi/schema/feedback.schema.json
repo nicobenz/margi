@@ -5,7 +5,7 @@
   "description": "Draft = what the agent writes to margi/.staging/. Record = draft + run + provenance, written only by `margi finalize`.",
   "$defs": {
     "command": {
-      "enum": ["propose", "challenge", "grade", "outline", "read", "todos", "respond"]
+      "enum": ["propose", "challenge", "grade", "outline", "read", "todos", "respond", "submit-check", "defend"]
     },
     "anchor": {
       "type": "object",
