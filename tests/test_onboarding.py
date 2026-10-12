@@ -1,7 +1,7 @@
 import json
 
 from click.testing import CliRunner
-from conftest import human_commit
+from conftest import human_commit, run_git
 
 from margi.cli import main, should_open_dashboard
 from margi.config import load
@@ -57,3 +57,25 @@ def test_browser_opens_only_on_first_run_at_a_terminal():
     assert not should_open_dashboard(True, True, True, {})  # --no-open
     assert not should_open_dashboard(True, False, False, {})  # piped, or an agent ran it
     assert not should_open_dashboard(True, False, True, {"CI": "true"})
+
+
+def test_next_shows_setup_steps_and_inventory_without_writing(repo, monkeypatch):
+    monkeypatch.chdir(repo)
+    before = run_git(repo, "status", "--porcelain").stdout
+    out = CliRunner().invoke(main, ["next"])
+    assert out.exit_code == 0, out.output
+    assert "Getting started  0 of 6 done" in out.output
+    assert "[>] Write your plan into PROPOSAL.md and save it" in out.output
+    assert "/margi propose" in out.output.split("Next steps", 1)[1]
+    assert "Plan          PROPOSAL.md still the template" in out.output
+    assert "Submission    no date documented" in out.output
+    assert "Guide tab" in out.output
+    assert run_git(repo, "status", "--porcelain").stdout == before  # read-only
+
+
+def test_help_is_routed_and_allowed():
+    from margi.resources import skills_dir, templates_dir
+
+    skill = (skills_dir() / "margi" / "SKILL.md").read_text()
+    assert "`/margi help`, or `/margi` alone" in skill and (skills_dir() / "margi/commands/help.md").is_file()
+    assert "Bash(uv run margi next:*)" in json.loads((templates_dir() / "claude-settings.json").read_text())["permissions"]["allow"]
