@@ -661,7 +661,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     $("updated").textContent = D.updated ? "Updated " + fmtDate(D.updated) : "No runs yet";
     if (D.thesis_commit) {
       $("updated").innerHTML = esc($("updated").textContent) + ' · <span class="mono">' + esc(D.thesis_commit.sha.slice(0, 7)) + '</span>';
-      $("updated").title = "Thesis as saved " + fmtDate(D.thesis_commit.date, true) + " (version " + D.thesis_commit.sha.slice(0, 7) + "). Any margi command refreshes this page.";
+      $("updated").title = "Thesis as saved " + fmtDate(D.thesis_commit.date, true) + " (version " + D.thesis_commit.sha.slice(0, 7) + "). After a margi command, reload this page to see its results.";
     }
     var steps = D.next_steps || [];
     var el = $("next");
@@ -917,7 +917,9 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       catIds.map(function (k) { return multiple(runs, k); }).join("") + '</div></div>' : '';
 
     var mine = CM.filter(function (c) { return covers(s.id, c.section); });
-    return head + meta + progress(mine) + warns +
+    var firstNote = runs.length === 1 && !mine.some(function (c) { return c.history.length; })
+      ? '<p class="progress">First grade of this section. The next grade shows what changed.</p>' : '';
+    return head + meta + (progress(mine) || firstNote) + warns +
       (g.summary ? '<p class="summary">' + esc(g.summary) + '</p>' : '') +
       '<div class="block"><h3><span class="caps">Scores</span><span class="muted" style="font-size:14px">open a category for its rationale</span></h3>' + cats + '</div>' +
       openComments(mine, runs.length) + notes(g, idx, runs.length) + closedComments(mine) + history + respondBar();
@@ -1122,7 +1124,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
   function timelineView() {
     if (!TL || (!TL.deadline && !(TL.events || []).length && !(TL.commits || []).length)) {
-      return '<div class="sheet empty"><h3>No timeline yet</h3><p>Document the submission date and milestones, and margi sets them against your grades, writing and saved versions.</p><p>' + cmdChip("/margi challenge deadline") + '</p></div>';
+      return '<div class="sheet empty"><h3 aria-level="2">No timeline yet</h3><p>Document the submission date and milestones, and margi sets them against your grades, writing and saved versions.</p><p>' + cmdChip("/margi challenge deadline") + '</p></div>';
     }
     var wrapW = Math.max(720, Math.min(1472, ($("view").clientWidth || 1200) - 34));
     return '<div class="sheet"><div class="tlwrap" id="tlwrap">' + timelineChart(wrapW) + '<div class="tip" role="presentation"></div></div>' + timelineKey() +
@@ -1291,7 +1293,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       '<p class="why" style="margin-top:0">A factual list of every margi run and how its output was kept apart from your text, checked against the whole git history. Your declaration and AI statement stay yours to write.</p><p>' + cmdChip("/margi ai-report") + '</p></div>' +
       (prep ? '' : '<div class="block"><h3><span class="caps">Mock defense</span></h3><p class="why" style="margin-top:0">An examiner’s questions over the finished thesis; you answer, margi only asks.</p><p>' + cmdChip("/margi defend") + '</p></div>') + '</section>';
     if (!C) {
-      return '<div class="cols"><div class="sheet empty"><h3>No submission check yet</h3><p>Checks every direct quotation against its PDF, the bibliography against your citations and PDFs, the length against your goal, and what is still open: sections changed since graded, major comments, todos. No AI involved.</p><p>' +
+      return '<div class="cols"><div class="sheet empty"><h3 aria-level="2">No submission check yet</h3><p>Checks every direct quotation against its PDF, the bibliography against your citations and PDFs, the length against your goal, and what is still open: sections changed since graded, major comments, todos. No AI involved.</p><p>' +
         cmdChip("/margi submit-check") + '</p></div>' + extras + '</div>' + (prep ? '<div style="margin-top:24px">' + prep + '</div>' : '');
     }
     var qs = C.quotes || [], issues = qs.filter(function (q) { return q.status !== "match"; }), ok = qs.filter(function (q) { return q.status === "match"; });
@@ -1344,7 +1346,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   function literatureView() {
     var L = D.literature;
     if (!L.rated.length && !L.unrated.length) {
-      return '<div class="sheet empty"><h3>No literature yet</h3><p>Put PDFs into the literature folder, then rate them for relevance to your research question.</p><p>' + cmdChip("/margi read") + '</p></div>';
+      return '<div class="sheet empty"><h3 aria-level="2">No literature yet</h3><p>Put PDFs into the <code>' + esc(L.dir || "lit/") + '</code> folder, then rate them for relevance to your research question.</p><p>' + cmdChip("/margi read") + '</p></div>';
     }
     var unrated = L.unrated.length ? '<div class="sheet pad" style="margin-top:24px"><h3 class="caps" style="margin:0 0 8px;color:var(--ink)">Not rated yet <span class="muted">' + L.unrated.length + '</span></h3><ul class="list">' +
       L.unrated.map(function (p) { return '<li class="mono">' + esc(p) + '</li>'; }).join("") + '</ul><p>' + cmdChip("/margi read") + '</p></div>' : '';
@@ -1445,7 +1447,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   var STATE_LABEL_JS = { open: "open", addressed: "addressed", disputed: "disputed", wont_fix: "won’t fix", resolved: "resolved", withdrawn: "withdrawn" };
   function todosView() {
     var T = D.todos;
-    if (!T.length) return '<div class="sheet empty"><h3>No todos</h3><p>margi proposes todos from your comments and ratings; you accept, reject or change them. ' +
+    if (!T.length) return '<div class="sheet empty"><h3 aria-level="2">No todos</h3><p>margi proposes todos from your comments and ratings; you accept, reject or change them. ' +
       (D.todo_sync ? 'Accepted todos also become GitHub issues.' : 'They stay in <code>margi/todos/</code>; GitHub is optional.') + '</p><p>' + cmdChip("/margi todos") + '</p></div>';
     var open = T.filter(function (t) { return t.state === "open"; });
     var waiting = T.filter(function (t) { return t.kind === "proposed" || t.kind === "close"; });
@@ -1483,7 +1485,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     return tab ? '<a href="#tab=' + tab + '" data-tabgo="' + tab + '">' + label + '</a>' : label;
   }
   function runsView() {
-    if (!D.runs.length) return '<div class="sheet empty"><h3>No runs yet</h3><p>Every margi command leaves a provenance-stamped record in <code>margi/feedback/</code>. They will be listed here.</p></div>';
+    if (!D.runs.length) return '<div class="sheet empty"><h3 aria-level="2">No runs yet</h3><p>Every margi command leaves a provenance-stamped record in <code>margi/feedback/</code>. They will be listed here.</p></div>';
     var cmds = [];
     D.runs.forEach(function (r) { if (cmds.indexOf(r.command) < 0) cmds.push(r.command); });
     if (state.runcmd && cmds.indexOf(state.runcmd) < 0) state.runcmd = null;
@@ -1507,7 +1509,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     ["/margi read [pdf …]", "Rates literature PDFs for relevance and traces key passages into the PDF.", true],
     ["/margi todos", "Proposes todos and closures for you to accept; /margi todos done <id> marks yours done.", true],
     ["/margi outline", "Counts the length of every section against your targets.", false],
-    ["/margi status", "Plain-text overview; also refreshes this page.", false],
+    ["/margi status", "Plain-text overview of grades, comments, length and recent runs; also updates this page (reload it).", false],
     ["/margi help", "Checks what is there and what is missing, and suggests what to run next. Also just /margi.", true],
     ["/margi submit-check", "Before submission: quotations against PDFs, bibliography, length, what is still open.", false],
     ["/margi ai-report", "A factual appendix of every margi run and the separation check.", false],
@@ -1518,6 +1520,12 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var cmds = '<section class="sheet" style="min-width:0;overflow-x:auto"><table class="plain" aria-label="Commands"><thead><tr><th class="caps">Command</th><th class="caps">What it does</th><th class="caps">AI</th></tr></thead><tbody>' +
       COMMANDS.map(function (c) {
         var bare = c[0].replace(/\s*[<\[].*$/, "");
+        if (bare === "/margi grade") {
+          var g1 = (D.next_steps || []).filter(function (x) { return /^\/margi grade \S/.test(x.command); })[0];
+          var s1 = D.sections.filter(function (x) { return !x.orphan && x.chars > 0; })[0];
+          var cmd = g1 ? g1.command : s1 ? "/margi grade " + s1.id : null;
+          if (cmd) return '<tr><td>' + cmdChip(cmd) + '<div class="muted mono" style="font-size:12px;margin-top:2px">or any &lt;section&gt; id</div></td><td class="why">' + esc(c[1]) + '</td><td class="muted">yes</td></tr>';
+        }
         return '<tr><td>' + cmdChip(bare) + (bare !== c[0] ? '<div class="muted mono" style="font-size:12px;margin-top:2px">' + esc(c[0].slice(bare.length).trim()) + '</div>' : '') + '</td><td class="why">' + esc(c[1]) + '</td><td class="muted">' + (c[2] ? 'yes' : 'no') + '</td></tr>';
       }).join("") + '</tbody></table><p class="tlnote" style="padding-top:12px">Run them in Claude Code. margi writes only inside <code>margi/</code> and never writes thesis text.</p></section>';
     var anchors = rub.anchors || {}, keys = Object.keys(anchors).sort();

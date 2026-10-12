@@ -107,5 +107,10 @@ Then run `uv run margi finalize` and report, in this order:
    your dispute of c15 accepted`.
 2. A compact table of the scores.
 3. The new major comments as one line each with their number and a file:line link.
+4. **Only on the first grade of this section** (no earlier record in step 4 of Inputs): one line
+   that puts the scores in the rubric's own terms, quoting the anchor of the median score from
+   `scale.anchors` in `rubric.yml`, e.g. `First grade. A 3 is "adequate: meets expectations with clear room to
+   improve"; the next grade shows what changed.` Plain and factual: no praise, no consolation.
+5. The `next` and `dashboard` lines from finalize (see "Talking to the user").
 
 Nothing else.

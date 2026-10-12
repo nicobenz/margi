@@ -16,6 +16,7 @@ colors:
   rule-soft: "#e3dfd8"
   chart: "#1c1a18"
   chart-grid: "#ddd8cf"
+  paper: "#ffffff"
 typography:
   headline:
     fontFamily: "Libertinus Serif, Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif"
@@ -28,6 +29,11 @@ typography:
     fontWeight: 400
     lineHeight: 1.45
     fontFeature: "tnum, lnum, kern"
+  body-compact:
+    fontFamily: "Libertinus Serif, Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1.45
   body-small:
     fontFamily: "Libertinus Serif, Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif"
     fontSize: "15px"
@@ -38,6 +44,11 @@ typography:
     fontSize: "12px"
     fontWeight: 400
     letterSpacing: "0.09em"
+  flag:
+    fontFamily: "Libertinus Sans, Gill Sans, Segoe UI, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 400
+    letterSpacing: "0.08em"
   control:
     fontFamily: "Libertinus Sans, Gill Sans, Segoe UI, system-ui, sans-serif"
     fontSize: "14px"
@@ -139,7 +150,7 @@ A warm, paper-and-ink neutral range with a single red; dark mode inverts the sam
 - **Rubricator Red** (red): marks only what needs attention: major-severity labels, scores at or below the low cut (2 on the 1-5 scale), the "changed since grading" flag, a nonzero major-comment count, the selected section's number, and the "needs N%" docs shortfall. It also carries the interaction marks: focus ring, text caret, link-hover underline, the copy-confirmed tick, and the border of the missing-data banner.
 - **Deep Rubric** (red-ink): red for running warning text (low confidence, text changed since grade, anchor "moved" / "passage not found"), slightly darker than Rubricator Red so sentences stay comfortable to read.
 - **Rubric Wash** (red-tint): the text-selection highlight only.
-- **Passage Wash** (wash): the quoted lines on a page image in the Literature view, multiplied over the paper-white crop. It marks a quoted selection, not attention, and stays the same in dark mode because the crop stays paper-white.
+- **Passage Wash** (wash): the quoted lines on a page image in the Literature view, multiplied over the paper-white (paper) crop. It marks a quoted selection, not attention, and stays the same in dark mode because the crop stays paper-white.
 
 ### Neutral
 - **Desk Grey** (ground): the page background, the running head, the scrollbar track.
@@ -169,7 +180,7 @@ Fonts ship as woff2 and are inlined as data URIs at render time: Serif 400, 400 
 
 ### Hierarchy
 - **Headline** (Serif 600, 26px, 1.15, balanced wrap): the apparatus panel title ("2.1 Genre theory of the Novelle", "Needs attention"), with the section number in regular weight, faded ink.
-- **Body** (Serif 400, 17px, 1.45; 16px under 720px): section titles in the table, summaries (max 68ch). Top-level sections set in 600.
+- **Body** (Serif 400, 17px, 1.45; body-compact 16px under 720px and in the status line): section titles in the table, summaries (max 68ch). Top-level sections set in 600.
 - **Body small** (Serif 400, 15-16px): comment notes (16px, max 66ch), rationales, "why" lines, category names; the lemma is italic in curly quotes.
 - **Label** (Sans 400, 12px, 0.08-0.09em, uppercase, faded ink): table column heads, block headings in the apparatus (set in ink there), severity words, the "Next" field label, small-multiple captions. Flags such as CHANGED use 11px.
 - **Control** (Sans 400, 13-15px): tabs 15px, header strip 14px, meta lines, filters and legend 13px.

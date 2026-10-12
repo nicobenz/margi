@@ -73,5 +73,5 @@ def render(cfg: Config) -> str:
                                       "outdated, the text changed since" if sub["stale"] else "up to date"))
 
     lines.append("")
-    lines.append(f"Dashboard  {DASH_HTML}  (all commands are in its Guide tab)")
+    lines.append(f"Dashboard  {(cfg.root / DASH_HTML).resolve().as_uri()}  (all commands are in its Guide tab)")
     return "\n".join(lines)

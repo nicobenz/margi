@@ -22,6 +22,23 @@ def load_records(cfg: Config) -> list[dict]:
     return sorted(out, key=lambda r: r.get("provenance", {}).get("timestamp", ""))
 
 
+MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+
+
+def _day(ts: str) -> str:
+    """'2026-10-05T10:00:00Z' -> '5 Oct', as on the dashboard."""
+    return f"{int(ts[8:10])} {MONTHS[int(ts[5:7]) - 1]}" if ts and len(ts) >= 10 else "?"
+
+
+def _n(n: int) -> str:
+    """Thousands grouped with a space, as on the dashboard: 7 180."""
+    return f"{n:,}".replace(",", " ")
+
+
+def _plural(n: int, word: str, many: str | None = None) -> str:
+    return f"{n} {word if n == 1 else many or word + 's'}"
+
+
 def render(cfg: Config) -> str:
     lines: list[str] = []
     from .agent_settings import consent_overrides
@@ -47,26 +64,29 @@ def render(cfg: Config) -> str:
     for r in records:
         if r.get("command") == "grade" and (r.get("readiness") or {}).get("decision") != "not_ready":
             grades[r["scope"]] = r
+
+    from .lifecycle import AWAITING, comments
+
+    tracked = comments(cfg)
     lines.append("")
     lines.append("Latest grades" if grades else "Latest grades  none yet — /margi grade <section>")
     for scope, r in sorted(grades.items()):
         scores = r.get("scores", {})
         parts = [f"{k} {v['score']:g}/{v['max']:g}" for k, v in scores.items()]
-        date = r["provenance"]["timestamp"][:10]
         low = " [low confidence]" if r["provenance"].get("docs", {}).get("low_confidence") else ""
-        n_major = sum(1 for c in r.get("comments", []) if c.get("severity") == "major")
-        lines.append(f"  {scope:<10} {date}  {', '.join(parts)}  ({len(r.get('comments', []))} comments, {n_major} major){low}")
+        # open comments in this section now (the dashboard's count), not the ones this grade created
+        here = [c for c in tracked if c["state"] in AWAITING and c.get("section") == scope]
+        n_major = sum(1 for c in here if c.get("severity") == "major")
+        lines.append(f"  {scope:<10} {_day(r['provenance']['timestamp']):<7} {', '.join(parts)}  "
+                     f"({_plural(len(here), 'open comment')}, {n_major} major){low}")
 
-    from .lifecycle import AWAITING, comments
-
-    tracked = comments(cfg)
     if tracked:
         not_closed = [c for c in tracked if c["state"] in AWAITING]
         majors = sum(1 for c in not_closed if c["severity"] == "major")
         waiting = sum(1 for c in not_closed if c["state"] != "open")
         closed = len(tracked) - len(not_closed)
-        lines.append(f"Comments       {len(not_closed)} open ({majors} major, {waiting} answered, awaiting a grade), "
-                     f"{closed} closed — uv run margi comments")
+        lines.append(f"Comments       {len(not_closed)} open ({majors} major, {waiting} answered and awaiting a grade), "
+                     f"{closed} closed")
 
     outlines = [r for r in records if r.get("command") == "outline"]
     lines.append("")
@@ -74,8 +94,9 @@ def render(cfg: Config) -> str:
         o = outlines[-1]["payload"]
         top = ", ".join(f"{s['title']} {s['share']:.0%}" for s in o.get("sections", [])[:6])
         prev = outlines[-2]["payload"]["total"] if len(outlines) > 1 else None
-        delta = f" ({o['total'] - prev:+d} since previous snapshot)" if prev is not None else ""
-        lines.append(f"Outline        {o['total']} {o['unit']}{delta}")
+        diff = o["total"] - prev if prev is not None else 0
+        delta = f" ({'+' if diff >= 0 else '−'}{_n(abs(diff))} since the previous snapshot)" if prev is not None else ""
+        lines.append(f"Outline        {_n(o['total'])} {o['unit']}{delta}")
         lines.append(f"  {top}")
     else:
         lines.append("Outline        no snapshot yet — /margi outline")
@@ -88,10 +109,8 @@ def render(cfg: Config) -> str:
                  + (" (mirrored to GitHub)" if github_sync(cfg) else ""))
 
     lines.append("")
-    lines.append("Recent runs")
+    lines.append("Recent runs" if records else "Recent runs    none yet")
     for r in records[-5:][::-1]:
-        p = r["provenance"]
-        lines.append(f"  {p['timestamp']}  {r['command']:<9} {r['scope']:<16} {p.get('model') or '-'} ({p['model_source']})")
-    if not records:
-        lines.append("  none")
+        scope = "" if r.get("scope") in (None, "all") else r["scope"]
+        lines.append(f"  {_day(r['provenance']['timestamp']):<7} /margi {r['command']} {scope}".rstrip())
     return "\n".join(lines)
