@@ -155,7 +155,7 @@ A warm, paper-and-ink neutral range with a single red; dark mode inverts the sam
 ### Named Rules
 **The Rubricator Rule.** Red means "look here". It is never used for a brand mark, a positive state, a target, or a delta; the wordmark, length targets and score changes stay in ink.
 
-**The No Verdict Hue Rule.** There is no "good" colour. Rising and falling deltas are ink and second ink; a high literature relevance is ink, a low one faded ink. Only attention earns a hue.
+**The No Verdict Hue Rule.** There is no "good" colour. Rising deltas are ink 600, falling ones faded ink (weight and value, never hue); a high literature relevance is ink, a low one faded ink. Only attention earns a hue.
 
 ## Typography
 
@@ -261,6 +261,10 @@ The signature action: a typed command you can copy.
 ### Submission tab
 - A prose head line ("Checked 11 Oct at commit d911843 · **13** findings, 3 need attention" with the attention count in red, a Deep Rubric warning when the thesis changed since, the re-run chip), then sheets in two columns: *Quotations* (apparatus entries: line locator, the thesis quote as lemma, a severity-style label "differs from the PDF" / "not found in the PDF" in red capitals or "no PDF for this source" / "no citation near the quote" in faded capitals, cite and PDF page; differing words as a thread, thesis words in the student's italic, PDF words roman; matching quotes collapsed), *Bibliography*, *Still open* (sections with grade chips, open majors and todos), *Prepare for the defense*, and the AI-use appendix.
 
+### Runs and Guide tabs
+- Runs: a command filter (native select) in the table bar with the run count; each scope links to where the run shows up (a grade's section, the Literature, Todos, Timeline, Submission or Project docs tab); the row's title names its record file.
+- Guide: the command reference (command chip, arguments in Mono beneath, what it does, whether AI is involved) beside the rubric: the scale anchors, the low-score and low-confidence conventions, and every category with its guiding question and its 5/3/1 descriptors. The Sections legend links to it ("How scores work").
+
 ### Comment lifecycle (apparatus)
 - The section panel opens with a progress line in running prose under the meta line: "Since 3 Oct: **1 of 3** major comments resolved · 1 withdrawn · 1 open" (Serif 17px, second ink, figures in ink 600). No hue: progress is good news (The No Verdict Hue Rule).
 - *Open comments* lists every major and minor comment of the section and its subsections that isn't closed, across all grades, by severity, then age. Each apparatus entry adds, under the note, a thread and a state line.
@@ -281,7 +285,7 @@ The signature action: a typed command you can copy.
 - A legend line under the chart (Sans 13px, drawn glyphs), then the milestone table (`plain` table: date, milestone, sections as links, state: "met 8 Oct", "met late, 8 Oct", "due in 9 days", "missed" in red).
 
 ### Passage entry (Literature apparatus)
-- The Literature view uses the Sections split: the rated-literature table left (selected row: Pencil Shade, relevance figure in red), the apparatus panel right for one paper: name as headline, a meta line (relevance, role, thesis sections, cited or not, rating date), the PDF path with an "open the PDF" link, the rating's why as summary, caveats as an italic-led note.
+- The Literature view uses the Sections split: the rated-literature table left (selected row: Pencil Shade and the underlined title; the relevance figure keeps its ink, since red would read as a low value), the apparatus panel right for one paper: name as headline, a meta line (relevance, role, thesis sections, cited or not, rating date), the PDF path with an "open the PDF" link, the rating's why as summary, caveats as an italic-led note.
 - Each key passage is an apparatus entry: locator `p. N` in Mono 12px; the paper's own section path in Sans 13px faded ink with › separators; the page crop; the lemma line (italic quote, faded bracket, anchor state in Deep Rubric: "found on p. N, not p. M", "passage not found in the PDF"; "read from the page image" in faded ink); the passage's why as the note; "Open p. N in the PDF" in Sans 13px with a drawn 11px external-link icon.
 - The crop: a greyscale page image on white inside a 1px hairline, square, no shadow; top and bottom fade out over 10px so it reads as an excerpt (no fade in print). Width fills the panel up to 1.5x print size and never drops below print size; on a phone it scrolls sideways inside its frame. Quoted lines carry the Passage Wash as an overlay, not baked into the image. Dark mode dims the crop to 88% brightness.
 - A crop that doesn't load (PDF not on this machine, changed, or not rendered yet) is replaced by a Sans 13px faded note saying how to get it back, and the page link hides.

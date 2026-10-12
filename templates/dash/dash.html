@@ -180,8 +180,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .len .bar { display: block; position: relative; height: 3px; margin-top: 3px; background: var(--rule-soft); }
 .len .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink-2); }
 .len .bar b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--ink); }
-.delta.up { color: var(--ink); }
-.delta.down { color: var(--ink-2); }
+.delta.up { color: var(--ink); font-weight: 600; }
+.delta.down { color: var(--ink-3); }
 .legend { display: flex; flex-wrap: wrap; gap: 2px var(--s4); margin: 0; padding: var(--s3) var(--s4); border-top: 1px solid var(--ink); font-family: var(--sans); font-size: 13px; color: var(--ink-3); }
 .legend b { color: var(--ink-2); font-weight: 700; }
 .legend i { font-family: var(--serif); font-size: 15px; color: var(--ink-2); }
@@ -366,6 +366,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .todos .loc { font-size: 11px; }
 .ttitle { font-size: 16px; }
 .tmeta { margin-top: 2px; font-family: var(--sans); font-size: 13px; color: var(--ink-2); }
+.guidecats dt { font-family: var(--serif); font-size: 16px; color: var(--ink); margin-top: var(--s4); }
+.guidecats dt b { font-family: var(--sans); font-size: 12px; color: var(--ink-3); margin-right: 4px; }
 .tlink { font-family: var(--sans); font-size: 13px; color: var(--ink-2); margin-left: 6px; white-space: nowrap; }
 .respond .hint { flex: 1 1 16ch; }
 .respond .clear { border: 0; background: none; padding: 2px 4px; cursor: pointer; color: var(--ink-3); font-size: 13px; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
@@ -375,7 +377,6 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .ptitle { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .ptitle:focus-visible { outline-offset: 3px; }
 .grid tbody tr.sel .ptitle { text-decoration: underline; text-decoration-color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 4px; }
-.grid tbody tr.sel .rel { color: var(--red); }
 .grid .src-path { font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
 .passage .where { font-family: var(--sans); font-size: 13px; color: var(--ink-3); margin-bottom: var(--s2); }
 .passage .where .sep { margin: 0 6px; color: var(--rule); }
@@ -761,7 +762,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     ["docs", "Project docs", D.docs.open_questions.length || null],
     ["literature", "Literature", D.literature.rated.length + D.literature.unrated.length || null],
     ["todos", "Todos", D.todos.filter(function (t) { return t.state === "open"; }).length || null],
-    ["runs", "Runs", D.runs.length || null]
+    ["runs", "Runs", D.runs.length || null],
+    ["guide", "Guide", null]
   ];
   function renderTabs() {
     $("tabs").innerHTML = TABS.map(function (t) {
@@ -845,7 +847,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var problem = D.project.section_problem ? '<p class="warn">Section list comes from the last length snapshot: ' + esc(D.project.section_problem) + '</p>' : '';
     var anyLc = gradedIds.some(function (id) { return latest(id).low_confidence; });
     var legend = '<p class="legend">' + cats.map(function (c) { return '<span class="key"><b>' + esc(abbr(c.id)) + '</b> ' + esc(c.title) + '</span>'; }).join("") +
-      '<span class="key"><b>Δ</b> mean change since the previous grade</span><span>Scores of ' + Math.floor(lowCut) + ' or below in <span class="red">red</span></span>' +
+      '<span class="key"><b>Δ</b> mean change since the previous grade</span><a class="key" href="#tab=guide" data-tabgo="guide">How scores work</a><span>Scores of ' + Math.floor(lowCut) + ' or below in <span class="red">red</span></span>' +
       (anyLc ? '<span><i>Italic</i> scores were graded while the project docs were incomplete</span>' : '') + '</p>';
     return '<div class="split' + (setupOpen && !state.sel ? ' setup-first' : '') + '"><div class="sheet">' + bar + '<table class="grid" aria-label="Sections and their latest scores"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>' + legend + problem + '</div>' +
       '<aside class="sheet apparatus" id="apparatus" aria-label="Section detail" tabindex="-1">' + apparatus() + '</aside></div>';
@@ -1469,20 +1471,70 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
       (waitList ? '<section class="sheet pad"><div class="block" style="margin-top:0"><h3><span class="caps">Waiting for your review</span><span class="muted" style="font-size:14px">' + waiting.length + '</span></h3>' + waitList + '</div></section>' : '<div></div>') + '</div>';
   }
 
+  var RUN_LINK = { read: "literature", todos: "todos", "submit-check": "submission", defend: "submission", outline: "timeline", propose: "docs", challenge: "docs" };
+  function runLink(r) {
+    var label = esc(r.scope);
+    if ((r.command === "grade" || r.command === "respond") && sections.some(function (x) { return x.id === r.scope; })) {
+      return '<a href="#tab=sections&s=' + encodeURIComponent(r.scope) + '" data-goto="' + esc(r.scope) + '">' + label + '</a>';
+    }
+    var tab = RUN_LINK[r.command];
+    return tab ? '<a href="#tab=' + tab + '" data-tabgo="' + tab + '">' + label + '</a>' : label;
+  }
   function runsView() {
     if (!D.runs.length) return '<div class="sheet empty"><h3>No runs yet</h3><p>Every margi command leaves a provenance-stamped record in <code>margi/feedback/</code>. They will be listed here.</p></div>';
-    return '<div class="sheet"><table class="plain"><thead><tr><th class="caps">When</th><th class="caps">Command</th><th class="caps">Scope</th><th class="caps hide-s">Model</th><th class="caps hide-s">Summary</th></tr></thead><tbody>' +
-      D.runs.map(function (r) {
-        return '<tr><td style="white-space:nowrap">' + fmtDate(r.timestamp, true) + '</td><td>' + esc(r.command) + '</td><td>' + esc(r.scope) + '</td><td class="hide-s muted">' + esc(r.model || "—") + '</td><td class="why hide-s">' + esc(r.summary) + '</td></tr>';
+    var cmds = [];
+    D.runs.forEach(function (r) { if (cmds.indexOf(r.command) < 0) cmds.push(r.command); });
+    if (state.runcmd && cmds.indexOf(state.runcmd) < 0) state.runcmd = null;
+    var shown = D.runs.filter(function (r) { return !state.runcmd || r.command === state.runcmd; });
+    var filter = cmds.length > 1 ? '<div class="tablebar"><label><span class="visually-hidden">Command</span><select id="runcmd"><option value="">All commands</option>' +
+      cmds.map(function (c) { return '<option value="' + esc(c) + '"' + (state.runcmd === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join("") + '</select></label>' +
+      '<span>' + plural(shown.length, "run") + '</span></div>' : '';
+    return '<div class="sheet">' + filter + '<table class="plain"><thead><tr><th class="caps">When</th><th class="caps">Command</th><th class="caps">Scope</th><th class="caps hide-s">Model</th><th class="caps hide-s">Summary</th></tr></thead><tbody>' +
+      shown.map(function (r) {
+        return '<tr title="' + esc(r.file) + '"><td style="white-space:nowrap">' + fmtDate(r.timestamp, true) + '</td><td>' + esc(r.command) + '</td><td>' + runLink(r) + '</td><td class="hide-s muted">' + esc(r.model || "—") + '</td><td class="why hide-s">' + esc(r.summary) + '</td></tr>';
       }).join("") + '</tbody></table></div>' +
-      '<p class="muted" style="font-size:15px">The full audit trail is <code>git log -- margi/</code>.</p>';
+      '<p class="muted" style="font-size:15px">Each run is a record in <code>margi/feedback/</code> (hover a row for its file). The full audit trail is <code>git log -- margi/</code>.</p>';
+  }
+
+  // ------------------------------------------------------------------ guide tab
+  var COMMANDS = [
+    ["/margi propose", "Turns your PROPOSAL.md into sourced project docs and lists open questions.", true],
+    ["/margi challenge <aspect>", "A devil's-advocate dialogue about one aspect; confirmed refinements go into the docs.", true],
+    ["/margi grade <section>", "Rubric scores and comments anchored to your text, judged against your docs.", true],
+    ["/margi respond <c17 …>", "Your answer to comments: addressed, disputed or won't fix, in your own words.", false],
+    ["/margi read [pdf …]", "Rates literature PDFs for relevance and traces key passages into the PDF.", true],
+    ["/margi todos", "Proposes todos and closures for you to accept; /margi todos done <id> marks yours done.", true],
+    ["/margi outline", "Counts the length of every section against your targets.", false],
+    ["/margi status", "Plain-text overview; also refreshes this page after you commit.", false],
+    ["/margi submit-check", "Before submission: quotations against PDFs, bibliography, length, what is still open.", false],
+    ["/margi ai-report", "A factual appendix of every margi run and the separation check.", false],
+    ["/margi defend [chapter]", "Examiner questions over the finished thesis; margi only asks.", true]
+  ];
+  var codeTicks = function (t) { return esc(t).replace(/`([^`]+)`/g, "<code>$1</code>"); };
+  function guideView() {
+    var cmds = '<section class="sheet" style="min-width:0;overflow-x:auto"><table class="plain" aria-label="Commands"><thead><tr><th class="caps">Command</th><th class="caps">What it does</th><th class="caps">AI</th></tr></thead><tbody>' +
+      COMMANDS.map(function (c) {
+        var bare = c[0].replace(/\s*[<\[].*$/, "");
+        return '<tr><td>' + cmdChip(bare) + (bare !== c[0] ? '<div class="muted mono" style="font-size:12px;margin-top:2px">' + esc(c[0].slice(bare.length).trim()) + '</div>' : '') + '</td><td class="why">' + esc(c[1]) + '</td><td class="muted">' + (c[2] ? 'yes' : 'no') + '</td></tr>';
+      }).join("") + '</tbody></table><p class="tlnote" style="padding-top:12px">Run them in Claude Code. margi writes only inside <code>margi/</code> and never writes thesis text.</p></section>';
+    var anchors = rub.anchors || {}, keys = Object.keys(anchors).sort();
+    var scale = '<div class="block" style="margin-top:0"><h3><span class="caps">The scale</span><span class="muted" style="font-size:14px">' + esc(rub.title || rub.id) + '</span></h3><ul class="list">' +
+      keys.map(function (k) { return '<li><b>' + esc(k) + '</b> ' + esc(anchors[k]) + '</li>'; }).join("") + '</ul>' +
+      '<p class="lcnote">Scores of ' + Math.floor(lowCut) + ' or below are marked in <span class="red">red</span>. A grade is judged against what your project docs say the thesis is trying to do; while the docs are incomplete it is marked low-confidence (in italics).' + (rub.notes ? ' ' + codeTicks(rub.notes) : '') + '</p></div>';
+    var cats = '<div class="block"><h3><span class="caps">Categories</span><span class="muted" style="font-size:14px">' + rub.categories.length + '</span></h3><dl class="doclist guidecats">' +
+      rub.categories.map(function (c) {
+        var lv = c.levels || {};
+        return '<dt><b>' + esc(abbr(c.id)) + '</b> ' + esc(c.title) + '</dt><dd>' + (c.question ? '<p style="margin:2px 0 4px">' + codeTicks(c.question) + '</p>' : '') +
+          Object.keys(lv).sort().reverse().map(function (k) { return '<div class="why"><b>' + esc(k) + '</b> ' + codeTicks(lv[k]) + '</div>'; }).join("") + '</dd>';
+      }).join("") + '</dl></div>';
+    return '<div class="cols">' + cmds + '<section class="sheet pad">' + scale + cats + '</section></div>';
   }
 
   // ------------------------------------------------------------------ render + events
   function render(opts) {
     renderTabs();
     var v = $("view");
-    var views = { sections: sectionsView, timeline: timelineView, submission: submissionView, docs: docsView, literature: literatureView, todos: todosView, runs: runsView };
+    var views = { guide: guideView, sections: sectionsView, timeline: timelineView, submission: submissionView, docs: docsView, literature: literatureView, todos: todosView, runs: runsView };
     if (!views[state.tab]) state.tab = "sections";
     v.setAttribute("aria-labelledby", "tab-" + state.tab);
     v.innerHTML = views[state.tab]();
@@ -1542,6 +1594,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     }
     if (e.target.id === "catsel") { state.cat = e.target.value; rerenderPanel(); }
     if (e.target.id === "runsel") { state.run = Number(e.target.value); rerenderPanel(); }
+    if (e.target.id === "runcmd") { state.runcmd = e.target.value || null; render(); var rc = $("runcmd"); if (rc) rc.focus(); }
   });
   $("view").addEventListener("keydown", function (e) {
     var pb = e.target.closest(".ptitle");

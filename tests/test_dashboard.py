@@ -112,3 +112,12 @@ def test_steps_are_capped_and_challenge_names_an_aspect():
     d, recs = _data(questions=qs)
     challenge = next(s for s in dashboard.next_steps(d, recs) if s["command"].startswith("/margi challenge"))
     assert challenge["command"] == "/margi challenge method" and "most of them about method" in challenge["reason"]
+
+
+def test_rubric_explains_itself(repo, cfg):
+    rub = collect(cfg)["rubric"]
+    arg = next(c for c in rub["categories"] if c["id"] == "argument")
+    assert arg["question"] == "Are claims stated clearly, ordered logically and justified?"
+    assert set(arg["levels"]) == {"1", "3", "5"}
+    align = next(c for c in rub["categories"] if c["id"] == "alignment")
+    assert align["question"].endswith("?")  # a question spanning lines is joined, not cut
