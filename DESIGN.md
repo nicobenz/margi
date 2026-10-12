@@ -258,6 +258,9 @@ The signature action: a typed command you can copy.
 - Ticking builds `/margi todos done t… t…` in the same sticky command bar as comment answers. Done todos show date and who closed them ("by you", "on margi's evidence", "closed on GitHub"); the student's note is set like their other words (italic, curly quotes).
 - A comment with an open todo ends its note with "→ todo: <title>" in Sans 13px second ink, linking to the tab.
 
+### Submission tab
+- A prose head line ("Checked 11 Oct at commit d911843 · **13** findings, 3 need attention" with the attention count in red, a Deep Rubric warning when the thesis changed since, the re-run chip), then sheets in two columns: *Quotations* (apparatus entries: line locator, the thesis quote as lemma, a severity-style label "differs from the PDF" / "not found in the PDF" in red capitals or "no PDF for this source" / "no citation near the quote" in faded capitals, cite and PDF page; differing words as a thread, thesis words in the student's italic, PDF words roman; matching quotes collapsed), *Bibliography*, *Still open* (sections with grade chips, open majors and todos), *Prepare for the defense*, and the AI-use appendix.
+
 ### Comment lifecycle (apparatus)
 - The section panel opens with a progress line in running prose under the meta line: "Since 3 Oct: **1 of 3** major comments resolved · 1 withdrawn · 1 open" (Serif 17px, second ink, figures in ink 600). No hue: progress is good news (The No Verdict Hue Rule).
 - *Open comments* lists every major and minor comment of the section and its subsections that isn't closed, across all grades, by severity, then age. Each apparatus entry adds, under the note, a thread and a state line.

@@ -320,9 +320,29 @@ def collect(cfg: Config) -> dict:
         "runs": runs,
     }
     data["timeline"] = _timeline(cfg, records, sections, comments, data["thesis_commit"], outline["unit"])
+    data["submission"] = _submission(records, data["thesis_commit"])
     data["next_steps"] = next_steps(data, records)
     data["setup"] = _setup(cfg, records, data)
     return data
+
+
+def _submission(records: list[dict], thesis_commit: dict | None) -> dict:
+    """The latest submit-check, whether the thesis changed since, and the defense questions to prepare."""
+    checks = [r for r in records if r.get("command") == "submit-check"]
+    latest = checks[-1] if checks else None
+    prepare = []
+    for r in records:
+        if r.get("command") != "defend":
+            continue
+        for q in (r.get("payload") or {}).get("questions", []):
+            if q.get("outcome") == "struggled":
+                prepare.append({"question": q.get("question"), "target": q.get("target"), "timestamp": r["provenance"].get("timestamp")})
+    return {
+        "check": {"timestamp": latest["provenance"].get("timestamp"), "file": latest["_file"], **(latest.get("payload") or {})} if latest else None,
+        "stale": bool(latest and thesis_commit and (latest.get("payload") or {}).get("commit") != thesis_commit.get("sha")),
+        "prepare": prepare[-20:],
+        "defended": sum(1 for r in records if r.get("command") == "defend"),
+    }
 
 
 def _plan_written(cfg: Config) -> bool:
@@ -541,6 +561,12 @@ def _date(ts: str | None) -> str:
     return f"{int(m.group(3))} {MONTHS[int(m.group(2)) - 1]} {m.group(1)}" if m else (ts or "")
 
 
+def _days(a: str, b: str) -> int:
+    import datetime as dt
+
+    return (dt.date.fromisoformat(b[:10]) - dt.date.fromisoformat(a[:10])).days
+
+
 def _common_parent(ids: list[str]) -> str:
     """The deepest section containing all ``ids`` ("2.1", "2.3" -> "2"), or the first id."""
     parts = [i.split(".") for i in ids]
@@ -591,6 +617,11 @@ def next_steps(data: dict, records: list[dict]) -> list[dict]:
             names = m["label"] or f"{', '.join(m['sections'])} {m['state']}"
             target = m["sections"][0] if len(m["sections"]) == 1 else _common_parent(m["sections"])
             add(f"/margi grade {target}", f"Milestone \"{names}\" is due {_date(m['date'])}.")
+    sub = data.get("submission") or {}
+    ref, deadline = timeline.get("reference"), timeline.get("deadline")
+    if ref and deadline and (_days(ref, deadline) <= 21) and (not sub.get("check") or sub.get("stale")):
+        add("/margi submit-check", f"The submission is due {_date(deadline)}; "
+                                   + ("the text changed since the last check." if sub.get("check") else "check quotations, bibliography and open items."))
     if not timeline.get("deadline") and docs["completeness"] >= docs["threshold"]:
         add("/margi challenge deadline", "No submission date documented yet.")
     gated = data.get("grade_precheck") != "none"

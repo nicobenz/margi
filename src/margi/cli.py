@@ -246,6 +246,59 @@ def respond(answers: tuple[str, ...], reasons: tuple[tuple[str, str], ...]) -> N
         click.echo(f"  not committed ({NO_GIT})")
 
 
+@main.command(name="submit-check", hidden=True)
+def submit_check() -> None:
+    """[plumbing] Check quotations, bibliography, length, grades and open items before submission (no AI)."""
+    import json as _json
+
+    from . import submission
+    from .finalize import STAGING
+
+    cfg = _cfg()
+    try:
+        ensure_clean(cfg)
+    except FinalizeError as e:
+        raise click.ClickException(str(e)) from e
+    payload = submission.run(cfg)
+    lines = submission.summary(payload)
+    for line in lines:
+        click.echo(line)
+    c = payload["counts"]
+    draft = {"command": "submit-check", "scope": "all",
+             "summary": f"{c['findings']} findings, {c['attention']} need attention. " + " ".join(lines)[:2800],
+             "payload": payload}
+    staging = cfg.root / STAGING
+    staging.mkdir(parents=True, exist_ok=True)
+    (staging / "submit-check.json").write_text(_json.dumps(draft, ensure_ascii=False), encoding="utf-8")
+    try:
+        result = run_finalize(cfg, model_source="none")
+    except FinalizeError as e:
+        raise click.ClickException(str(e)) from e
+    click.echo("")
+    _report(result, cfg)
+
+
+@main.command(name="ai-report", hidden=True)
+def ai_report() -> None:
+    """[plumbing] Write the AI-use appendix (margi/ai-use.md, printable margi/dash/ai-use.html) and commit it."""
+    from . import ai_report as report_mod
+
+    cfg = _cfg()
+    try:
+        ensure_clean(cfg)
+    except FinalizeError as e:
+        raise click.ClickException(str(e)) from e
+    _, rep = report_mod.write(cfg)
+    click.echo(f"  wrote {report_mod.MD} ({len(rep['rows'])} runs) and {report_mod.HTML} (printable, not committed)")
+    if rep["violations"]:
+        click.echo(f"  the guard found {len(rep['violations'])} commit(s) that break the separation; see the report")
+    try:
+        result = run_finalize(cfg, command="ai-report", model_source="none")
+    except FinalizeError as e:
+        raise click.ClickException(str(e)) from e
+    _report(result, cfg)
+
+
 @main.command(name="sync-todos", hidden=True)
 def sync_todos() -> None:
     """[plumbing] Apply accepted todos and closures; with github.sync, mirror them to issues (no AI)."""

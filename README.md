@@ -64,6 +64,9 @@ All commands run inside Claude Code.
 | `/margi outline` | Character counts and their distribution across sections and subsections, compared against targets from `structure.md`. No AI involved. |
 | `/margi read [pdf…]` | Rates literature PDFs for relevance to your research question and outline. |
 | `/margi todos` | Proposes todos from your open comments and other feedback, and proposes closing todos that look done. You accept, reject or change each one. Accepted todos live in `margi/todos/`; set `github.sync: true` in `thesis.config.yml` to mirror them to GitHub issues. `/margi todos done <id>` marks todos you finished, with an optional note in your own words. |
+| `/margi submit-check` | Before submission: checks every direct quotation against its PDF (word for word, showing what differs), the bibliography against your citations and PDFs, the length against your goal, and what is still open. No AI involved; results on the dashboard's Submission tab. |
+| `/margi ai-report` | A factual appendix on how margi was used (`margi/ai-use.md`, printable `margi/dash/ai-use.html`): every run and what it produced, and the guard's check of your whole git history. Your declaration and AI statement stay yours to write. |
+| `/margi defend [chapter]` | A mock defense: examiner questions over the finished thesis, one at a time. You answer; margi only asks and records which questions to prepare. |
 | `/margi status` | Shows docs completeness, latest grades, outline, todos and recent runs. |
 
 `/margi-propose` and `/margi-challenge <aspect>` work as shortcuts too.
