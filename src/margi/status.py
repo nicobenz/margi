@@ -48,7 +48,8 @@ def render(cfg: Config) -> str:
     if saved:
         from datetime import datetime
 
-        dt = datetime.fromisoformat(saved)
+        # git may print UTC as a trailing "Z", which fromisoformat only accepts from Python 3.11 on
+        dt = datetime.fromisoformat(saved.replace("Z", "+00:00"))
         lines.append(f"Last saved     {dt.day} {dt:%b %Y, %H:%M}")
     for rule in consent_overrides(cfg.root):
         lines.append(f"warning: {rule} lets your agent save without asking you; `uv run margi init` removes it")
