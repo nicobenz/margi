@@ -328,6 +328,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 .setup .when { font-family: var(--sans); font-size: 12px; color: var(--ink-3); margin-left: 6px; }
 .setup .act { grid-column: 2; margin-top: 6px; }
 .setup .act .hint { display: block; font-family: var(--sans); font-size: 13px; color: var(--ink-3); margin-top: 4px; }
+.setup-more { font-family: var(--sans); font-size: 13px; color: var(--ink-3); margin: var(--s3) 0 0; }
 
 /* comment lifecycle ------------------------------------------------------------------ */
 .progress { margin: var(--s3) 0 0; font-size: 17px; color: var(--ink-2); max-width: 68ch; }
@@ -602,7 +603,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     }).join("");
     var head = asPanel ? '<h2>Getting started</h2><div class="meta"><span>' + SETUP.done + ' of ' + SETUP.total + ' done. The list ticks itself off as margi\u2019s records come in.</span></div><div class="block" style="margin-top:24px">'
       : '<div class="block"><h3><span class="caps">Getting started</span><span class="muted" style="font-size:14px">' + SETUP.done + ' of ' + SETUP.total + '</span></h3>';
-    return head + '<ol class="setup">' + items + '</ol></div>';
+    return head + '<ol class="setup">' + items + '</ol><p class="setup-more">Every command and what it does: <a href="#tab=guide" data-tabgo="guide">Guide</a>. Lost? ' + cmdChip("/margi help") + ' looks at your project and suggests what to run next.</p></div>';
   }
   var shareTarget = function (t) { var m = /target\s+([\d.]+)\s*%/.exec(t || ""); return m ? Number(m[1]) / 100 : null; };
 
@@ -1507,6 +1508,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     ["/margi todos", "Proposes todos and closures for you to accept; /margi todos done <id> marks yours done.", true],
     ["/margi outline", "Counts the length of every section against your targets.", false],
     ["/margi status", "Plain-text overview; also refreshes this page.", false],
+    ["/margi help", "Checks what is there and what is missing, and suggests what to run next. Also just /margi.", true],
     ["/margi submit-check", "Before submission: quotations against PDFs, bibliography, length, what is still open.", false],
     ["/margi ai-report", "A factual appendix of every margi run and the separation check.", false],
     ["/margi defend [chapter]", "Examiner questions over the finished thesis; margi only asks.", true]

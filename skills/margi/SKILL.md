@@ -1,6 +1,6 @@
 ---
 name: margi
-description: AI feedback in the margins of a human-written thesis. Use for /margi grade, read, todos, respond, outline, status, submit-check, ai-report, defend, propose and challenge. Writes only to margi/ and never writes thesis text.
+description: AI feedback in the margins of a human-written thesis. Use for /margi (bare), help, grade, read, todos, respond, outline, status, submit-check, ai-report, defend, propose and challenge. Writes only to margi/ and never writes thesis text.
 ---
 
 # margi
@@ -18,6 +18,8 @@ hand**. You give feedback in the margins. You never write the text.
   date the user said it; unknowns go to `margi/docs/open-questions.md`.
 
 ## Every run
+
+`/margi help` and a bare `/margi` are read-only and skip these steps (see `commands/help.md`).
 
 1. Run `uv run margi finalize --check`. If it prints "Your thesis has changes that aren't saved
    yet", see "Saving the user's work" below. On any other failure, show the message and **stop**.
@@ -85,6 +87,7 @@ Work quietly and confidently; report results, not process.
 
 | Invocation | What to do |
 |---|---|
+| `/margi help`, or `/margi` alone | Follow `commands/help.md` |
 | `/margi grade <section>` | Follow `commands/grade.md` |
 | `/margi read [pdf…]` | Follow `commands/read.md` |
 | `/margi todos` | Follow `commands/todos.md` |

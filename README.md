@@ -29,6 +29,8 @@ skip that. Until setup is done, the dashboard shows a *Getting started* checklis
 itself off from margi's records: plan saved, project docs, docs complete enough to grade,
 submission date, first length snapshot, first grade. Each open step comes with the command to
 copy, and margi's reports in Claude Code end with a link to the dashboard until the list is done.
+The dashboard's Guide tab lists every command. In Claude Code, `/margi help` (or just `/margi`)
+looks at your project and tells you where you stand and what to run next.
 
 Then:
 
@@ -71,6 +73,7 @@ All commands run inside Claude Code.
 | `/margi ai-report` | A factual appendix on how margi was used (`margi/ai-use.md`, printable `margi/dash/ai-use.html`): every run and what it produced, and the guard's check of your whole git history. Your declaration and AI statement stay yours to write. |
 | `/margi defend [chapter]` | A mock defense: examiner questions over the finished thesis, one at a time. You answer; margi only asks and records which questions to prepare. |
 | `/margi status` | Shows docs completeness, latest grades, outline, todos and recent runs. |
+| `/margi help` | Checks what is there and what is missing (plan, docs, submission date, grades, literature, todos), suggests the next commands and lists them all. A bare `/margi` does the same. Read-only: nothing is recorded. |
 
 `/margi-propose` and `/margi-challenge <aspect>` work as shortcuts too.
 
@@ -109,7 +112,7 @@ uv run margi export          # writes margi/dash/export.html, one self-contained
 ```
  In the background,
 the skills call a few hidden `uv run margi …` helpers (`finalize`, `outline`, `status`,
-`comments`, `respond`, `extract-pdfs`, `sync-todos`); you never need to run them yourself.
+`next`, `comments`, `respond`, `extract-pdfs`, `sync-todos`); you never need to run them yourself.
 
 ## How the separation works
 

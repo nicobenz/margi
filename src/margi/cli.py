@@ -129,6 +129,7 @@ def init(
     click.echo("  Versions   " + (f"saves upload to {report.remote}" if report.remote else
                                  "saves stay on this computer until you add a remote repository"))
     click.echo("  Next       write your plan into PROPOSAL.md, then run /margi propose in Claude Code")
+    click.echo("  Lost?      run /margi help in Claude Code: where you stand, what to run next, every command")
 
 
 def ask_author() -> tuple[str | None, str | None]:
@@ -246,6 +247,14 @@ def status() -> None:
     cfg = _cfg()
     refresh(cfg)
     click.echo(status_mod.render(cfg))
+
+
+@main.command(name="next", hidden=True)
+def next_() -> None:
+    """[plumbing] Setup progress, next steps and what is there or missing, for /margi help. Read-only."""
+    from .overview import render
+
+    click.echo(render(_cfg()))
 
 
 @main.command(hidden=True)
