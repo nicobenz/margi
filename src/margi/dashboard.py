@@ -121,8 +121,22 @@ def _rubric(cfg: Config) -> dict:
         "min": scale.get("min", 1),
         "max": scale.get("max", 5),
         "anchors": {str(k): str(v) for k, v in (scale.get("anchors") or {}).items()},
-        "categories": [{"id": str(c["id"]), "title": str(c.get("title", c["id"]))} for c in data.get("categories", [])],
+        "categories": [dict({"id": str(c["id"]), "title": str(c.get("title", c["id"]))}, **_category_text(path, c))
+                       for c in data.get("categories", [])],
+        "notes": str(data.get("notes") or "").strip() or None,
     }
+
+
+def _category_text(rubric_dir: Path, category: dict) -> dict:
+    """The category file's guiding question and its level descriptors ("- **5**: …"), for the page's guide."""
+    f = rubric_dir / str(category.get("file") or f"{category['id']}.md")
+    if not f.is_file():
+        return {}
+    text = f.read_text(encoding="utf-8")
+    paras = [" ".join(ln.strip() for ln in p.splitlines()) for p in re.split(r"\n\s*\n", text)]
+    question = next((p for p in paras if p and not p.startswith(("#", "-"))), None)
+    levels = {m.group(1): m.group(2).strip() for m in re.finditer(r"^- \*\*(\d+)\*\*:\s*(.+)$", text, re.M)}
+    return {"question": question, "levels": levels}
 
 
 def _sections(cfg: Config, records: list[dict]) -> tuple[list[dict], str | None]:
