@@ -5,16 +5,20 @@
 margi is a feedback layer for a thesis that you write 100% by hand. You use it from
 [Claude Code](https://claude.com/claude-code) with `/margi` commands. The agent reads your thesis
 and writes documentation, grades, literature ratings and todos, but **only inside `margi/`**, and
-always in commits that are kept separate from yours. Git hooks and CI enforce this. You don't
-have to take it on trust.
+always in commits that are kept separate from yours. A git hook (and, on GitHub, CI) enforces
+this. You don't have to take it on trust, and you don't need to know git: margi keeps the
+versions for you.
 
 ## Install
 
 ```sh
-mkdir my-thesis && cd my-thesis && git init && uvx margi init
+mkdir my-thesis && cd my-thesis && uvx margi init
 ```
 
-This is the only setup command you run in the terminal. In an empty folder it bootstraps a Typst
+This is the only setup command you run in the terminal. It needs git; if git is missing, `init`
+says so and offers to install it (macOS, Windows) or prints the command for your system. It
+creates the git repository if there is none and asks for the name your saved versions are
+recorded under (Enter keeps "User"; see [Saving your work](#saving-your-work)). In an empty folder it bootstraps a Typst
 thesis: `main.typ` with a chapter skeleton in `chapters/`, an empty `refs.bib`, `lit/` for
 PDFs, and `PROPOSAL.md`. In an existing Typst project it only adds what is missing
 (`PROPOSAL.md` and margi itself) and leaves your files alone. The literature folder gets its own
@@ -22,7 +26,7 @@ PDFs, and `PROPOSAL.md`. In an existing Typst project it only adds what is missi
 
 At the end, `init` opens the dashboard (`margi/dash.html`) in your browser; pass `--no-open` to
 skip that. Until setup is done, the dashboard shows a *Getting started* checklist that ticks
-itself off from margi's records: plan committed, project docs, docs complete enough to grade,
+itself off from margi's records: plan saved, project docs, docs complete enough to grade,
 submission date, first length snapshot, first grade. Each open step comes with the command to
 copy, and margi's reports in Claude Code end with a link to the dashboard until the list is done.
 
@@ -30,12 +34,10 @@ Then:
 
 1. Write your plan into `PROPOSAL.md`: title ideas, research question, data, method, outline,
    constraints. Fragments and loose thoughts are fine.
-2. Commit it.
-3. Open Claude Code in the repository and run `/margi propose`. margi turns the proposal into
-   structured docs in `margi/docs/` and lists what is still unclear in
-   `margi/docs/open-questions.md`.
-4. Add to `PROPOSAL.md`, commit, and run `/margi propose` again until the docs are complete
-   enough.
+2. Open Claude Code in the repository and run `/margi propose`. margi first offers to save your
+   plan as a version (you approve it), then turns the proposal into structured docs in
+   `margi/docs/` and lists what is still unclear in `margi/docs/open-questions.md`.
+3. Add to `PROPOSAL.md` and run `/margi propose` again until the docs are complete enough.
 
 margi is installed **per thesis repository**, not globally. `margi init` adds it as a dev
 dependency to the repo's `pyproject.toml` (creating a bare one if needed) and locks it in
@@ -45,11 +47,12 @@ machine, run `uv sync` once.
 
 `margi init` also installs the skills (vendored to `.agents/skills/`, symlinked from
 `.claude/skills/`) and Claude Code's permissions in `.claude/settings.json`. Finally it writes
-`thesis.config.yml`, installs the commit guard and the CI workflow, and creates `margi/`.
+`thesis.config.yml` and a `.gitignore`, installs the commit guard (plus a CI workflow when the
+repository has a GitHub remote), and creates `margi/`.
 
 margi supports **Claude Code** only for now. Other agents that read `SKILL.md` may run the
-commands, but they are untested and the `protect_thesis` permissions don't apply to them; the
-commit guard and CI do.
+commands, but they are untested and the `protect_thesis` permissions and the question before
+each save don't apply to them; the commit guard and CI do.
 
 ## Commands
 
@@ -125,10 +128,12 @@ margi commits  → only margi/                   ("margi: grade 2.1", author mar
 - **`.githooks/commit-msg`** (`margi guard --staged`) rejects mixed commits, `margi:`
   commits outside `margi/`, unprefixed commits inside it, and any change to an existing
   record in `margi/feedback/` (which is append-only).
-- **CI** (`margi guard --range`) repeats the hook's checks, so `--no-verify` doesn't bypass them.
+- **CI** (`margi guard --range`, written when the repository has a GitHub remote) repeats the
+  hook's checks, so `--no-verify` doesn't bypass them.
 - **Agent permissions**: `.claude/settings.json` allows `Edit(margi/**)`, the margi helpers and
   read-only `git`/`gh` commands, and always denies edits to margi's own setup (including
-  `thesis.config.yml`). `sync-todos` (creates GitHub issues) still asks for your permission.
+  `thesis.config.yml`). `margi save`, `margi author` and `sync-todos` (creates GitHub issues)
+  always ask for your permission.
 - **`protect_thesis`** in `thesis.config.yml` (default `true`) also denies every agent session
   edits to thesis sources (`.typ`, `.bib`, `.tex`, `.qmd`) and `git commit`/`push`/`reset`/`checkout`,
   whatever you ask it. Set it to `false` if you want your agent's help outside margi, then run
@@ -141,19 +146,47 @@ margi commits  → only margi/                   ("margi: grade 2.1", author mar
 `margi/` holds one kind of text by you: your answers to comments (`/margi respond`), committed
 under your name, so the log shows who said what.
 
+## Saving your work
+
+margi only gives feedback on a version of your thesis that you saved, so every grade points to
+exactly the text it read. You don't save with git yourself (you can, if you like): when a
+`/margi` command finds unsaved changes, it pauses and shows what would be saved:
+
+```
+Your thesis has changes that aren't saved yet. margi only gives feedback on a saved version.
+  chapters/2-method.typ  +1,240 chars
+  refs.bib               +3 entries
+Saving makes a version under your name (a git commit) that stays on this computer.
+```
+
+The agent then runs `uv run margi save`, and Claude Code asks you to approve it. That approval is
+your decision; margi never saves your work on its own. Decline, and the command stops without
+feedback. The save is tied to what you were shown: if a file changed in between, nothing is saved
+and you see the new summary.
+
+- **Your name.** Saves are recorded under `author` in `thesis.config.yml` (default `User`, no
+  email). `margi init` asks for it; change it in the file any time, or tell your agent, which
+  runs `uv run margi author` (again only after you approve). Later saves use the new value.
+- **Where versions go.** Without a remote repository, saves stay on this computer. Once you add
+  one (`git remote add origin …`), every save also uploads there; if the upload fails, the
+  version is still saved locally and goes up with the next save.
+- **On the record.** Saves are commits by you, never by the bot, with a fixed message margi writes
+  (`save: 2 files, +1,281 chars`) and a `Margi-Save:` line. The AI-use appendix counts them.
+- If "always allow" ever lets your agent save without asking, `/margi status` warns and
+  `uv run margi init` removes the rule.
+
 ### Without git
 
-margi also works in a folder that isn't a git repository. Every command still runs and still
-writes provenance-stamped records to `margi/feedback/`, but everything that needs git is skipped:
+margi also works in a folder that isn't a git repository (`margi init` creates one, so this only
+happens if you remove it). Every command still runs and still writes provenance-stamped records to
+`margi/feedback/`, but everything that needs git is skipped:
 
-- no commits;
+- no saves and no commits;
 - no check that nothing outside `margi/` changed;
 - anchors and file hashes come from the working tree, not `HEAD`;
 - no commit hook, and `margi guard` refuses to run.
 
-So the separation is not enforced until you add git. Once you run `git init`, run
-`uv run margi init` again to install the hook and make the first two commits. From then on,
-everything is enforced.
+So the separation is not enforced without git. Run `uv run margi init` again to set it up.
 
 ## Layout
 

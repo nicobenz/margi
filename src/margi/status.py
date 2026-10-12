@@ -24,6 +24,17 @@ def load_records(cfg: Config) -> list[dict]:
 
 def render(cfg: Config) -> str:
     lines: list[str] = []
+    from .agent_settings import consent_overrides
+    from .save import last_save
+
+    saved = last_save(cfg)
+    if saved:
+        from datetime import datetime
+
+        dt = datetime.fromisoformat(saved)
+        lines.append(f"Last saved     {dt.day} {dt:%b %Y, %H:%M}")
+    for rule in consent_overrides(cfg.root):
+        lines.append(f"warning: {rule} lets your agent save without asking you; `uv run margi init` removes it")
     report = docs_check.check(cfg.root / MARGI_DIR / "docs")
     threshold = float(cfg["docs"]["min_completeness"])
     flag = "ok" if report.completeness >= threshold else f"below {threshold:.0%} — run /margi propose"

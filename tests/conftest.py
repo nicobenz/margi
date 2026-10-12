@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from margi.config import load
+from margi.config import load, set_author
 from margi.init import init
 from margi.resources import templates_dir
 
@@ -47,6 +47,7 @@ def repo(bare_repo) -> Path:
     template = (templates_dir() / "thesis.config.yml").read_text()
     (bare_repo / "thesis.config.yml").write_text(
         template.replace("{{main}}", "main.typ").replace("{{bib}}", "null").replace("precheck: ask ", "precheck: none"))
+    set_author(bare_repo, "Human Writer", "human@example.org")
     init(bare_repo, install=False)
     return bare_repo
 

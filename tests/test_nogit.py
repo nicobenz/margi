@@ -21,12 +21,12 @@ def plain_dir(tmp_path):
 
 @pytest.fixture
 def plain(plain_dir):
-    init(plain_dir, install=False)
+    init(plain_dir, install=False, git_init=False)
     return plain_dir
 
 
 def test_init_without_git_scaffolds_and_skips_commits(plain_dir):
-    report = init(plain_dir, install=False)
+    report = init(plain_dir, install=False, git_init=False)
     assert (plain_dir / "thesis.config.yml").exists() and (plain_dir / "margi/docs").is_dir()
     assert report.commits == []
     assert any("hooksPath" in s for s in report.skipped) and any("commits" in s for s in report.skipped)

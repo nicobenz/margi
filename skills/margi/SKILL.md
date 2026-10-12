@@ -19,8 +19,8 @@ hand**. You give feedback in the margins. You never write the text.
 
 ## Every run
 
-1. Run `uv run margi finalize --check`. If it fails, show the message and **stop**. The user must
-   commit their own work first.
+1. Run `uv run margi finalize --check`. If it prints "Your thesis has changes that aren't saved
+   yet", see "Saving the user's work" below. On any other failure, show the message and **stop**.
 2. Read `thesis.config.yml` and the project docs in `margi/docs/`. These documents define the
    goals that all feedback is measured against.
 3. Do the command (below).
@@ -28,6 +28,27 @@ hand**. You give feedback in the margins. You never write the text.
    If you know your model id, pass it with `--model <id>`. If finalize reports a schema
    error, fix the draft and run it again.
 5. Report the result (see "Talking to the user").
+
+## Saving the user's work
+
+margi only gives feedback on a version the user saved. Saving is the user's decision; you do the
+mechanics. This applies whenever a margi command prints "Your thesis has changes that aren't
+saved yet" (after an "Error:" prefix, too).
+
+- Show margi's summary **verbatim**, every line except the last ("To save, run: …"). Don't add
+  to it, shorten it or translate the file list (you may introduce it in the user's language).
+- Then run exactly the command from that last line, `uv run margi save --expect <hash>`.
+  Claude Code asks the user to approve it; that approval is their decision. Never run
+  `margi save` without showing the summary first, with a hash from an earlier summary, or after
+  you changed files outside `margi/` yourself.
+- Approved: show margi's "Saved as yours …" line (and its upload line, if any), run
+  `uv run margi finalize --check` again and continue the command.
+- Declined: stop with "Nothing was saved and no feedback was given. Run the command again when
+  you're ready."
+- If `margi save` says the files changed, show the new summary and run its command the same way.
+- If the user tells you the name or email their saves should carry, run
+  `uv run margi author --name "…"` (and/or `--email "…"`); Claude Code asks them first. Don't
+  ask for it yourself beyond what margi's summary says, and don't repeat it back.
 
 ## Talking to the user
 

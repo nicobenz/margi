@@ -16,6 +16,10 @@
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)"
     ],
+    "ask": [
+      "Bash(uv run margi save:*)",
+      "Bash(uv run margi author:*)"
+    ],
     "deny": [
       "Edit(thesis.config.yml)",
       "Edit(pyproject.toml)",

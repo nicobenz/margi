@@ -265,6 +265,7 @@ def collect(cfg: Config) -> dict:
             "changed": _changed_files(cfg, r, (section_files & files) if section_files else None),
             "override": ready.get("decision") == "override",
             "readiness_reasons": (ready.get("check") or {}).get("reasons") or [],
+            "saved": _saved_at(cfg, prov.get("head_sha")),
         })
     known = {s["id"] for s in sections}
     for key in list(grades) + list(prechecks):
@@ -389,7 +390,7 @@ def _setup(cfg: Config, records: list[dict], data: dict) -> dict:
     target = (ready or real or [None])[0]
     aspect = docs.get("challenge_aspect")
     steps = [
-        {"id": "plan", "title": "Write your plan into PROPOSAL.md and commit it", "done": _plan_written(cfg),
+        {"id": "plan", "title": "Write your plan into PROPOSAL.md and save it", "done": _plan_written(cfg),
          "command": None},
         {"id": "propose", "title": "Turn the plan into project docs", "done": bool(proposed), "date": proposed,
          "command": "/margi propose"},
@@ -471,6 +472,16 @@ def _comments(cfg: Config, records: list[dict], sections: list[dict]) -> list[di
                     "category": c["category"], "body": c["body"], "anchor": c["anchor"], "now": c.get("now"),
                     "signal": c["signal"], "state": c["state"], "created": c["created"], "history": c["history"]})
     return out
+
+
+def _saved_at(cfg: Config, sha: str | None, _cache: dict = {}) -> str | None:
+    """When the version a record was based on was saved: the commit date of its HEAD SHA."""
+    if not (cfg.has_git and sha):
+        return None
+    key = (str(cfg.root), sha)
+    if key not in _cache:
+        _cache[key] = git("show", "-s", "--format=%cI", sha, cwd=cfg.root, check=False).strip() or None
+    return _cache[key]
 
 
 def _thesis_commit(cfg: Config) -> dict | None:

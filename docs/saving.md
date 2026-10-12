@@ -1,6 +1,7 @@
 # Saving the student's work (design draft)
 
-Confirmed brief, 2026-10-12. Not implemented yet.
+Confirmed brief, 2026-10-12. Implemented in `src/margi/save.py` (summary, `margi save`, push),
+`margi author`, `margi init` and the `ask` permissions; tests in `tests/test_save.py`.
 
 ## Why
 

@@ -262,14 +262,8 @@ def check_verdicts(cfg: Config, draft: dict, records: list[dict]) -> list[str]:
 def _identity(cfg: Config) -> dict:
     if not cfg.has_git:
         return {"name": None, "email": None}
-    from .guard import _author_ident
-
-    try:
-        name, email = _author_ident(cfg.root)
-    except GitError as e:
-        raise LifecycleError("git doesn't know who you are; set user.name and user.email so your answer is "
-                             "committed under your name") from e
-    return {"name": name or None, "email": email or None}
+    name, email = cfg.author
+    return {"name": name, "email": email}
 
 
 def respond(cfg: Config, answers: list[tuple[str, str]], reasons: dict[str, str] | None = None,
@@ -344,7 +338,7 @@ def respond(cfg: Config, answers: list[tuple[str, str]], reasons: dict[str, str]
     subject = f"{PREFIX} respond {' '.join(r for r, _ in answers)}"
     try:
         git("add", "-A", "--", MARGI_DIR, cwd=cfg.root)
-        git("commit", "-q", "-m", subject, "-m", f"Margi-Run: {run_id}", cwd=cfg.root)
+        git("commit", "-q", "-m", subject, "-m", f"Margi-Run: {run_id}", cwd=cfg.root, env=cfg.author_env())
     except GitError as e:
         raise LifecycleError(f"{out.name} was written but not committed:\n  {e}") from e
     return out, git("rev-parse", "HEAD", cwd=cfg.root).strip()

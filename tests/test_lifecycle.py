@@ -141,7 +141,7 @@ def test_respond_refuses_bad_answers(repo, cfg):
     with pytest.raises(LifecycleError, match="isn't answered"):
         respond(cfg, [("c1", "disputed")], {"c2": "why"})
     (repo / "main.typ").write_text("uncommitted\n")
-    with pytest.raises(LifecycleError, match="not clean"):
+    with pytest.raises(LifecycleError, match="aren't saved yet"):
         respond(cfg, [("c1", "addressed")])
 
 

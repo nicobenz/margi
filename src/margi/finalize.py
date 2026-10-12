@@ -60,13 +60,26 @@ def preflight(cfg: Config) -> list[str]:
     return problems
 
 
-def ensure_clean(cfg: Config) -> None:
+def ensure_clean(cfg: Config, *, offer_save: bool = True) -> None:
+    """Refuse to run on unsaved work.
+
+    At the start of a run (``offer_save``) the message is margi's save summary, which the agent
+    shows the student. At the end of a run (finalize) it is not: thesis files that changed during
+    the run might be the agent's, and saving them would record them as the student's.
+    """
     problems = preflight(cfg)
-    if problems:
+    if not problems:
+        return
+    feedback = [p for p in problems if p.startswith("existing feedback")]
+    if feedback:
+        raise FinalizeError("margi/feedback is append-only, but records were changed:\n  " + "\n  ".join(feedback))
+    if not offer_save:
         raise FinalizeError(
-            "working tree is not clean outside margi/ — commit or stash your own changes first.\n  "
-            + "\n  ".join(problems)
-        )
+            "files outside margi/ changed during this run, so nothing was recorded. margi never writes "
+            "there; if you edited them yourself in the meantime, run the command again.\n  " + "\n  ".join(problems))
+    from .save import prompt
+
+    raise FinalizeError(prompt(cfg))
 
 
 # --------------------------------------------------------------------------- helpers
@@ -294,7 +307,7 @@ def finalize(
     command: str | None = None,
     commit: bool = True,
 ) -> FinalizeResult:
-    ensure_clean(cfg)
+    ensure_clean(cfg, offer_save=False)
     drafts = load_drafts(cfg)  # validates all drafts before anything is written
 
     from .lifecycle import after_latest, check_verdicts, load_records, next_number
