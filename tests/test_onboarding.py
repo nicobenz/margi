@@ -35,11 +35,32 @@ def test_uncommitted_plan_does_not_count(repo, cfg):
     assert not steps(repo)["plan"]["done"]
 
 
-def test_finalize_names_the_dashboard_until_setup_is_done(repo, monkeypatch):
+def test_finalize_ends_with_next_step_and_dashboard(repo, monkeypatch):
     monkeypatch.chdir(repo)
     out = CliRunner().invoke(main, ["finalize", "--message", "noop"])
     assert out.exit_code == 0, out.output
-    assert "dashboard  margi/dash.html  (setup 0 of 6)" in out.output
+    tail = out.output.rstrip().splitlines()[-2:]
+    assert tail[0].startswith("  next       /margi propose  Write your plan into PROPOSAL.md first")
+    assert tail[1].startswith("  dashboard  file://") and "margi/dash.html  (reload it if it is open; setup 0 of 6)" in tail[1]
+
+
+def test_propose_reason_follows_the_plan(repo, cfg):
+    from margi.dashboard import collect
+
+    first = collect(cfg)["next_steps"][0]
+    assert first["command"] == "/margi propose" and "Write your plan" in first["reason"]
+    (repo / "PROPOSAL.md").write_text((repo / "PROPOSAL.md").read_text() + "\nMy research question.\n")
+    human_commit(repo, "plan", "PROPOSAL.md")
+    first = collect(cfg)["next_steps"][0]
+    assert first["command"] == "/margi propose" and "grading needs" in first["reason"]
+
+
+def test_status_ends_with_the_handover_and_hides_plumbing(repo, monkeypatch):
+    monkeypatch.chdir(repo)
+    out = CliRunner().invoke(main, ["status"])
+    assert out.exit_code == 0, out.output
+    assert "self-reported" not in out.output and "(none)" not in out.output
+    assert out.output.rstrip().splitlines()[-1].startswith("  dashboard  file://")
 
 
 def test_init_names_the_dashboard(bare_repo, monkeypatch):
@@ -47,7 +68,8 @@ def test_init_names_the_dashboard(bare_repo, monkeypatch):
     out = CliRunner().invoke(main, ["init", "--no-install"])
     assert out.exit_code == 0, out.output
     assert "Dashboard  file://" in out.output and "margi/dash.html   (open it in a browser)" in out.output
-    assert "Next       write your plan" in out.output
+    assert "Next       write your plan" in out.output and "type `claude` here" in out.output
+    assert "  wrote " not in out.output and "--verbose lists them" in out.output
     assert init(bare_repo, install=False, commit=False).first is False  # margi is there now
 
 

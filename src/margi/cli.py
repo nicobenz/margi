@@ -49,11 +49,14 @@ def _report(result: FinalizeResult, cfg: Config | None = None) -> None:
     elif not result.records:
         click.echo("  nothing to finalize")
     if cfg is not None:
-        from .dashboard import DASH_HTML, setup_progress
+        _handover(cfg)
 
-        progress = setup_progress(cfg)
-        if progress and progress["done"] < progress["total"]:
-            click.echo(f"  dashboard  {DASH_HTML}  (setup {progress['done']} of {progress['total']})")
+
+def _handover(cfg: Config) -> None:
+    from .dashboard import handover
+
+    for line in handover(cfg):
+        click.echo(line)
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -76,6 +79,7 @@ def main() -> None:
 @click.option("--no-install", is_flag=True, help="Do not add margi to the repo's pyproject.toml (uv).")
 @click.option("--spec", help="Requirement passed to `uv add --dev` (default: margi==<this version>; a path works too).")
 @click.option("--no-open", is_flag=True, help="Do not open the dashboard in a browser.")
+@click.option("-v", "--verbose", is_flag=True, help="List every file written or kept.")
 def init(
     no_commit: bool,
     no_claude_settings: bool,
@@ -83,6 +87,7 @@ def init(
     no_install: bool,
     spec: str | None,
     no_open: bool,
+    verbose: bool,
 ) -> None:
     """Bootstrap a Typst thesis with margi, or add margi to an existing one."""
     from .init import GitMissing, InitError, init as run_init
@@ -105,14 +110,15 @@ def init(
         sys.exit(1)
     except InitError as e:
         raise click.ClickException(str(e)) from e
-    for w in report.written:
-        click.echo(f"  wrote {w}")
-    for k in report.kept:
-        click.echo(f"  kept  {k}")
-    for c in report.commits:
-        click.echo(f"  commit {c}")
+    if verbose:
+        for w in report.written:
+            click.echo(f"  wrote {w}")
+        for k in report.kept:
+            click.echo(f"  kept  {k}")
+        for c in report.commits:
+            click.echo(f"  commit {c}")
     for s in report.skipped:
-        click.echo(f"  skip  {s}")
+        click.echo(f"  skipped {s}")
     from .dashboard import DASH_HTML
 
     dash = (root / DASH_HTML).resolve()
@@ -124,12 +130,20 @@ def init(
             opened = webbrowser.open(dash.as_uri())
         except webbrowser.Error:
             opened = False
-    click.echo("\nmargi is ready.\n")
+    click.echo("\nmargi is ready." + ("" if verbose else
+                                       f" Set up {_plural(len(report.written), 'file')}"
+                                       + (f", kept {len(report.kept)} existing" if report.kept else "")
+                                       + " (--verbose lists them).") + "\n")
     click.echo(f"  Dashboard  {dash.as_uri()}   ({'opened in your browser' if opened else 'open it in a browser'})")
     click.echo("  Versions   " + (f"saves upload to {report.remote}" if report.remote else
                                  "saves stay on this computer until you add a remote repository"))
     click.echo("  Next       write your plan into PROPOSAL.md, then run /margi propose in Claude Code")
+    click.echo("             (start Claude Code in this folder: type `claude` here, or open the folder in the app)")
     click.echo("  Lost?      run /margi help in Claude Code: where you stand, what to run next, every command")
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}{'' if n == 1 else 's'}"
 
 
 def ask_author() -> tuple[str | None, str | None]:
@@ -247,6 +261,8 @@ def status() -> None:
     cfg = _cfg()
     refresh(cfg)
     click.echo(status_mod.render(cfg))
+    click.echo("")
+    _handover(cfg)
 
 
 @main.command(name="next", hidden=True)
@@ -312,6 +328,7 @@ def respond(answers: tuple[str, ...], reasons: tuple[tuple[str, str], ...]) -> N
         click.echo(f"  committed {sha[:7]}  margi: respond {' '.join(r for r, _ in pairs)}")
     elif not cfg.has_git:
         click.echo(f"  not committed ({NO_GIT})")
+    _handover(cfg)
 
 
 @main.command(name="submit-check", hidden=True)

@@ -53,9 +53,14 @@ Six steps, each judged from the data, never by the agent:
 
 ## Later runs
 
-While setup is incomplete, `margi finalize` prints one more line:
-`dashboard  margi/dash.html  (setup 3 of 6)`. The skill tells the agent to end its report with
-that line whenever finalize prints it. When setup is done the line stops.
+`margi finalize`, `margi status` and `margi respond` end with the same two lines: the first next
+step (`next  /margi grade 3  Method changed since it was graded on 5 Oct.`) and the dashboard as
+an absolute link (`dashboard  file:///…/margi/dash.html  (reload it if it is open; setup 3 of 6)`;
+the setup count goes once setup is done). The skill tells the agent to close every report with
+them, so the student always leaves a run with one command and the way back to the page.
+
+Before the plan is written, the `/margi propose` step says so ("Write your plan into PROPOSAL.md
+first"), matching checklist step 1, instead of warning about low-confidence grades.
 
 ## Decided while building
 

@@ -28,7 +28,8 @@ Run `uv run margi finalize --check`. Stop if it fails.
    `uv run margi extract-pdfs <file>` and read the text file it prints. If it flags pages
    (third column, e.g. `3:no-text`), read those pages from the PDF itself.
 2. If the source has nothing beyond the template's headings and comments, stop and tell the
-   user in one line to write their thoughts into it and commit first. No draft, no finalize.
+   user in one line to write their thoughts into it (fragments are fine) and run `/margi propose`
+   again; margi offers to save it then. No draft, no finalize.
 3. On a re-run: the current `margi/docs/*.md` and `CHANGELOG.md`, to see what changed.
 
 ## 2. Write the docs
@@ -98,4 +99,4 @@ At most ~5 lines:
 - Completeness, e.g. `Docs 24/28 (86%)`, and whether that is below the grading threshold.
 - The three most important open questions, each with its proposal heading.
 - One line: the full list is in `margi/docs/open-questions.md` (as a link); add to
-  `PROPOSAL.md`, commit, and run `/margi propose` again.
+  `PROPOSAL.md` and run `/margi propose` again.

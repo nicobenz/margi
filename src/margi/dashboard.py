@@ -296,6 +296,7 @@ def collect(cfg: Config) -> dict:
         "open_questions": _open_questions(cfg),
     }
     docs["challenge_aspect"] = _challenge_aspect(docs["open_questions"])
+    docs["plan_written"] = _plan_written(cfg)
 
     outlines = [r for r in records if r.get("command") == "outline"]
     outline = {
@@ -408,14 +409,34 @@ def _setup(cfg: Config, records: list[dict], data: dict) -> dict:
     return {"steps": steps, "done": done, "total": len(steps)}
 
 
-def setup_progress(cfg: Config) -> dict | None:
-    """The checklist as last written to dash/data.js (no recomputation), or None."""
+def _written(cfg: Config) -> dict:
+    """The data as last written to dash/data.js (no recomputation), or {}."""
     path = cfg.root / DASH_DATA
     try:
         text = path.read_text(encoding="utf-8")
-        return json.loads(text[text.index("{"):text.rindex("}") + 1]).get("setup")
+        return json.loads(text[text.index("{"):text.rindex("}") + 1])
     except (OSError, ValueError):
-        return None
+        return {}
+
+
+def setup_progress(cfg: Config) -> dict | None:
+    """The checklist as last written to dash/data.js (no recomputation), or None."""
+    return _written(cfg).get("setup")
+
+
+def handover(cfg: Config) -> list[str]:
+    """The two lines every margi report ends with: the first next step and the dashboard link."""
+    data = _written(cfg)
+    lines = []
+    step = next((s for s in data.get("next_steps") or [] if not s.get("held")), None)
+    if step:
+        lines.append(f"  next       {step['command']}  {step['reason']}".rstrip())
+    setup = data.get("setup") or {}
+    note = "reload it if it is open"
+    if setup and setup["done"] < setup["total"]:
+        note += f"; setup {setup['done']} of {setup['total']}"
+    lines.append(f"  dashboard  {(cfg.root / DASH_HTML).resolve().as_uri()}  ({note})")
+    return lines
 
 
 def _timeline(cfg: Config, records: list[dict], sections: list[dict], comments: list[dict],
@@ -513,13 +534,15 @@ def _literature(cfg: Config, records: list[dict]) -> dict:
         for item in (r.get("payload") or {}).get("ratings", []):
             if isinstance(item, dict) and item.get("pdf"):
                 ratings[item["pdf"]] = dict(item, timestamp=r["provenance"].get("timestamp"))
-    lit_dir = cfg.root / (cfg.get("literature", {}) or {}).get("dir", "lit")
+    lit_name = str((cfg.get("literature", {}) or {}).get("dir", "lit"))
+    lit_dir = cfg.root / lit_name
     pdfs = sorted(p.relative_to(cfg.root).as_posix() for p in lit_dir.rglob("*.pdf")) if lit_dir.is_dir() else []
     for item in ratings.values():
         _passage_links(item)
     return {
         "rated": sorted(ratings.values(), key=lambda x: (-(x.get("relevance") or 0), x["pdf"])),
         "unrated": [p for p in pdfs if p not in ratings],
+        "dir": lit_name.rstrip("/") + "/",
     }
 
 
@@ -621,9 +644,11 @@ def next_steps(data: dict, records: list[dict]) -> list[dict]:
             steps.append({"command": command, "reason": reason, "source": source, **extra})
 
     docs = data["docs"]
-    if docs["completeness"] < docs["threshold"]:
-        add("/margi propose", f"Project docs are {docs['completeness']:.0%} complete (needs {docs['threshold']:.0%}); "
-                              "until then every grade is low-confidence.")
+    if docs.get("plan_written") is False and not docs.get("filled"):
+        add("/margi propose", "Write your plan into PROPOSAL.md first; this turns it into project docs.")
+    elif docs["completeness"] < docs["threshold"]:
+        add("/margi propose", f"Project docs are {docs['completeness']:.0%} complete (grading needs "
+                              f"{docs['threshold']:.0%}); grades before that are marked low-confidence.")
     sections = [s for s in data["sections"] if not s.get("orphan")]
     awaiting: dict[str, int] = {}
     for c in data.get("comments", []):

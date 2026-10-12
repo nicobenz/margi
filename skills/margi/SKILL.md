@@ -79,9 +79,12 @@ Work quietly and confidently; report results, not process.
   - Never invent an option that points elsewhere ("Answer below", "See chat") or that
     proposes plausible project content.
 - No hedging, no apologies, no justifying that you followed the skill.
-- While setup is incomplete, `margi finalize` prints a line like
-  `dashboard  margi/dash.html  (setup 3 of 6)`. End your report with it, as a link. When it
-  isn't printed, don't mention the dashboard.
+- **End every report the same way.** `margi finalize` (also `margi status` and `margi respond`)
+  ends with two lines: `next  /margi grade 3  Method changed since it was graded on 5 Oct.` and
+  `dashboard  file:///…/margi/dash.html  (…)`. Close your report with them, in that order: the
+  command in code, then its reason; the dashboard as a link with the note in brackets. If the
+  student asked for a different next step in this conversation, name that one instead (and put
+  it into the draft's `next_steps`). Nothing comes after these two lines.
 
 ## Commands
 
@@ -98,7 +101,7 @@ Work quietly and confidently; report results, not process.
 | `/margi submit-check` | Run `uv run margi submit-check` and show its summary lines. No draft is needed; it records and commits itself. Name the findings that need attention (quotes that differ or aren't in their PDF, citations missing from the bibliography); never suggest corrected wording. |
 | `/margi ai-report` | Run `uv run margi ai-report` and link `margi/ai-use.md` and the printable `margi/dash/ai-use.html`. Don't draft a declaration or AI statement; say in one line that the student writes those. |
 | `/margi defend [chapter]` | Follow `commands/defend.md` |
-| `/margi status` | Run `uv run margi status` and show the output. It also refreshes the dashboard. |
+| `/margi status` | Run `uv run margi status` and show the output. It also refreshes the dashboard. Status is the record (grades, comments, length, recent runs); for what to run next, `/margi help` explains more. |
 
 `margi finalize` also refreshes the dashboard (`margi/dash.html`, data in `margi/dash/data.js`).
 Never edit either file by hand.
