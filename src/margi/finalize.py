@@ -6,6 +6,7 @@ The agent never writes provenance. This module is the only place that does.
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 import os
 import re
@@ -59,13 +60,26 @@ def preflight(cfg: Config) -> list[str]:
     return problems
 
 
-def ensure_clean(cfg: Config) -> None:
+def ensure_clean(cfg: Config, *, offer_save: bool = True) -> None:
+    """Refuse to run on unsaved work.
+
+    At the start of a run (``offer_save``) the message is margi's save summary, which the agent
+    shows the student. At the end of a run (finalize) it is not: thesis files that changed during
+    the run might be the agent's, and saving them would record them as the student's.
+    """
     problems = preflight(cfg)
-    if problems:
+    if not problems:
+        return
+    feedback = [p for p in problems if p.startswith("existing feedback")]
+    if feedback:
+        raise FinalizeError("margi/feedback is append-only, but records were changed:\n  " + "\n  ".join(feedback))
+    if not offer_save:
         raise FinalizeError(
-            "working tree is not clean outside margi/ — commit or stash your own changes first.\n  "
-            + "\n  ".join(problems)
-        )
+            "files outside margi/ changed during this run, so nothing was recorded. margi never writes "
+            "there; if you edited them yourself in the meantime, run the command again.\n  " + "\n  ".join(problems))
+    from .save import prompt
+
+    raise FinalizeError(prompt(cfg))
 
 
 # --------------------------------------------------------------------------- helpers
@@ -114,13 +128,16 @@ def verify_anchor(anchor: dict, content: bytes | None) -> dict:
     return anchor
 
 
+RUBRIC = "default"  # custom rubrics are not supported yet (see README, "Rubrics")
+
+
 def resolve_rubric(cfg: Config) -> dict | None:
-    rid = cfg["rubric"]
+    """The bundled rubric: the repo's vendored copy of the skill if present, else the package's."""
+    rid = RUBRIC
     candidates = [
-        cfg.root / MARGI_DIR / "rubrics" / rid,
         cfg.root / ".agents" / "skills" / "margi" / "rubrics" / rid,
+        skills_dir() / "margi" / "rubrics" / rid,
     ]
-    candidates.append(skills_dir() / "margi" / "rubrics" / rid)
     for d in candidates:
         meta = d / "rubric.yml"
         if meta.is_file():
@@ -140,6 +157,43 @@ def _slug(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9.]+", "-", text).strip("-")[:60] or "all"
 
 
+# --------------------------------------------------------------------------- readiness
+
+
+def grade_readiness(cfg: Config, draft: dict) -> dict:
+    """Run the precheck for a grade draft and decide, per grade.precheck, whether it may be recorded."""
+    from .readiness import ReadinessError, for_scope, mode
+
+    try:
+        m = mode(cfg)
+    except ReadinessError as e:
+        raise FinalizeError(str(e)) from e
+    _, check = for_scope(cfg, draft["scope"])
+    asked = draft.get("readiness", {})
+    graded = bool(draft.get("scores") or draft.get("comments"))
+    out = {"mode": m, "decision": "graded", "check": check}
+    if asked.get("reasons"):
+        out["reasons"] = asked["reasons"]
+    if asked.get("decision") == "not_ready":
+        if graded:
+            raise FinalizeError(f"grade {draft['scope']}: a not_ready grade carries no scores or comments")
+        out["decision"] = "not_ready"
+        return out
+    if not graded or check is None or check["ready"] or m == "none":
+        return out
+    why = "; ".join(check["reasons"])
+    if m == "strict":
+        raise FinalizeError(f"grade {draft['scope']}: the section is not ready to grade ({why}) and grade.precheck is "
+                            "strict. Record it as not ready (readiness.decision: not_ready, no scores); to grade it "
+                            "anyway, the user changes grade.precheck in thesis.config.yml.")
+    if asked.get("decision") != "override":
+        raise FinalizeError(f"grade {draft['scope']}: the section is not ready to grade ({why}). Ask the user: if they "
+                            "want it graded anyway, set readiness.decision to override; otherwise record it as not "
+                            "ready (readiness.decision: not_ready, no scores).")
+    out["decision"] = "override"
+    return out
+
+
 # --------------------------------------------------------------------------- build
 
 
@@ -156,6 +210,11 @@ def load_drafts(cfg: Config) -> list[tuple[Path, dict]]:
         errs = schema.errors(obj, "draft")
         if errs:
             raise FinalizeError(f"{path.name}: draft does not match schema:\n  " + "\n  ".join(errs))
+        if obj["command"] == "respond":
+            raise FinalizeError(f"{path.name}: answers to comments are the student's; record them with "
+                                "`uv run margi respond`, not as a draft")
+        if any("ref" in c for c in obj.get("comments", [])):
+            raise FinalizeError(f"{path.name}: comments must not carry a ref — margi numbers them")
         drafts.append((path, obj))
     return drafts
 
@@ -169,13 +228,25 @@ def build_record(
     model: str | None,
     harness: str | None,
     model_source: str | None,
+    refs=None,
 ) -> dict:
+    """``refs`` yields the next comment numbers (an iterator of ints) for major and minor grade comments."""
     record = {"schema": "margi/record@1", "run": {"id": run_id}}
     record.update(draft)
+    if draft["command"] == "grade":
+        record["readiness"] = grade_readiness(cfg, draft)
+    else:
+        record.pop("readiness", None)
+    if draft["command"] == "read" and isinstance(draft.get("payload"), dict):
+        from .passages import trace
+
+        record["payload"] = trace(cfg.root, draft["payload"])
 
     comments = []
     for c in draft.get("comments", []):
         c = dict(c, id=f"{run_id}:{c['id']}")
+        if refs is not None and draft["command"] == "grade" and c["severity"] in ("major", "minor"):
+            c["ref"] = f"c{next(refs)}"
         if "anchor" in c:
             content, _ = _read_source(cfg, c["anchor"]["file"])
             c["anchor"] = verify_anchor(c["anchor"], content)
@@ -236,19 +307,29 @@ def finalize(
     command: str | None = None,
     commit: bool = True,
 ) -> FinalizeResult:
-    ensure_clean(cfg)
+    ensure_clean(cfg, offer_save=False)
     drafts = load_drafts(cfg)  # validates all drafts before anything is written
 
-    now = datetime.now(timezone.utc)
+    from .lifecycle import after_latest, check_verdicts, load_records, next_number
+
+    existing = load_records(cfg)
+    now = after_latest(existing, datetime.now(timezone.utc).replace(microsecond=0))
     stamp = now.strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{stamp}-{secrets.token_hex(3)}"
     feedback = cfg.root / FEEDBACK
     feedback.mkdir(parents=True, exist_ok=True)
 
+    for path, draft in drafts:
+        problems = check_verdicts(cfg, draft, existing)
+        if problems:
+            raise FinalizeError(f"{path.name}: verdicts on earlier comments:\n  " + "\n  ".join(problems))
+    refs = itertools.count(next_number(existing))
+
     result = FinalizeResult(has_git=cfg.has_git)
-    for i, (path, draft) in enumerate(drafts):
-        rid = run_id if len(drafts) == 1 else f"{run_id}-{i + 1}"
-        record = build_record(cfg, draft, rid, now, model=model, harness=harness, model_source=model_source)
+    records = [build_record(cfg, draft, run_id if len(drafts) == 1 else f"{run_id}-{i + 1}", now,
+                            model=model, harness=harness, model_source=model_source, refs=refs)
+               for i, (_, draft) in enumerate(drafts)]  # every draft must pass before anything is written
+    for (path, draft), record in zip(drafts, records):
         out = feedback / f"{stamp}_{draft['command']}_{_slug(draft['scope'])}.json"
         n = 2
         while out.exists():
@@ -257,6 +338,10 @@ def finalize(
         out.write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         result.records.append(out)
         path.unlink()
+
+    from .dashboard import refresh
+
+    refresh(cfg)
 
     if not commit:
         return result

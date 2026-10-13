@@ -1,11 +1,12 @@
 """margi command-line interface.
 
-The only user-facing command is `init`. Everything else happens in the agent (`/margi ...`);
+The user-facing commands are `init` and `export`. Everything else happens in the agent (`/margi ...`);
 the remaining commands are hidden plumbing that the skills, the commit hook and CI call.
 """
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -23,11 +24,22 @@ from .guard import check_range, check_staged, commit_msg_from_file
 NO_GIT = "no git repository: margi works, but commits, the clean-tree check and the guard are skipped"
 
 
+def _clean_or_exit(cfg: Config) -> None:
+    """Start-of-run check. Unsaved work prints margi's save summary as is (no "Error:"), exit 1."""
+    try:
+        ensure_clean(cfg)
+    except FinalizeError as e:
+        if str(e).startswith("Your thesis has changes"):
+            click.echo(str(e))
+            sys.exit(1)
+        raise click.ClickException(str(e)) from e
+
+
 def _cfg() -> Config:
     return load(project_root(Path.cwd(), CONFIG_NAME))
 
 
-def _report(result: FinalizeResult) -> None:
+def _report(result: FinalizeResult, cfg: Config | None = None) -> None:
     for rec in result.records:
         click.echo(f"  wrote {rec.relative_to(rec.parents[2]).as_posix()}")
     if not result.has_git:
@@ -36,6 +48,15 @@ def _report(result: FinalizeResult) -> None:
         click.echo(f"  committed {result.commit[:7]}  {result.message}")
     elif not result.records:
         click.echo("  nothing to finalize")
+    if cfg is not None:
+        _handover(cfg)
+
+
+def _handover(cfg: Config) -> None:
+    from .dashboard import handover
+
+    for line in handover(cfg):
+        click.echo(line)
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -57,32 +78,126 @@ def main() -> None:
 @click.option("--force-config", is_flag=True, help="Overwrite an existing thesis.config.yml.")
 @click.option("--no-install", is_flag=True, help="Do not add margi to the repo's pyproject.toml (uv).")
 @click.option("--spec", help="Requirement passed to `uv add --dev` (default: margi==<this version>; a path works too).")
+@click.option("--no-open", is_flag=True, help="Do not open the dashboard in a browser.")
+@click.option("-v", "--verbose", is_flag=True, help="List every file written or kept.")
 def init(
     no_commit: bool,
     no_claude_settings: bool,
     force_config: bool,
     no_install: bool,
     spec: str | None,
+    no_open: bool,
+    verbose: bool,
 ) -> None:
     """Bootstrap a Typst thesis with margi, or add margi to an existing one."""
-    from .init import InitError, init as run_init
+    from .init import GitMissing, InitError, init as run_init
 
+    root = project_root(Path.cwd(), CONFIG_NAME)
+    interactive = sys.stdin.isatty() and sys.stdout.isatty() and not os.environ.get("CI")
+    import shutil
+
+    if not shutil.which("git"):  # before asking anything: without git there is nothing to set up
+        offer_git_install("margi needs git to keep versions of your thesis, and git is not installed", interactive)
+        sys.exit(1)
+    author = None
+    if interactive and (force_config or not (root / CONFIG_NAME).exists()):
+        author = ask_author()
     try:
-        root = project_root(Path.cwd(), CONFIG_NAME)
         report = run_init(root, commit=not no_commit, claude_settings=not no_claude_settings, force_config=force_config,
-                         install=not no_install, spec=spec)
+                         install=not no_install, spec=spec, author=author)
+    except GitMissing as e:
+        offer_git_install(str(e), interactive)
+        sys.exit(1)
     except InitError as e:
         raise click.ClickException(str(e)) from e
-    for w in report.written:
-        click.echo(f"  wrote {w}")
-    for k in report.kept:
-        click.echo(f"  kept  {k}")
-    for c in report.commits:
-        click.echo(f"  commit {c}")
+    if verbose:
+        for w in report.written:
+            click.echo(f"  wrote {w}")
+        for k in report.kept:
+            click.echo(f"  kept  {k}")
+        for c in report.commits:
+            click.echo(f"  commit {c}")
     for s in report.skipped:
-        click.echo(f"  skip  {s}")
-    click.echo("\nmargi is ready. Write your plan into PROPOSAL.md, commit it, then run /margi propose "
-               "in your agent.")
+        click.echo(f"  skipped {s}")
+    from .dashboard import DASH_HTML
+
+    dash = (root / DASH_HTML).resolve()
+    opened = False
+    if should_open_dashboard(report.first, no_open, sys.stdout.isatty(), os.environ):
+        import webbrowser
+
+        try:
+            opened = webbrowser.open(dash.as_uri())
+        except webbrowser.Error:
+            opened = False
+    click.echo("\nmargi is ready." + ("" if verbose else
+                                       f" Set up {_plural(len(report.written), 'file')}"
+                                       + (f", kept {len(report.kept)} existing" if report.kept else "")
+                                       + " (--verbose lists them).") + "\n")
+    click.echo(f"  Dashboard  {dash.as_uri()}   ({'opened in your browser' if opened else 'open it in a browser'})")
+    click.echo("  Versions   " + (f"saves upload to {report.remote}" if report.remote else
+                                 "saves stay on this computer until you add a remote repository"))
+    click.echo("  Next       write your plan into PROPOSAL.md, then run /margi propose in Claude Code")
+    click.echo("             (start Claude Code in this folder: type `claude` here, or open the folder in the app)")
+    click.echo("  Lost?      run /margi help in Claude Code: where you stand, what to run next, every command")
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}{'' if n == 1 else 's'}"
+
+
+def ask_author() -> tuple[str | None, str | None]:
+    """Ask who saves are recorded as; Enter keeps the placeholder. Runs in the terminal, before any AI."""
+    from .config import PLACEHOLDER
+
+    click.echo("Your saved versions are recorded under a name.")
+    name = click.prompt("  Name", default=PLACEHOLDER[0], show_default=True).strip()
+    email = click.prompt("  Email (optional)", default="", show_default=False).strip()
+    click.echo("  You can change this later in thesis.config.yml, or ask your agent to do it.\n")
+    return (name if name and name != PLACEHOLDER[0] else None), (email or None)
+
+
+def git_install_command() -> tuple[list[str] | None, str]:
+    """(command margi may run without admin rights, or None; the instruction to show)."""
+    if sys.platform == "darwin":
+        return ["xcode-select", "--install"], "xcode-select --install"
+    if sys.platform == "win32":
+        return ["winget", "install", "--id", "Git.Git", "-e"], "winget install --id Git.Git -e"
+    return None, "install it with your package manager, e.g. `sudo apt install git` or `sudo dnf install git`"
+
+
+def offer_git_install(message: str, interactive: bool) -> None:
+    import shutil
+    import subprocess
+
+    cmd, hint = git_install_command()
+    click.echo(f"{message}.", err=True)
+    if cmd and interactive and shutil.which(cmd[0]) and click.confirm("Install it now?", default=True):
+        subprocess.run(cmd)
+        click.echo("When the installation has finished, open a new terminal and run `uvx margi init` again.")
+        return
+    click.echo(f"To install git: {hint}. Then run `uvx margi init` again.", err=True)
+
+
+def should_open_dashboard(first: bool, no_open: bool, interactive: bool, env) -> bool:
+    """Open the dashboard only when margi was just added, by a person at a terminal, outside CI."""
+    return first and not no_open and interactive and not env.get("CI")
+
+
+@main.command()
+@click.option("--out", type=click.Path(dir_okay=False, path_type=Path),
+              help="Where to write the file (default: margi/dash/export.html).")
+def export(out: Path | None) -> None:
+    """Write the dashboard as one self-contained HTML file that works offline."""
+    from .dashboard import export as run_export
+
+    cfg = _cfg()
+    path = run_export(cfg, out.resolve() if out else None)
+    try:
+        shown = path.relative_to(Path.cwd()).as_posix()
+    except ValueError:
+        shown = str(path)
+    click.echo(f"  wrote {shown}")
 
 
 # ----------------------------------------------------------------- plumbing (hidden, called by skills, hook and CI)
@@ -102,7 +217,8 @@ def outline(no_save: bool) -> None:
     if no_save:
         return
     if preflight(cfg):
-        click.echo("\n(snapshot not saved: uncommitted changes outside margi/ — commit first so counts match HEAD)")
+        click.echo("\n(snapshot not recorded: the thesis has unsaved changes, and margi records counts only for a "
+                   "saved version)")
         return
     outline_mod.write_snapshot(cfg, outline_mod.snapshot_draft(tree, rows, unit))
     try:
@@ -110,18 +226,161 @@ def outline(no_save: bool) -> None:
     except FinalizeError as e:
         raise click.ClickException(str(e)) from e
     click.echo("")
-    _report(result)
+    _report(result, cfg)
+
+
+@main.command(hidden=True)
+@click.argument("section")
+def precheck(section: str) -> None:
+    """[plumbing] Is a section ready to grade? Run before `/margi grade`."""
+    from .readiness import ReadinessError, for_scope, mode
+
+    cfg = _cfg()
+    try:
+        m = mode(cfg)
+    except ReadinessError as e:
+        raise click.ClickException(str(e)) from e
+    sec, check = for_scope(cfg, section)
+    if check is None:
+        raise click.ClickException(f"no section {section!r} in the thesis (see `uv run margi outline --no-save`)")
+    click.echo(f"{sec.id} {sec.title}: {'ready' if check['ready'] else 'not ready'} to grade (grade.precheck: {m})")
+    for r in check["reasons"]:
+        click.echo(f"  - {r}")
+    click.echo(f"  {check['words']} words of running prose, {check['list_share']:.0%} list items"
+               + (f", markers: {', '.join(check['markers'])}" if check["markers"] else ""))
 
 
 @main.command(hidden=True)
 def status() -> None:
-    """[plumbing] Overview: docs completeness, latest grades, outline, todos, recent runs."""
-    click.echo(status_mod.render(_cfg()))
+    """[plumbing] Overview: docs completeness, latest grades, outline, todos, recent runs.
+
+    Also refreshes the dashboard data, so it reflects commits made since the last margi run.
+    """
+    from .dashboard import refresh
+
+    cfg = _cfg()
+    refresh(cfg)
+    click.echo(status_mod.render(cfg))
+    click.echo("")
+    _handover(cfg)
+
+
+@main.command(name="next", hidden=True)
+def next_() -> None:
+    """[plumbing] Setup progress, next steps and what is there or missing, for /margi help. Read-only."""
+    from .overview import render
+
+    click.echo(render(_cfg()))
+
+
+@main.command(hidden=True)
+@click.argument("scope", required=False)
+@click.option("--all", "show_all", is_flag=True, help="Also list closed comments.")
+def comments(scope: str | None, show_all: bool) -> None:
+    """[plumbing] Comments that aren't closed; with SCOPE, those a grade of SCOPE must give a verdict on."""
+    from . import lifecycle
+
+    cfg = _cfg()
+    if scope:
+        sid, entries = lifecycle.pending(cfg, scope)
+        if not entries:
+            click.echo(f"no open comments in {sid}; the grade gives no verdicts")
+            return
+        click.echo(f"{len(entries)} comment{'s' if len(entries) != 1 else ''} in {sid} need a verdict in this grade:\n")
+    else:
+        entries = [c for c in lifecycle.comments(cfg) if show_all or c["state"] in lifecycle.AWAITING]
+        if not entries:
+            click.echo("no open comments")
+            return
+    click.echo(lifecycle.render(entries))
+
+
+@main.command(hidden=True)
+@click.argument("answers", nargs=-1, required=True)
+@click.option("--reason", "reasons", nargs=2, multiple=True, metavar="REF TEXT",
+              help="The student's own words for one comment, stored verbatim. Repeat per comment.")
+def respond(answers: tuple[str, ...], reasons: tuple[tuple[str, str], ...]) -> None:
+    """[plumbing] Record the student's answers, e.g. `c17=addressed c18=disputed --reason c18 "..."`.
+
+    Statuses: addressed, disputed, wont_fix. The record is committed under the student's name (`author` in thesis.config.yml).
+    """
+    from .lifecycle import LifecycleError
+    from .lifecycle import respond as run_respond
+
+    pairs = []
+    for a in answers:
+        ref, sep, status = a.partition("=")
+        if not sep:
+            raise click.ClickException(f"{a!r}: write REF=STATUS, e.g. c17=addressed")
+        pairs.append((ref.strip(), status.strip().replace("-", "_").replace("won't_fix", "wont_fix")))
+    given: dict[str, str] = {}
+    for ref, text in reasons:
+        if ref in given:
+            raise click.ClickException(f"{ref}: more than one --reason")
+        given[ref] = text
+    cfg = _cfg()
+    try:
+        path, sha = run_respond(cfg, pairs, given)
+    except LifecycleError as e:
+        raise click.ClickException(str(e)) from e
+    click.echo(f"  wrote {path.relative_to(cfg.root).as_posix()}")
+    if sha:
+        click.echo(f"  committed {sha[:7]}  margi: respond {' '.join(r for r, _ in pairs)}")
+    elif not cfg.has_git:
+        click.echo(f"  not committed ({NO_GIT})")
+    _handover(cfg)
+
+
+@main.command(name="submit-check", hidden=True)
+def submit_check() -> None:
+    """[plumbing] Check quotations, bibliography, length, grades and open items before submission (no AI)."""
+    import json as _json
+
+    from . import submission
+    from .finalize import STAGING
+
+    cfg = _cfg()
+    _clean_or_exit(cfg)
+    payload = submission.run(cfg)
+    lines = submission.summary(payload)
+    for line in lines:
+        click.echo(line)
+    c = payload["counts"]
+    draft = {"command": "submit-check", "scope": "all",
+             "summary": f"{c['findings']} findings, {c['attention']} need attention. " + " ".join(lines)[:2800],
+             "payload": payload}
+    staging = cfg.root / STAGING
+    staging.mkdir(parents=True, exist_ok=True)
+    (staging / "submit-check.json").write_text(_json.dumps(draft, ensure_ascii=False), encoding="utf-8")
+    try:
+        result = run_finalize(cfg, model_source="none")
+    except FinalizeError as e:
+        raise click.ClickException(str(e)) from e
+    click.echo("")
+    _report(result, cfg)
+
+
+@main.command(name="ai-report", hidden=True)
+def ai_report() -> None:
+    """[plumbing] Write the AI-use appendix (margi/ai-use.md, printable margi/dash/ai-use.html) and commit it."""
+    from . import ai_report as report_mod
+
+    cfg = _cfg()
+    _clean_or_exit(cfg)
+    _, rep = report_mod.write(cfg)
+    click.echo(f"  wrote {report_mod.MD} ({len(rep['rows'])} runs) and {report_mod.HTML} (printable, not committed)")
+    if rep["violations"]:
+        click.echo(f"  the guard found {len(rep['violations'])} commit(s) that break the separation; see the report")
+    try:
+        result = run_finalize(cfg, command="ai-report", model_source="none")
+    except FinalizeError as e:
+        raise click.ClickException(str(e)) from e
+    _report(result, cfg)
 
 
 @main.command(name="sync-todos", hidden=True)
 def sync_todos() -> None:
-    """[plumbing] Push accepted todos/closures to GitHub (no AI)."""
+    """[plumbing] Apply accepted todos and closures; with github.sync, mirror them to issues (no AI)."""
     from .todos_sync import SyncError, sync_accepted
 
     cfg = _cfg()
@@ -129,14 +388,38 @@ def sync_todos() -> None:
         report = sync_accepted(cfg)
     except SyncError as e:
         raise click.ClickException(str(e)) from e
+    for tid in report.opened:
+        click.echo(f"  open    {tid}")
     for tid, n in report.created:
         click.echo(f"  created #{n}  {tid}")
     for tid, n in report.reused:
         click.echo(f"  exists  #{n}  {tid}")
     for n in report.closed:
         click.echo(f"  closed  #{n}")
-    if not (report.created or report.reused or report.closed):
-        click.echo("  no accepted todos or closures to sync")
+    for tid in report.done:
+        click.echo(f"  done    {tid}")
+    if not (report.opened or report.closed or report.done):
+        click.echo("  nothing accepted to apply")
+
+
+@main.command(name="todo-done", hidden=True)
+@click.argument("ids", nargs=-1, required=True)
+@click.option("--note", help="The student's own words, stored verbatim (at most 600 characters).")
+def todo_done(ids: tuple[str, ...], note: str | None) -> None:
+    """[plumbing] The student marks open todos done; committed under their name."""
+    from .todos_sync import SyncError, todo_done as run_done
+
+    cfg = _cfg()
+    try:
+        moved, sha = run_done(cfg, list(ids), note)
+    except SyncError as e:
+        raise click.ClickException(str(e)) from e
+    for p in moved:
+        click.echo(f"  done    {p.relative_to(cfg.root).as_posix()}")
+    if sha:
+        click.echo(f"  committed {sha[:7]}  margi: todo done {' '.join(dict.fromkeys(ids))}")
+    elif not cfg.has_git:
+        click.echo(f"  not committed ({NO_GIT})")
 
 
 @main.command(hidden=True)
@@ -151,10 +434,12 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
 
     cfg = _cfg()
     if check:
-        try:
-            ensure_clean(cfg)
-        except FinalizeError as e:
-            raise click.ClickException(str(e)) from e
+        _clean_or_exit(cfg)
+        from .agent_settings import drift
+
+        mismatch = drift(cfg)
+        if mismatch:
+            raise click.ClickException(f"{mismatch}. Run `uv run margi init` to apply the setting.")
         report = docs_check.check(cfg.root / MARGI_DIR / "docs")
         threshold = float(cfg["docs"]["min_completeness"])
         tree = "tree clean outside margi/" if cfg.has_git else NO_GIT
@@ -168,7 +453,7 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
                               model_source="self-reported" if model else None)
     except FinalizeError as e:
         raise click.ClickException(str(e)) from e
-    _report(result)
+    _report(result, cfg)
 
 
 @main.command(hidden=True)
@@ -200,14 +485,61 @@ def guard(msg_file: str | None, rev_range: str | None) -> None:
     raise click.UsageError("pass --staged <msg-file> or --range <rev-range>")
 
 
+@main.command(hidden=True)
+@click.option("--expect", required=True, metavar="HASH",
+              help="The hash from the summary margi printed; nothing is saved if the files changed since.")
+def save(expect: str) -> None:
+    """[plumbing] Save the student's work as a version under their name, after they approved it.
+
+    The agent runs this only with the hash from margi's own summary; Claude Code asks the student
+    first (`ask` in .claude/settings.json). Never prints the student's name.
+    """
+    from .save import SaveError, save as run_save
+
+    cfg = _cfg()
+    try:
+        result = run_save(cfg, expect.strip())
+    except SaveError as e:
+        raise click.ClickException(str(e)) from e
+    from datetime import datetime
+
+    line = f"Saved as yours · {datetime.now().strftime('%H:%M')} · {result.files} file{'s' if result.files != 1 else ''}"
+    if result.pushed:
+        line += f" · uploaded to {result.remote}"
+    click.echo(line)
+    if result.push_error:
+        click.echo(f"Saved on this computer; upload to {result.remote} failed: {result.push_error}. "
+                   "It will go up with the next save.")
+    from .dashboard import refresh
+
+    refresh(cfg)
+
+
+@main.command(hidden=True)
+@click.option("--name", help="Your name as it appears on your saved versions.")
+@click.option("--email", help="Optional email for your saved versions.")
+def author(name: str | None, email: str | None) -> None:
+    """[plumbing] Set who saves are recorded as (`author` in thesis.config.yml). Never echoes it."""
+    from .config import set_author
+
+    if name is None and email is None:
+        raise click.UsageError("pass --name and/or --email")
+    cfg = _cfg()
+    current = cfg.get("author") or {}
+    set_author(cfg.root, name if name is not None else current.get("name"),
+               email if email is not None else current.get("email"))
+    click.echo(f"  updated author in {CONFIG_NAME}; later saves use it (earlier saves keep theirs)")
+
+
 @main.command(name="extract-pdfs", hidden=True)
 @click.argument("pdfs", nargs=-1)
 def extract_pdfs(pdfs: tuple[str, ...]) -> None:
-    """[plumbing] Extract literature PDFs to margi/.cache/lit/."""
+    """[plumbing] Extract literature PDFs to margi/.cache/lit/. Prints pdf, text file and flagged pages."""
     from .pdf import extract
 
     for path, entry in extract(_cfg(), list(pdfs) or None).items():
-        click.echo(f"{path}\t{entry['text']}")
+        flags = ",".join(f"{page}:{why}" for page, why in entry["flags"].items()) or "-"
+        click.echo(f"{path}\t{entry['text']}\t{flags}")
 
 
 if __name__ == "__main__":

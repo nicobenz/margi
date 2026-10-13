@@ -23,9 +23,5 @@ def templates_dir() -> Path:
     return bundled_root() / "templates"
 
 
-def agents_md() -> Path:
-    return bundled_root() / "AGENTS.md"
-
-
 def schema_path() -> Path:
     return skills_dir() / "margi" / "schema" / "feedback.schema.json"

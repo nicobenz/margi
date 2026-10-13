@@ -30,6 +30,13 @@ Run `uv run margi finalize --check`. Stop if it fails.
 If the docs say nothing about the aspect, say so and suggest `/margi propose` first, or
 gather the basics in this session.
 
+**Aspect `deadline` (or timeline, milestones):** first make sure the dates exist: the
+submission date, a start date if the user knows it, and milestones (ask which chapters each
+one covers and whether they should be drafted, graded or settled by then). Then challenge the
+plan: does the time fit the scope, the corpus and the method; is there slack before the
+deadline; are milestones spaced so that a grade and a revision fit in between? Confirmed dates
+go into the `# margi-timeline` block in `constraints.md` (format as in `/margi propose`).
+
 ## 2. Dialogue
 
 - Start with a 2–3 sentence restatement of the user's current position on the aspect, with

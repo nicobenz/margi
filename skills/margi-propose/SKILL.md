@@ -25,9 +25,11 @@ Run `uv run margi finalize --check`. Stop if it fails.
 
 1. The source: the file passed with `--from <file>`, otherwise `propose.source` from
    `thesis.config.yml` (default `PROPOSAL.md`). Read it with line numbers. For a PDF, run
-   `uv run margi extract-pdfs <file>` and read the text file it prints.
+   `uv run margi extract-pdfs <file>` and read the text file it prints. If it flags pages
+   (third column, e.g. `3:no-text`), read those pages from the PDF itself.
 2. If the source has nothing beyond the template's headings and comments, stop and tell the
-   user in one line to write their thoughts into it and commit first. No draft, no finalize.
+   user in one line to write their thoughts into it (fragments are fine) and run `/margi propose`
+   again; margi offers to save it then. No draft, no finalize.
 3. On a re-run: the current `margi/docs/*.md` and `CHANGELOG.md`, to see what changed.
 
 ## 2. Write the docs
@@ -52,6 +54,14 @@ Fill the templates in `margi/docs/`. The files already exist with fixed `## ` he
   (`target: 15%`). Titles must match the thesis headings for `uv run margi outline`; if the
   planned chapters differ from the headings in the thesis, record the plan and raise it
   as an open question.
+- Dates: record the submission date, a start date and milestones in `constraints.md` inside
+  the fenced YAML block marked `# margi-timeline` (see the commented example in the template),
+  next to the prose and its citation. Only dates the user actually gives, as `YYYY-MM-DD`; a
+  vague date ("end of March") stays in the prose and becomes an open question. A milestone
+  gets `sections` and a `state` (`drafted`, `graded` or `settled`) only when the user ties it
+  to chapters ("chapter 2 drafted by December"); otherwise it is a plain date with a `label`.
+  `length` is the overall length limit or goal, in the unit of `count` in
+  `thesis.config.yml`, only if the user gives one in that unit.
 
 ## 3. Open questions
 
@@ -89,4 +99,4 @@ At most ~5 lines:
 - Completeness, e.g. `Docs 24/28 (86%)`, and whether that is below the grading threshold.
 - The three most important open questions, each with its proposal heading.
 - One line: the full list is in `margi/docs/open-questions.md` (as a link); add to
-  `PROPOSAL.md`, commit, and run `/margi propose` again.
+  `PROPOSAL.md` and run `/margi propose` again.

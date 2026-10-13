@@ -24,6 +24,13 @@ class Section:
     segments: list[Segment] = field(default_factory=list)  # own text incl. heading line, excl. children
     own_chars: int = 0
     children: list["Section"] = field(default_factory=list)
+    # readiness signals for own text: running-prose words, prose lines, list-item lines,
+    # placeholder text (lorem ipsum) and to-do markers such as TODO or "citation needed"
+    own_words: int = 0
+    own_lines: int = 0
+    own_list_lines: int = 0
+    own_placeholder: bool = False
+    own_markers: list[str] = field(default_factory=list)
 
     @property
     def total_chars(self) -> int:
