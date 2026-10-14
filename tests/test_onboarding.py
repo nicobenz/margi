@@ -101,3 +101,13 @@ def test_help_is_routed_and_allowed():
     skill = (skills_dir() / "margi" / "SKILL.md").read_text()
     assert "`/margi help`, or `/margi` alone" in skill and (skills_dir() / "margi/commands/help.md").is_file()
     assert "Bash(uv run margi next:*)" in json.loads((templates_dir() / "claude-settings.json").read_text())["permissions"]["allow"]
+
+
+def test_finalize_without_draft_warns_when_it_commits(repo, monkeypatch):
+    monkeypatch.chdir(repo)
+    (repo / "margi/docs/method.md").write_text("# Method\n\nChanged by hand.\n")
+    out = CliRunner().invoke(main, ["finalize"])
+    assert out.exit_code == 0, out.output
+    assert "no draft in margi/.staging/" in out.output
+    quiet = CliRunner().invoke(main, ["finalize", "--message", "noop"])
+    assert "no draft" not in quiet.output

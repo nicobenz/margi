@@ -89,6 +89,11 @@ Update `margi/docs/open-questions.md` so it lists what the proposal leaves uncle
    - `scope`: `initial` or `update`
    - `summary`: what is now documented and what remains open
    - `files_read`: the source and the docs you read
+   - Write it with an absolute path or from the project root (do not rely on a `cd`), and
+     check `margi finalize` printed `wrote margi/feedback/...`. If it did not, the draft is
+     missing: fix that and finalize again.
+   - `fields_filled` lists only fields with real content; a plan without calendar dates
+     does not fill `constraints.deadline`.
    - `payload`: `{"source": "PROPOSAL.md", "fields_filled": [...], "fields_open": [...], "questions_open": N, "questions_resolved": N}`
 3. Run `uv run margi finalize`, then `uv run margi status`.
 
