@@ -88,7 +88,7 @@ yet (2026-10-09).
   `structure.md`.
 - Todos have states: proposed, accepted (not synced), closure proposals, synced to GitHub.
 - Typst is the only supported thesis format; adapters are the extension point.
-- Status: alpha, version 0.4.0 (`pyproject.toml`).
+- Status: alpha, version 0.4.1 (`pyproject.toml`).
 - Next steps come from both sources (user, 2026-10-09): deterministic checks (e.g. docs
   completeness, missing grades, stale outline) are passed to the agent as input. The agent combines
   them with chat context, such as a focus the student already asked for. The dashboard should make
