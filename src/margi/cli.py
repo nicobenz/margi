@@ -454,6 +454,9 @@ def finalize(check: bool, model: str | None, harness: str | None, subject: str |
     except FinalizeError as e:
         raise click.ClickException(str(e)) from e
     _report(result, cfg)
+    if result.commit and not result.records and not subject:
+        click.echo("warning: no draft in margi/.staging/, so this commit has no run record. If you ran a command, "
+                   "the draft write failed (check the path); write it and run `uv run margi finalize` again.", err=True)
 
 
 @main.command(hidden=True)
