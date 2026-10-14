@@ -83,7 +83,7 @@ code, .mono { font-family: var(--mono); font-size: 0.86em; }
   border-bottom: 1px solid var(--ink);
 }
 .head::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; border-bottom: 1px solid var(--ink); }
-.wordmark { font-family: var(--sans); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
+.wordmark { font-family: var(--sans); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; color: inherit; text-decoration: none; }
 .title { margin: 0; font-weight: 400; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
 .head .spacer { flex: 1 1 auto; }
 .next { display: flex; align-items: center; gap: var(--s3); min-width: 0; font-family: var(--sans); font-size: 14px; }
@@ -475,7 +475,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
 </head>
 <body>
 <header class="head" id="head">
-  <div class="wordmark">margi</div>
+  <a class="wordmark" id="home" href="#tab=sections" title="Back to the overview">margi</a>
   <h1 class="title" id="title"></h1>
   <div class="spacer"></div>
   <div class="next" id="next"></div>
@@ -772,6 +772,11 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
         (state.tab === t[0] ? '' : ' tabindex="-1"') + '>' + t[1] + (t[2] ? '<span class="n">' + t[2] + '</span>' : '') + '</button>';
     }).join("");
   }
+  $("home").addEventListener("click", function (e) {
+    e.preventDefault();
+    state.tab = "sections"; state.sel = null; state.paper = null;
+    render({ push: true }); window.scrollTo(0, 0);
+  });
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("[data-tab]"); if (!b) return;
     state.tab = b.getAttribute("data-tab"); render(); b = $("tab-" + state.tab); if (b) b.focus();
