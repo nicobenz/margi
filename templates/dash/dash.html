@@ -774,6 +774,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("[data-tab]"); if (!b) return;
+    if (state.tab === b.getAttribute("data-tab") && state.tab === "sections") state.sel = null;
     state.tab = b.getAttribute("data-tab"); render(); b = $("tab-" + state.tab); if (b) b.focus();
   });
   $("tabs").addEventListener("keydown", function (e) {
@@ -865,7 +866,8 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
     var s = sections.filter(function (x) { return x.id === state.sel; })[0];
     if (!s) return overviewPanel();
     var runs = D.grades[s.id] || [];
-    var head = '<h2><span class="sid">' + esc(s.id) + '</span>' + esc(s.title) + '</h2>';
+    var head = '<p class="lcnote"><a href="#tab=sections" data-overview>\u2190 ' + (setupOpen && !gradedIds.length ? 'Getting started' : 'Overview') + '</a></p>' +
+      '<h2><span class="sid">' + esc(s.id) + '</span>' + esc(s.title) + '</h2>';
     if (!runs.length) {
       var smeta = '<div class="meta"><span>' + fmtN(s.chars) + ' ' + unitName(D.outline.unit) + '</span>' + (s.files.length ? '<span class="mono">' + esc(s.files.join(", ")) + '</span>' : '') + '</div>';
       var draft = draftState(s);
@@ -1577,6 +1579,7 @@ tr.l3 .stitle, tr.l4 .stitle { padding-left: 28px; color: var(--ink-2); }
   }
 
   $("view").addEventListener("click", function (e) {
+    if (e.target.closest("[data-overview]")) { e.preventDefault(); state.sel = null; render({ push: true }); return; }
     var go = e.target.closest("[data-goto]");
     if (go) { e.preventDefault(); select(go.getAttribute("data-goto"), true); return; }
     var ref = e.target.closest("[data-ref]");
