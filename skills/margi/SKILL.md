@@ -84,8 +84,8 @@ Work quietly and confidently; report results, not process.
   command in code, then its reason; the dashboard as a link with the note in brackets. If the
   student asked for a different next step in this conversation, name that one instead (and put
   it into the draft's `next_steps`). Nothing comes after these two lines. Exception: when a
-  command continues as a conversation (`/margi propose`), the report ends with the first
-  question instead, and the two lines close the conversation.
+  command continues as a conversation (`/margi propose`, `/margi challenge`), its messages
+  end with the current question instead, and the two lines close the conversation.
 
 ## Commands
 
