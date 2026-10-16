@@ -76,6 +76,9 @@ Work quietly and confidently; report results, not process.
   - **Open questions** (what, which, why, how): exactly the two options "Not decided yet"
     (record the gap as undecided) and "Skip for now" (defer to `open-questions.md`). The
     answer comes through "Other"; say so in the question, e.g. "… (answer via Other)".
+    Both options mark the question as deferred in `open-questions.md` (format in
+    `../margi-propose/SKILL.md`). Never ask a deferred question again unless the user asks
+    to review their open questions.
   - Never invent an option that points elsewhere ("Answer below", "See chat") or that
     proposes plausible project content.
 - No hedging, no apologies, no justifying that you followed the skill.
@@ -95,7 +98,7 @@ Work quietly and confidently; report results, not process.
 | `/margi read [pdf…]` | Follow `commands/read.md` |
 | `/margi todos` | Follow `commands/todos.md` |
 | `/margi respond <c17 c18 …>` | Follow `commands/respond.md` |
-| `/margi propose [--from <file>]` | Follow `../margi-propose/SKILL.md` |
+| `/margi propose [--from <file>] [--review]` | Follow `../margi-propose/SKILL.md` |
 | `/margi challenge <aspect>` | Follow `../margi-challenge/SKILL.md` |
 | `/margi outline` | Run `uv run margi outline` and show the output. No draft is needed. |
 | `/margi submit-check` | Run `uv run margi submit-check` and show its summary lines. No draft is needed; it records and commits itself. Name the findings that need attention (quotes that differ or aren't in their PDF, citations missing from the bibliography); never suggest corrected wording. |
