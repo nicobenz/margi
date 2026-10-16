@@ -38,8 +38,11 @@ Then:
    constraints. Fragments and loose thoughts are fine.
 2. Open Claude Code in the repository and run `/margi propose`. margi first offers to save your
    plan as a version (you approve it), then turns the proposal into structured docs in
-   `margi/docs/` and lists what is still unclear in `margi/docs/open-questions.md`.
-3. Add to `PROPOSAL.md` and run `/margi propose` again until the docs are complete enough.
+   `margi/docs/`, records what is still unclear in `margi/docs/open-questions.md` and then
+   talks those questions through with you in the chat. Your answers go into the docs. Say
+   you don't know yet or want to skip one and it stays on the list without being asked
+   again; `/margi propose --review` goes through those later.
+3. Add to `PROPOSAL.md` and run `/margi propose` again whenever your plan changes.
 
 margi is installed **per thesis repository**, not globally. `margi init` adds it as a dev
 dependency to the repo's `pyproject.toml` (creating a bare one if needed) and locks it in
@@ -62,7 +65,7 @@ All commands run inside Claude Code.
 
 | Command | |
 |---|---|
-| `/margi propose [--from expose.md]` | Reads your `PROPOSAL.md` (or another file) and documents the research question, dataset, method, field, structure and constraints in `margi/docs/`, with gaps listed in `open-questions.md`. Every other command grades against these docs. |
+| `/margi propose [--from expose.md] [--review]` | Reads your `PROPOSAL.md` (or another file) and documents the research question, dataset, method, field, structure and constraints in `margi/docs/`. Gaps are listed in `open-questions.md` and asked in the chat; questions you defer aren't asked again until you run it with `--review`. Every other command grades against these docs. |
 | `/margi challenge <aspect>` | A devil's-advocate dialogue about any aspect of the project. The refinements you confirm are written back into `margi/docs/`. |
 | `/margi grade <section>` | Rubric-based scores per category with comments anchored to file, lines and a verbatim quote. A section that isn't running prose yet (too few words, mostly bullet points, lorem ipsum) is recorded as *not ready to grade* instead of getting scores; `grade.precheck` in `thesis.config.yml` sets whether you can grade it anyway (`ask`, default), never (`strict`) or without the check (`none`). If the docs are incomplete, it asks before grading and marks the result low-confidence. |
 | `/margi respond <c17 …>` | Your answer to grade comments: *addressed*, *disputed* or *won't fix*, with an optional reason in your own words. margi records it word for word and commits it under your name. The next `/margi grade` of that section checks every comment that isn't closed and marks it resolved, still open, or (for a dispute it accepts) withdrawn. *Won't fix* closes a comment for good. |

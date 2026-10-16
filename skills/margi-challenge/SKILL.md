@@ -12,7 +12,8 @@ you probe, record and refine the documentation.
 Write only to `margi/docs/` and `margi/.staging/`. Never touch thesis text.
 
 Talk to the user as described in "Talking to the user" in `../margi/SKILL.md`: no process
-narration, questions only through the structured question tool, a short final report.
+narration, a short final report. The challenge itself is a conversation in plain chat, not
+the structured question tool: the user argues in their own words.
 
 ## 0. Preflight
 
@@ -39,25 +40,34 @@ go into the `# margi-timeline` block in `constraints.md` (format as in `/margi p
 
 ## 2. Dialogue
 
+A conversation in plain chat, like an advisor's office hour. Don't use the structured
+question tool and don't offer answer options.
+
 - Start with a 2–3 sentence restatement of the user's current position on the aspect, with
-  citations to the docs, as a question-tool question ("Accurate" / "Needs correction").
-- Then pose **numbered challenges**, 1–3 per question-tool call. Each one is a concrete
-  question that names the assumption being tested and why it matters for the thesis.
-  Example: "C3: your RQ asks *why* X changed, but the method only measures *that* it
-  changed. What licenses the causal reading?" Options: "Defend", "Concede", "Leave open";
-  the user gives reasoning in the free-text answer or notes.
-- The user answers, concedes or defends. Follow up on weak answers once, then move on.
-  A defended position is a valid outcome.
-- When a challenge leads to a refinement, restate it precisely and **ask for confirmation**
-  through the question tool ("Confirm" / "Adjust" / "Drop") before writing it down.
-- Stop after about 5–10 challenges, or when the user wants to stop.
+  citations to the docs, and ask whether it is accurate. Correct it from their reply.
+- Then pose **numbered challenges**, one per message (two only when they are closely
+  linked). Each one is a concrete question that names the assumption being tested and why
+  it matters for the thesis. Example: "C3: your RQ asks *why* X changed, but the method
+  only measures *that* it changed. What licenses the causal reading?"
+- The user answers in their own words: they defend, concede, or leave the point open. Read
+  the outcome from the reply; ask only if it is genuinely unclear. Follow up on weak answers
+  once, then move on. A defended position is a valid outcome. If the user wants to leave a
+  point open or skip it, accept that and move on.
+- When a challenge leads to a refinement, restate it precisely and ask in one line whether
+  to record it that way. Write it down only once they agree; adjust it if they correct it,
+  drop it if they decline.
+- Never ask about a question deferred in `open-questions.md` unless the user brings it up.
+- Stop after about 5–10 challenges, or when the user wants to stop or moves on to something
+  else.
 
 ## 3. Write back
 
 1. Apply **only confirmed** refinements to the matching `margi/docs/*.md` sections, tagged
    `(user, <date>, challenge)`. Keep superseded statements only if the user wants the history
    visible; the changelog records the change either way.
-2. Add unresolved challenges to `open-questions.md` with the date.
+2. Add unresolved challenges to `open-questions.md` with the date and the `skipped <date>`
+   marker described in `../margi-propose/SKILL.md`: the user has already discussed them, so
+   `/margi propose` doesn't ask them again.
 3. Append a `CHANGELOG.md` entry: date, `challenge: <aspect>`, files changed, and one line
    per refinement.
 4. Write `margi/.staging/challenge.json`:
@@ -67,4 +77,4 @@ go into the `# margi-timeline` block in `constraints.md` (format as in `/margi p
    - `files_read`: the docs and thesis files you used
    - `payload`: `{"challenges": [{"id": "C1", "lens": "...", "question": "...", "outcome": "refined|defended|open|conceded", "note": "..."}], "docs_changed": [...]}`
 5. Run `uv run margi finalize`, then report in at most ~4 lines: refinements written (with
-   links), challenges left open.
+   links), challenges left open, then the `next` and `dashboard` lines.
