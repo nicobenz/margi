@@ -57,10 +57,10 @@ go into the `# margi-timeline` block in `constraints.md` (format as in `/margi p
 1. Apply **only confirmed** refinements to the matching `margi/docs/*.md` sections, tagged
    `(user, <date>, challenge)`. Keep superseded statements only if the user wants the history
    visible; the changelog records the change either way.
-2. Add unresolved challenges to `open-questions.md` with the date. A challenge the user
-   answered with "Not decided yet" or "Skip for now" gets the deferred marker described in
-   `../margi-propose/SKILL.md`. Don't open a challenge on a deferred question unless the user
-   brings it up.
+2. Add unresolved challenges to `open-questions.md` with the date and the `skipped <date>`
+   marker described in `../margi-propose/SKILL.md`: the user has already discussed them, so
+   `/margi propose` doesn't ask them again. Don't open a challenge on a deferred question
+   unless the user brings it up.
 3. Append a `CHANGELOG.md` entry: date, `challenge: <aspect>`, files changed, and one line
    per refinement.
 4. Write `margi/.staging/challenge.json`:

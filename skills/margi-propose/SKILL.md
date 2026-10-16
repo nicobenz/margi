@@ -11,8 +11,9 @@ against these documents.** A score is only meaningful if the goals are documente
 The user writes their plan in `PROPOSAL.md`, in their own words and as unstructured as they
 like. You turn it into the docs. You document their plans; you do not invent, complete or
 improve them. Gaps become entries in `open-questions.md` (the written record, kept in git
-history), and you ask the user those questions **in chat** in the same run; their answers go
-into the docs. The user never has to answer inside `open-questions.md`.
+history). After the docs are written, you and the user talk through those questions in
+plain chat; their answers go into the docs. The user never has to answer inside
+`open-questions.md`.
 
 Write only to `margi/docs/` and `margi/.staging/`. Never touch anything outside `margi/`,
 including `PROPOSAL.md`. Talk to the user as described in "Talking to the user" in
@@ -91,8 +92,9 @@ Update `margi/docs/open-questions.md` so it lists what the docs still leave uncl
 
 ### Deferred questions
 
-A question the user answered with "Not decided yet" or "Skip for now" stays in
-`open-questions.md`, still open, with a marker after the date:
+A question the user says they can't answer yet ("don't know yet", "not decided") or want to
+leave for later ("skip", "later", "not now") stays in `open-questions.md`, still open, with a
+marker after the date:
 
 - `- **Method** (2026-10-08; not decided yet 2026-10-09): …`: the user doesn't know yet.
   The matching doc field also records it as undecided, tagged `(user, <date>, propose)`.
@@ -103,52 +105,65 @@ Deferred questions are **not asked again**, in this run or later ones, unless th
 Remove one only when the proposal or a later answer settles it. In a review, a question the
 user defers again keeps its first date and gets the new marker date.
 
-## 4. Ask in chat
+## 4. Changelog and draft
 
-Ask the open questions that are not deferred (with `--review`: all of them), most important
-first, through the question tool as described in "Talking to the user" in
-`../margi/SKILL.md`: up to 4 per call, each as an open question with exactly the options
-"Not decided yet" and "Skip for now", answered through "Other". A contradiction is a closed
-question: the conflicting statements as options, plus "Skip for now".
-
-For each answer:
-
-- **An answer**: write it into the matching doc field, paraphrased faithfully and in the
-  user's certainty, tagged `(user, <date>, propose)`, and remove the question from
-  `open-questions.md`. If it is too vague to settle the gap, follow up once with a narrower
-  question; otherwise move on.
-- **Not decided yet** / **Skip for now**: mark the question as described above. Don't ask
-  it again or argue.
-
-An answer can raise a new gap. Add it to `open-questions.md` and ask it in the next call.
-Keep going until no undeferred question is left or the user asks to stop; then continue
-with the next step. Don't ask anything that is not in `open-questions.md`.
-
-## 5. Changelog and draft
-
-1. Append to `margi/docs/CHANGELOG.md`: date, `propose`, the files changed, a one-line
-   reason, and one line per question answered or deferred in chat. Never edit earlier
-   entries.
+1. Append to `margi/docs/CHANGELOG.md`: date, `propose`, the files changed, and a one-line
+   reason. Never edit earlier entries.
 2. Write `margi/.staging/propose.json`:
    - `command`: `propose`
-   - `scope`: `initial` or `update`
-   - `summary`: what is now documented, what the user answered in chat and what remains open
+   - `scope`: `initial` or `update` (`chat` for the conversation in step 6)
+   - `summary`: what is now documented and what remains open (`scope: chat`: what the user
+     answered or deferred)
    - `files_read`: the source and the docs you read
    - Write it with an absolute path or from the project root (do not rely on a `cd`), and
      check `margi finalize` printed `wrote margi/feedback/...`. If it did not, the draft is
      missing: fix that and finalize again.
    - `fields_filled` lists only fields with real content; a plan without calendar dates
      does not fill `constraints.deadline`.
-   - `payload`: `{"source": "PROPOSAL.md", "fields_filled": [...], "fields_open": [...], "questions_open": N, "questions_resolved": N, "questions_answered_in_chat": N, "questions_deferred": N}`.
+   - `payload`: `{"source": "PROPOSAL.md", "fields_filled": [...], "fields_open": [...], "questions_open": N, "questions_resolved": N, "questions_deferred": N}`.
      `questions_open` counts deferred questions too; `questions_deferred` is how many of them
      are deferred after this run.
 3. Run `uv run margi finalize`, then `uv run margi status`.
 
-## 6. Report
+## 5. Report
 
 At most ~5 lines:
 
 - Completeness, e.g. `Docs 24/28 (86%)`, and whether that is below the grading threshold.
-- What the chat answers changed (files as links), in one line.
-- How many questions are still open and how many of them are deferred, with a link to
-  `margi/docs/open-questions.md`. If any are deferred: `/margi propose --review` asks them again.
+- How many questions are open and how many of them are deferred, with a link to
+  `margi/docs/open-questions.md`.
+- If a question is open and not deferred (with `--review`: any open question): the most
+  important one, which starts the conversation below. Leave out the `next` and `dashboard`
+  lines; they close the conversation instead.
+- Otherwise: the `next` and `dashboard` lines, as in every report.
+
+## 6. Talk through the open questions
+
+This is a conversation, not a form. Ask in plain chat, **not** with the structured question
+tool: these questions have no options to offer, and the user answers in their own words.
+
+- Ask one question at a time, two only when they are closely linked, most important first.
+  Name the heading it belongs to and why it matters for the thesis in one short clause. Never
+  suggest answers or options.
+- Only ask questions that are in `open-questions.md` and not deferred (with `--review` or
+  when the user asks to review their open questions: deferred ones too). Never ask a
+  deferred question again on your own, and don't argue when the user defers one.
+- Read each reply for what it settles:
+  - **An answer**: write it into the matching doc field, paraphrased faithfully and in the
+    user's certainty, tagged `(user, <date>, propose)`, and remove the question from
+    `open-questions.md`. If the answer is too vague to settle the gap, ask one narrower
+    follow-up; otherwise move on. If it raises a new gap, add it to `open-questions.md`.
+  - **Can't answer yet / skip**: mark the question as deferred (see above). If the field is
+    undecided, record that in the doc too.
+  - **Something else**: the user may correct an earlier statement, answer several questions
+    at once, or answer one you haven't asked yet. Record all of it the same way.
+- After each reply that changed `margi/docs/`, append a `CHANGELOG.md` entry (date,
+  `propose: chat`, files changed, one line per question answered or deferred), write
+  `margi/.staging/propose.json` with `scope: chat` and the same payload fields as above, and
+  run `uv run margi finalize`. Don't mention any of this, and leave out the `next` and
+  `dashboard` lines in these replies: just acknowledge briefly what you recorded and ask
+  the next question.
+- When no undeferred question is left, or the user wants to stop or moves on to something
+  else, close with one line: how many questions are still open (deferred ones included),
+  and that `/margi propose --review` goes through the deferred ones. Then the `next` and
+  `dashboard` lines from the last finalize.

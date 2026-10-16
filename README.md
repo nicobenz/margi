@@ -38,9 +38,9 @@ Then:
    constraints. Fragments and loose thoughts are fine.
 2. Open Claude Code in the repository and run `/margi propose`. margi first offers to save your
    plan as a version (you approve it), then turns the proposal into structured docs in
-   `margi/docs/`, records what is still unclear in `margi/docs/open-questions.md` and asks
-   you those questions right there in the chat. Your answers go into the docs. Answer "Not
-   decided yet" or "Skip for now" and the question stays on the list without being asked
+   `margi/docs/`, records what is still unclear in `margi/docs/open-questions.md` and then
+   talks those questions through with you in the chat. Your answers go into the docs. Say
+   you don't know yet or want to skip one and it stays on the list without being asked
    again; `/margi propose --review` goes through those later.
 3. Add to `PROPOSAL.md` and run `/margi propose` again whenever your plan changes.
 
