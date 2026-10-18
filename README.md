@@ -29,6 +29,7 @@ skip that. Until setup is done, the dashboard shows a *Getting started* checklis
 itself off from margi's records: plan saved, project docs, docs complete enough to grade,
 submission date, first length snapshot, first grade. Each open step comes with the command to
 copy, and margi's reports in Claude Code end with a link to the dashboard until the list is done.
+After a run that changed the dashboard, the agent opens it in your browser for you.
 The dashboard's Guide tab lists every command. In Claude Code, `/margi help` (or just `/margi`)
 looks at your project and tells you where you stand and what to run next.
 

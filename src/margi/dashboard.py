@@ -12,6 +12,7 @@ and finalize has nothing to commit.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -29,6 +30,7 @@ from .todos_sync import github_sync, todo_items
 DASH_HTML = f"{MARGI_DIR}/dash.html"
 DASH_DATA = f"{MARGI_DIR}/dash/data.js"
 EXPORT_HTML = f"{MARGI_DIR}/dash/export.html"
+OPENED = f"{MARGI_DIR}/.cache/dash-opened"  # hash of the page as last opened in a browser
 DATA_TAG = '<script src="dash/data.js"></script>'
 FONTS_MARK = "/*@margi-fonts@*/"
 
@@ -431,12 +433,49 @@ def handover(cfg: Config) -> list[str]:
     step = next((s for s in data.get("next_steps") or [] if not s.get("held")), None)
     if step:
         lines.append(f"  next       {step['command']}  {step['reason']}".rstrip())
-    setup = data.get("setup") or {}
-    note = "reload it if it is open"
+    lines.append(dashboard_line(cfg, "reload it if it is open"))
+    return lines
+
+
+def dashboard_line(cfg: Config, note: str) -> str:
+    """`dashboard  file:///…/margi/dash.html  (note; setup 2 of 6)`."""
+    setup = _written(cfg).get("setup") or {}
     if setup and setup["done"] < setup["total"]:
         note += f"; setup {setup['done']} of {setup['total']}"
-    lines.append(f"  dashboard  {(cfg.root / DASH_HTML).resolve().as_uri()}  ({note})")
-    return lines
+    return f"  dashboard  {(cfg.root / DASH_HTML).resolve().as_uri()}  ({note})"
+
+
+def _page_hash(root: Path) -> str:
+    h = hashlib.sha256()
+    for rel in (DASH_HTML, DASH_DATA):
+        try:
+            h.update((root / rel).read_bytes())
+        except OSError:
+            pass
+    return h.hexdigest()
+
+
+def open_page(root: Path, only_if_changed: bool = True) -> str:
+    """Open dash.html in the default browser: "opened", "unchanged" (nothing new since it was last
+    opened, so no new tab) or "failed" (no browser, or CI). Agents in an IDE can't open a file://
+    link in a browser themselves, so margi does it."""
+    import os
+    import webbrowser
+
+    stamp = root / OPENED
+    digest = _page_hash(root)
+    if only_if_changed and stamp.is_file() and stamp.read_text(encoding="utf-8").strip() == digest:
+        return "unchanged"
+    if os.environ.get("CI"):
+        return "failed"
+    try:
+        if not webbrowser.open((root / DASH_HTML).resolve().as_uri()):
+            return "failed"
+    except webbrowser.Error:
+        return "failed"
+    stamp.parent.mkdir(parents=True, exist_ok=True)
+    stamp.write_text(digest + "\n", encoding="utf-8")
+    return "opened"
 
 
 def _timeline(cfg: Config, records: list[dict], sections: list[dict], comments: list[dict],
