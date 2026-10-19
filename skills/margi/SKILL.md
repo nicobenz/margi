@@ -29,7 +29,7 @@ hand**. You give feedback in the margins. You never write the text.
 4. Run `uv run margi finalize`. This validates your draft, injects provenance and commits `margi/`.
    If you know your model id, pass it with `--model <id>`. If finalize reports a schema
    error, fix the draft and run it again.
-5. Report the result (see "Talking to the user").
+5. Run `uv run margi open`, then report the result (see "Talking to the user").
 
 ## Saving the user's work
 
@@ -66,25 +66,29 @@ Work quietly and confidently; report results, not process.
   extra). It contains what changed (files as links), the one key number (score,
   completeness), and what needs the user next, if anything. No recaps of rules, no
   "you can run X again any time", no offers.
-- **Ask questions with your harness's structured question tool** (in Claude Code:
-  `AskUserQuestion`), never as a numbered list in chat. Only if no such tool exists, ask in
-  chat and end your turn. With `AskUserQuestion`: up to 4 questions per call, 2–4 options
-  each, header ≤ 12 chars. The tool always adds "Other", which is the free-text field.
-  Keep question text to one or two sentences. Options depend on the question type:
-  - **Closed questions** (confirm, choose, resolve a contradiction): the real alternatives,
-    taken from the sources or neutral states (done / planned / partly), plus "Skip for now".
-  - **Open questions** (what, which, why, how): exactly the two options "Not decided yet"
-    (record the gap as undecided) and "Skip for now" (defer to `open-questions.md`). The
-    answer comes through "Other"; say so in the question, e.g. "… (answer via Other)".
-  - Never invent an option that points elsewhere ("Answer below", "See chat") or that
-    proposes plausible project content.
+- **Closed questions** (confirm, choose, resolve a contradiction) go through your
+  harness's structured question tool (in Claude Code: `AskUserQuestion`), never as a
+  numbered list in chat. Only if no such tool exists, ask in chat and end your turn. With
+  `AskUserQuestion`: up to 4 questions per call, 2–4 options each, header ≤ 12 chars. The
+  tool always adds "Other", which is the free-text field. Keep question text to one or two
+  sentences. The options are the real alternatives, taken from the sources or neutral
+  states (done / planned / partly), plus "Skip for now". Never invent an option that points
+  elsewhere ("Answer below", "See chat") or that proposes plausible project content.
+- **Open questions** (what, which, why, how) have no options to offer: ask them in plain
+  chat, one at a time, and let the user answer in their own words. Don't force them into
+  the question tool.
 - No hedging, no apologies, no justifying that you followed the skill.
 - **End every report the same way.** `margi finalize` (also `margi status` and `margi respond`)
   ends with two lines: `next  /margi grade 3  Method changed since it was graded on 5 Oct.` and
-  `dashboard  file:///…/margi/dash.html  (…)`. Close your report with them, in that order: the
-  command in code, then its reason; the dashboard as a link with the note in brackets. If the
-  student asked for a different next step in this conversation, name that one instead (and put
-  it into the draft's `next_steps`). Nothing comes after these two lines.
+  `dashboard  file:///…/margi/dash.html  (…)`. Right before you write the report, run
+  `uv run margi open` as your last command: it opens the dashboard in the student's browser if it
+  changed since it was last opened, and prints a new `dashboard` line that replaces finalize's.
+  Run it whenever your report closes with these lines, and not before. Close your report with
+  them, in that order: the command in code, then its reason; the dashboard as a link with the
+  note in brackets. If the student asked for a different next step in this conversation, name
+  that one instead (and put it into the draft's `next_steps`). Nothing comes after these two lines. Exception: when a
+  command continues as a conversation (`/margi propose`, `/margi challenge`), its messages
+  end with the current question instead, and the two lines close the conversation.
 
 ## Commands
 
@@ -95,7 +99,7 @@ Work quietly and confidently; report results, not process.
 | `/margi read [pdf…]` | Follow `commands/read.md` |
 | `/margi todos` | Follow `commands/todos.md` |
 | `/margi respond <c17 c18 …>` | Follow `commands/respond.md` |
-| `/margi propose [--from <file>]` | Follow `../margi-propose/SKILL.md` |
+| `/margi propose [--from <file>] [--review]` | Follow `../margi-propose/SKILL.md` |
 | `/margi challenge <aspect>` | Follow `../margi-challenge/SKILL.md` |
 | `/margi outline` | Run `uv run margi outline` and show the output. No draft is needed. |
 | `/margi submit-check` | Run `uv run margi submit-check` and show its summary lines. No draft is needed; it records and commits itself. Name the findings that need attention (quotes that differ or aren't in their PDF, citations missing from the bibliography); never suggest corrected wording. |

@@ -59,6 +59,14 @@ an absolute link (`dashboard  file:///…/margi/dash.html  (reload it if it is o
 the setup count goes once setup is done). The skill tells the agent to close every report with
 them, so the student always leaves a run with one command and the way back to the page.
 
+Right before that report the agent runs `margi open`. In an IDE's chat panel a click on the
+`file://` link opens the HTML source in the editor, not the page, so margi opens the page in the
+default browser itself, but only if `dash.html` or `dash/data.js` changed since it was last
+opened (a hash in the gitignored `margi/.cache/dash-opened`): a read-only `/margi help` adds no
+tab. It prints the dashboard line with the note "opened in your browser", "unchanged since it was
+last opened" or, without a browser or in CI, "open it in a browser"; that line replaces
+finalize's. `--always` opens it regardless.
+
 Before the plan is written, the `/margi propose` step says so ("Write your plan into PROPOSAL.md
 first"), matching checklist step 1, instead of warning about low-confidence grades.
 

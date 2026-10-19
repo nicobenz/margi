@@ -122,3 +122,14 @@ def test_rubric_explains_itself(repo, cfg):
     assert set(arg["levels"]) == {"1", "3", "5"}
     align = next(c for c in rub["categories"] if c["id"] == "alignment")
     assert align["question"].endswith("?")  # a question spanning lines is joined, not cut
+
+
+def test_deferred_questions_stay_open(repo, cfg):
+    (repo / "margi/docs/open-questions.md").write_text(
+        "# Open questions\n\n"
+        "- **Method** (2026-10-08): How will you validate the clusters?\n"
+        "- **Method** (2026-10-08; not decided yet 2026-10-09): Which tool?\n"
+        "- **Data** (2026-10-08; skipped 2026-10-09): Which licence?\n")
+    questions = dashboard._open_questions(cfg)
+    assert len(questions) == 3
+    assert dashboard._challenge_aspect(questions) == "method"

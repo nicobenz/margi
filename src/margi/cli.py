@@ -1,6 +1,6 @@
 """margi command-line interface.
 
-The user-facing commands are `init` and `export`. Everything else happens in the agent (`/margi ...`);
+The user-facing commands are `init`, `update` and `export`. Everything else happens in the agent (`/margi ...`);
 the remaining commands are hidden plumbing that the skills, the commit hook and CI call.
 """
 
@@ -66,6 +66,7 @@ def main() -> None:
 
     Run `uvx margi init` once in your thesis repository. After that, use margi from
     your agent: /margi propose, /margi grade 2.1, /margi read, /margi todos, ...
+    `uvx margi@latest update` moves the repository to the latest margi.
     """
 
 
@@ -119,17 +120,12 @@ def init(
             click.echo(f"  commit {c}")
     for s in report.skipped:
         click.echo(f"  skipped {s}")
-    from .dashboard import DASH_HTML
+    from .dashboard import DASH_HTML, open_page
 
     dash = (root / DASH_HTML).resolve()
     opened = False
     if should_open_dashboard(report.first, no_open, sys.stdout.isatty(), os.environ):
-        import webbrowser
-
-        try:
-            opened = webbrowser.open(dash.as_uri())
-        except webbrowser.Error:
-            opened = False
+        opened = open_page(root, only_if_changed=False) == "opened"
     click.echo("\nmargi is ready." + ("" if verbose else
                                        f" Set up {_plural(len(report.written), 'file')}"
                                        + (f", kept {len(report.kept)} existing" if report.kept else "")
@@ -140,6 +136,33 @@ def init(
     click.echo("  Next       write your plan into PROPOSAL.md, then run /margi propose in Claude Code")
     click.echo("             (start Claude Code in this folder: type `claude` here, or open the folder in the app)")
     click.echo("  Lost?      run /margi help in Claude Code: where you stand, what to run next, every command")
+
+
+@main.command()
+@click.option("--check", is_flag=True, help="Only show whether a newer margi is available.")
+@click.option("--no-commit", is_flag=True, help="Update files without committing.")
+def update(check: bool, no_commit: bool) -> None:
+    """Update margi in this thesis repository. Run it as `uvx margi@latest update`."""
+    from .update import COMMAND, UpdateError, is_newer, update as run_update
+
+    root = project_root(Path.cwd(), CONFIG_NAME)
+    try:
+        result = run_update(root, commit=not no_commit, check=check)
+    except UpdateError as e:
+        raise click.ClickException(str(e)) from e
+    installed = result.installed or "an unknown version"
+    if check:
+        if result.installed and not is_newer(result.latest, result.installed):
+            click.echo(f"margi {installed} is up to date.")
+        else:
+            click.echo(f"This repository has margi {installed}; {result.latest} is available. Run `{COMMAND}`.")
+        return
+    if result.installed != result.current:
+        click.echo(f"\nmargi updated from {installed} to {result.current}.")
+    elif result.changed:
+        click.echo(f"\nmargi {result.current} is up to date; restored its files ({', '.join(result.report.commits)}).")
+    else:
+        click.echo(f"margi {result.current} is up to date.")
 
 
 def _plural(n: int, word: str) -> str:
@@ -263,6 +286,22 @@ def status() -> None:
     click.echo(status_mod.render(cfg))
     click.echo("")
     _handover(cfg)
+
+
+@main.command(name="open", hidden=True)
+@click.option("--always", is_flag=True, help="Open it even if nothing changed since it was last opened.")
+def open_(always: bool) -> None:
+    """[plumbing] Open the dashboard in the browser if it changed since it was last opened.
+
+    The agent runs this last, before its report; the printed line replaces finalize's dashboard line.
+    """
+    from .dashboard import dashboard_line, open_page
+
+    cfg = _cfg()
+    state = open_page(cfg.root, only_if_changed=not always)
+    click.echo(dashboard_line(cfg, {"opened": "opened in your browser",
+                                    "unchanged": "unchanged since it was last opened",
+                                    "failed": "open it in a browser"}[state]))
 
 
 @main.command(name="next", hidden=True)

@@ -5,9 +5,9 @@ Your thesis plan, in your own words. Write freely: fragments, bullet points, dou
 half-finished thoughts are all fine. Nothing here needs to be polished.
 
 When you have something under most headings, run `/margi propose` in your agent; it offers
-to save this file for you first. margi turns it into structured project docs in margi/docs/ and lists what
-is still unclear in margi/docs/open-questions.md. Add to this file and run it again as
-often as you like. margi never edits this file.
+to save this file for you first. margi turns it into structured project docs in margi/docs/,
+lists what is still unclear in margi/docs/open-questions.md and asks you about it in the chat.
+Add to this file and run it again as often as you like. margi never edits this file.
 
 The comments under each heading are prompts, not a form. Delete them whenever you like.
 -->

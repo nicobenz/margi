@@ -29,6 +29,7 @@ skip that. Until setup is done, the dashboard shows a *Getting started* checklis
 itself off from margi's records: plan saved, project docs, docs complete enough to grade,
 submission date, first length snapshot, first grade. Each open step comes with the command to
 copy, and margi's reports in Claude Code end with a link to the dashboard until the list is done.
+After a run that changed the dashboard, the agent opens it in your browser for you.
 The dashboard's Guide tab lists every command. In Claude Code, `/margi help` (or just `/margi`)
 looks at your project and tells you where you stand and what to run next.
 
@@ -38,14 +39,24 @@ Then:
    constraints. Fragments and loose thoughts are fine.
 2. Open Claude Code in the repository and run `/margi propose`. margi first offers to save your
    plan as a version (you approve it), then turns the proposal into structured docs in
-   `margi/docs/` and lists what is still unclear in `margi/docs/open-questions.md`.
-3. Add to `PROPOSAL.md` and run `/margi propose` again until the docs are complete enough.
+   `margi/docs/`, records what is still unclear in `margi/docs/open-questions.md` and then
+   talks those questions through with you in the chat. Your answers go into the docs. Say
+   you don't know yet or want to skip one and it stays on the list without being asked
+   again; `/margi propose --review` goes through those later.
+3. Add to `PROPOSAL.md` and run `/margi propose` again whenever your plan changes.
 
 margi is installed **per thesis repository**, not globally. `margi init` adds it as a dev
 dependency to the repo's `pyproject.toml` (creating a bare one if needed) and locks it in
 `uv.lock`, so you, your agent, the commit hook and CI all run the same pinned version from
 `.venv/`. Run commands with `uv run margi …` (or activate `.venv`). After cloning on another
 machine, run `uv sync` once.
+
+To move to a newer margi, run `uvx margi@latest update` in the repository (`@latest` makes uvx
+fetch the newest release instead of reusing a copy it has cached). It re-pins margi in
+`pyproject.toml` and `uv.lock`, replaces the skills, hook, CI workflow and agent settings with the
+new version's, and commits the result as `chore: update margi <version>`. Your thesis,
+`PROPOSAL.md`, `thesis.config.yml` and `margi/docs/` stay as they are. `--check` only reports
+whether an update is available; `uvx margi@0.5.0 update` moves to a specific version.
 
 `margi init` also installs the skills (vendored to `.agents/skills/`, symlinked from
 `.claude/skills/`) and Claude Code's permissions in `.claude/settings.json`. Finally it writes
@@ -62,7 +73,7 @@ All commands run inside Claude Code.
 
 | Command | |
 |---|---|
-| `/margi propose [--from expose.md]` | Reads your `PROPOSAL.md` (or another file) and documents the research question, dataset, method, field, structure and constraints in `margi/docs/`, with gaps listed in `open-questions.md`. Every other command grades against these docs. |
+| `/margi propose [--from expose.md] [--review]` | Reads your `PROPOSAL.md` (or another file) and documents the research question, dataset, method, field, structure and constraints in `margi/docs/`. Gaps are listed in `open-questions.md` and asked in the chat; questions you defer aren't asked again until you run it with `--review`. Every other command grades against these docs. |
 | `/margi challenge <aspect>` | A devil's-advocate dialogue about any aspect of the project. The refinements you confirm are written back into `margi/docs/`. |
 | `/margi grade <section>` | Rubric-based scores per category with comments anchored to file, lines and a verbatim quote. A section that isn't running prose yet (too few words, mostly bullet points, lorem ipsum) is recorded as *not ready to grade* instead of getting scores; `grade.precheck` in `thesis.config.yml` sets whether you can grade it anyway (`ask`, default), never (`strict`) or without the check (`none`). If the docs are incomplete, it asks before grading and marks the result low-confidence. |
 | `/margi respond <c17 …>` | Your answer to grade comments: *addressed*, *disputed* or *won't fix*, with an optional reason in your own words. margi records it word for word and commits it under your name. The next `/margi grade` of that section checks every comment that isn't closed and marks it resolved, still open, or (for a dispute it accepts) withdrawn. *Won't fix* closes a comment for good. |
@@ -199,7 +210,7 @@ skills/margi-propose/    SKILL.md, templates/ (the margi/docs files)
 skills/margi-challenge/  SKILL.md, lenses.md
 templates/               config, PROPOSAL.md, Typst skeleton, commit-msg hook, CI workflow, Claude settings,
                          dash/ (dashboard page and its Libertinus fonts, OFL)
-src/margi/               init, export + hidden helpers (finalize, guard, outline, dashboard, adapters/typst, …)
+src/margi/               init, update, export + hidden helpers (finalize, guard, outline, dashboard, adapters/typst, …)
 ```
 
 The only supported format is Typst; the adapters in `src/margi/adapters/` are the extension
