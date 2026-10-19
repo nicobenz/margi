@@ -1,18 +1,16 @@
-"""`margi update`: move a thesis repository to a newer margi.
+"""`margi update`: move a thesis repository to the margi that is running.
 
-Updating is `margi init` run by the new version: it re-pins the dev dependency, re-copies the
-skills, rewrites the hook, CI workflow and agent settings, and commits "chore: update margi X".
-The skills and templates must come from the new version, so when this process is older than the
-target, it hands over to `uv tool run --from margi==<target> margi init` instead of running the
-old init. When this process already is the target (`uvx margi@latest update`), init runs in-process.
+Run it as `uvx margi@latest update`. Updating is `margi init` run by the new version: it re-pins the
+dev dependency, re-copies the skills, rewrites the hook, CI workflow and agent settings, and commits
+"chore: update margi X". The skills and templates must come from the new version, so an older copy
+(`uv run margi update` from the repository's own .venv) stops and names the command instead of
+installing its own, outdated files. `uvx` runs outside .venv, so `uv add` can replace the repository's
+copy on every platform.
 """
 
 from __future__ import annotations
 
 import json
-import os
-import shutil
-import subprocess
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,22 +20,34 @@ from .config import CONFIG_NAME
 from .init import InitError, InitReport, init
 
 PYPI = "https://pypi.org/pypi/margi/json"
+COMMAND = "uvx margi@latest update"
 
 
 class UpdateError(RuntimeError):
     pass
 
 
+def installed_version(root: Path) -> str | None:
+    """The margi this repository was last set up with (init writes it next to the skills)."""
+    path = root / ".agents" / "skills" / "margi" / "VERSION"
+    return (path.read_text(encoding="utf-8").strip() or None) if path.is_file() else None
+
+
 @dataclass
 class UpdateResult:
-    current: str
-    target: str
-    report: InitReport | None = None  # set when init ran in this process
-    delegated: bool = False  # the target version's init ran in a subprocess
+    installed: str | None  # the repository's margi before this run
+    current: str  # the margi running now
+    latest: str | None  # None when PyPI could not be reached
+    report: InitReport | None = None
 
     @property
     def changed(self) -> bool:
-        return self.delegated or bool(self.report and self.report.commits)
+        return bool(self.report and self.report.commits)
+
+    @property
+    def outdated(self) -> bool:
+        """A newer release exists than the margi running now."""
+        return self.latest is not None and is_newer(self.latest, self.current)
 
 
 def latest_version(timeout: float = 10) -> str:
@@ -46,7 +56,7 @@ def latest_version(timeout: float = 10) -> str:
         with urllib.request.urlopen(PYPI, timeout=timeout) as resp:
             return json.load(resp)["info"]["version"]
     except (OSError, ValueError, KeyError) as e:
-        raise UpdateError(f"could not look up the latest margi on PyPI ({e}); pass --to <version> to choose one") from e
+        raise UpdateError(f"could not look up the latest margi on PyPI ({e})") from e
 
 
 def _key(v: str) -> tuple[int, ...] | None:
@@ -62,35 +72,22 @@ def is_newer(target: str, current: str) -> bool:
     return t > c
 
 
-def _delegate(root: Path, target: str, *, commit: bool) -> None:
-    uv = shutil.which("uv")
-    if not uv:
-        raise UpdateError("`uv` not found on PATH; margi is installed per repository with uv (https://docs.astral.sh/uv/)")
-    cmd = [uv, "tool", "run", "--from", f"margi=={target}", "margi", "init", "--no-open"]
-    if not commit:
-        cmd.append("--no-commit")
-    env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
-    if subprocess.run(cmd, cwd=root, env=env).returncode != 0:
-        raise UpdateError(f"margi {target} could not finish the update (see above); your repository is unchanged "
-                          "except for what it reported")
-
-
-def update(root: Path, *, to: str | None = None, commit: bool = True, check: bool = False) -> UpdateResult:
-    """Update margi in ``root`` to ``to`` (default: the latest release). ``check`` only compares versions."""
+def update(root: Path, *, commit: bool = True, check: bool = False) -> UpdateResult:
+    """Install this margi's files and pin in ``root``. ``check`` only compares versions."""
     if not (root / CONFIG_NAME).exists():
         raise UpdateError(f"no {CONFIG_NAME} here; margi is not set up in this folder yet (run `uvx margi init`)")
-    target = to or latest_version()
-    result = UpdateResult(current=__version__, target=target)
     if check:
-        return result
-    if target == __version__:
-        try:
-            result.report = init(root, commit=commit)
-        except InitError as e:
-            raise UpdateError(str(e)) from e
-        return result
-    if to is None and not is_newer(target, __version__):
-        return result  # this copy is ahead of PyPI (a dev or path install): nothing to update to
-    _delegate(root, target, commit=commit)
-    result.delegated = True
+        return UpdateResult(installed_version(root), __version__, latest_version())
+    try:
+        latest = latest_version()
+    except UpdateError:
+        latest = None  # offline: uvx already chose the version, so update to this one
+    result = UpdateResult(installed_version(root), __version__, latest)
+    if result.outdated:
+        raise UpdateError(f"this is margi {__version__}, but {latest} is available; run `{COMMAND}` "
+                          "so the new version installs its own files")
+    try:
+        result.report = init(root, commit=commit)
+    except InitError as e:
+        raise UpdateError(str(e)) from e
     return result

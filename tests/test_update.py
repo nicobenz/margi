@@ -1,7 +1,6 @@
 import io
 import json
 import shutil
-import subprocess
 
 import pytest
 from click.testing import CliRunner
@@ -9,85 +8,79 @@ from conftest import run_git
 
 from margi import __version__, update as update_mod
 from margi.cli import main
-from margi.update import UpdateError, is_newer, latest_version, update
+from margi.update import UpdateError, installed_version, is_newer, latest_version, update
 
 
 @pytest.fixture
-def delegated(monkeypatch):
-    """Records the hand-over to `uv tool run` instead of running it; everything else runs as usual."""
-    calls = []
-    which, run = shutil.which, subprocess.run
-    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/uv" if name == "uv" else which(name))
-    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: (calls.append((cmd, kw)) or
-                                                              subprocess.CompletedProcess(cmd, 0))
-                        if cmd[0] == "/usr/bin/uv" else run(cmd, **kw))
-    return calls
+def no_install(monkeypatch):
+    """Run the real init without `uv add` (tests have no package index)."""
+    real_init = update_mod.init
+    monkeypatch.setattr(update_mod, "init", lambda root, **kw: real_init(root, install=False, **kw))
+
+
+def _offline(*args, **kw):
+    raise UpdateError("no network")
 
 
 def _head(root):
     return run_git(root, "rev-parse", "HEAD").stdout.strip()
 
 
-def test_newer_release_hands_over_to_its_init(repo, monkeypatch, delegated):
-    monkeypatch.setattr(update_mod, "latest_version", lambda: "99.0.0")
-    result = update(repo)
-    assert result.delegated and result.changed and result.target == "99.0.0"
-    (cmd, kw), = delegated
-    assert cmd == ["/usr/bin/uv", "tool", "run", "--from", "margi==99.0.0", "margi", "init", "--no-open"]
-    assert kw["cwd"] == repo and "VIRTUAL_ENV" not in kw["env"]
+def _set_installed(root, version):
+    (root / ".agents/skills/margi/VERSION").write_text(version + "\n")
+    run_git(root, "add", "-A")
+    run_git(root, "commit", "-q", "-m", "older margi", "--no-verify")
 
 
-def test_no_commit_is_passed_on(repo, delegated):
-    update(repo, to="99.0.0", commit=False)
-    assert delegated[0][0][-1] == "--no-commit"
-
-
-def test_failed_handover_is_an_error(repo, monkeypatch):
-    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/uv")
-    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1))
-    with pytest.raises(UpdateError, match="could not finish"):
-        update(repo, to="99.0.0")
-
-
-def test_same_version_reruns_init_in_process(repo, monkeypatch, delegated):
+def test_update_installs_running_version(repo, monkeypatch, no_install):
     monkeypatch.setattr(update_mod, "latest_version", lambda: __version__)
-    monkeypatch.setattr(update_mod, "init", lambda root, **kw: update_mod.InitReport())  # no uv in the tests
+    _set_installed(repo, "0.1.0")
+    result = update(repo)
+    assert result.installed == "0.1.0" and result.changed
+    assert installed_version(repo) == __version__
+    subjects = run_git(repo, "log", "-2", "--format=%s").stdout.splitlines()
+    assert subjects[1].startswith(f"chore: update margi {__version__}") and subjects[0] == "margi: init"
+
+
+def test_up_to_date_commits_nothing(repo, monkeypatch, no_install):
+    monkeypatch.setattr(update_mod, "latest_version", lambda: __version__)
     before = _head(repo)
-    result = update(repo)
-    assert not result.delegated and not result.changed and not delegated
-    assert _head(repo) == before
+    assert not update(repo).changed and _head(repo) == before
 
 
-def test_same_version_restores_deleted_skill(repo, monkeypatch):
+def test_restores_deleted_skill(repo, monkeypatch, no_install):
     monkeypatch.setattr(update_mod, "latest_version", lambda: __version__)
-    real_init = update_mod.init
-    monkeypatch.setattr(update_mod, "init", lambda root, **kw: real_init(root, install=False, **kw))
     shutil.rmtree(repo / ".agents/skills/margi-challenge")
     run_git(repo, "add", "-A")
     run_git(repo, "commit", "-q", "-m", "oops", "--no-verify")
-    result = update(repo)
-    assert result.changed and (repo / ".agents/skills/margi-challenge/SKILL.md").exists()
-    assert run_git(repo, "log", "-2", "--format=%s").stdout.splitlines()[1].startswith(f"chore: update margi {__version__}")
+    assert update(repo).changed and (repo / ".agents/skills/margi-challenge/SKILL.md").exists()
 
 
-def test_older_latest_does_not_downgrade(repo, monkeypatch, delegated):
-    monkeypatch.setattr(update_mod, "__version__", "99.0.0")
-    monkeypatch.setattr(update_mod, "latest_version", lambda: "1.0.0")
-    assert not update(repo).changed and not delegated
-    update(repo, to="1.0.0")  # but an explicit --to does
-    assert delegated[0][0][4] == "margi==1.0.0"
+def test_outdated_copy_names_the_command(repo, monkeypatch, no_install):
+    monkeypatch.setattr(update_mod, "latest_version", lambda: "99.0.0")
+    before = _head(repo)
+    with pytest.raises(UpdateError, match="uvx margi@latest update"):
+        update(repo)
+    assert _head(repo) == before
 
 
-def test_check_changes_nothing(repo, monkeypatch, delegated):
+def test_offline_updates_to_running_version(repo, monkeypatch, no_install):
+    monkeypatch.setattr(update_mod, "latest_version", _offline)
+    _set_installed(repo, "0.1.0")
+    assert update(repo).changed and installed_version(repo) == __version__
+
+
+def test_check_changes_nothing(repo, monkeypatch):
     monkeypatch.setattr(update_mod, "latest_version", lambda: "99.0.0")
     before = _head(repo)
     result = update(repo, check=True)
-    assert result.target == "99.0.0" and not result.changed and not delegated and _head(repo) == before
+    assert result.latest == "99.0.0" and result.installed == __version__ and not result.changed
+    assert _head(repo) == before
 
 
 def test_needs_margi_set_up(bare_repo):
     with pytest.raises(UpdateError, match="uvx margi init"):
-        update(bare_repo, to="99.0.0")
+        update(bare_repo)
 
 
 def test_latest_version_reads_pypi(monkeypatch):
@@ -99,7 +92,7 @@ def test_latest_version_reads_pypi(monkeypatch):
         raise OSError("no network")
 
     monkeypatch.setattr(update_mod.urllib.request, "urlopen", offline)
-    with pytest.raises(UpdateError, match="--to"):
+    with pytest.raises(UpdateError, match="PyPI"):
         latest_version()
 
 
@@ -112,4 +105,12 @@ def test_cli_check(repo, monkeypatch):
     monkeypatch.chdir(repo)
     monkeypatch.setattr(update_mod, "latest_version", lambda: "99.0.0")
     out = CliRunner().invoke(main, ["update", "--check"])
-    assert out.exit_code == 0 and "99.0.0 is available" in out.output
+    assert out.exit_code == 0 and "99.0.0 is available" in out.output and "uvx margi@latest update" in out.output
+
+
+def test_cli_update_reports_versions(repo, monkeypatch, no_install):
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(update_mod, "latest_version", lambda: __version__)
+    _set_installed(repo, "0.1.0")
+    out = CliRunner().invoke(main, ["update"])
+    assert out.exit_code == 0 and f"updated from 0.1.0 to {__version__}" in out.output
