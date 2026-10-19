@@ -1,6 +1,6 @@
 """margi command-line interface.
 
-The user-facing commands are `init` and `export`. Everything else happens in the agent (`/margi ...`);
+The user-facing commands are `init`, `update` and `export`. Everything else happens in the agent (`/margi ...`);
 the remaining commands are hidden plumbing that the skills, the commit hook and CI call.
 """
 
@@ -66,6 +66,7 @@ def main() -> None:
 
     Run `uvx margi init` once in your thesis repository. After that, use margi from
     your agent: /margi propose, /margi grade 2.1, /margi read, /margi todos, ...
+    `uvx margi@latest update` moves the repository to the latest margi.
     """
 
 
@@ -135,6 +136,33 @@ def init(
     click.echo("  Next       write your plan into PROPOSAL.md, then run /margi propose in Claude Code")
     click.echo("             (start Claude Code in this folder: type `claude` here, or open the folder in the app)")
     click.echo("  Lost?      run /margi help in Claude Code: where you stand, what to run next, every command")
+
+
+@main.command()
+@click.option("--check", is_flag=True, help="Only show whether a newer margi is available.")
+@click.option("--no-commit", is_flag=True, help="Update files without committing.")
+def update(check: bool, no_commit: bool) -> None:
+    """Update margi in this thesis repository. Run it as `uvx margi@latest update`."""
+    from .update import COMMAND, UpdateError, is_newer, update as run_update
+
+    root = project_root(Path.cwd(), CONFIG_NAME)
+    try:
+        result = run_update(root, commit=not no_commit, check=check)
+    except UpdateError as e:
+        raise click.ClickException(str(e)) from e
+    installed = result.installed or "an unknown version"
+    if check:
+        if result.installed and not is_newer(result.latest, result.installed):
+            click.echo(f"margi {installed} is up to date.")
+        else:
+            click.echo(f"This repository has margi {installed}; {result.latest} is available. Run `{COMMAND}`.")
+        return
+    if result.installed != result.current:
+        click.echo(f"\nmargi updated from {installed} to {result.current}.")
+    elif result.changed:
+        click.echo(f"\nmargi {result.current} is up to date; restored its files ({', '.join(result.report.commits)}).")
+    else:
+        click.echo(f"margi {result.current} is up to date.")
 
 
 def _plural(n: int, word: str) -> str:

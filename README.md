@@ -51,6 +51,13 @@ dependency to the repo's `pyproject.toml` (creating a bare one if needed) and lo
 `.venv/`. Run commands with `uv run margi …` (or activate `.venv`). After cloning on another
 machine, run `uv sync` once.
 
+To move to a newer margi, run `uvx margi@latest update` in the repository (`@latest` makes uvx
+fetch the newest release instead of reusing a copy it has cached). It re-pins margi in
+`pyproject.toml` and `uv.lock`, replaces the skills, hook, CI workflow and agent settings with the
+new version's, and commits the result as `chore: update margi <version>`. Your thesis,
+`PROPOSAL.md`, `thesis.config.yml` and `margi/docs/` stay as they are. `--check` only reports
+whether an update is available; `uvx margi@0.5.0 update` moves to a specific version.
+
 `margi init` also installs the skills (vendored to `.agents/skills/`, symlinked from
 `.claude/skills/`) and Claude Code's permissions in `.claude/settings.json`. Finally it writes
 `thesis.config.yml` and a `.gitignore`, installs the commit guard (plus a CI workflow when the
@@ -203,7 +210,7 @@ skills/margi-propose/    SKILL.md, templates/ (the margi/docs files)
 skills/margi-challenge/  SKILL.md, lenses.md
 templates/               config, PROPOSAL.md, Typst skeleton, commit-msg hook, CI workflow, Claude settings,
                          dash/ (dashboard page and its Libertinus fonts, OFL)
-src/margi/               init, export + hidden helpers (finalize, guard, outline, dashboard, adapters/typst, …)
+src/margi/               init, update, export + hidden helpers (finalize, guard, outline, dashboard, adapters/typst, …)
 ```
 
 The only supported format is Typst; the adapters in `src/margi/adapters/` are the extension
