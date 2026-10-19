@@ -29,7 +29,7 @@ hand**. You give feedback in the margins. You never write the text.
 4. Run `uv run margi finalize`. This validates your draft, injects provenance and commits `margi/`.
    If you know your model id, pass it with `--model <id>`. If finalize reports a schema
    error, fix the draft and run it again.
-5. Report the result (see "Talking to the user").
+5. Run `uv run margi open`, then report the result (see "Talking to the user").
 
 ## Saving the user's work
 
@@ -80,10 +80,13 @@ Work quietly and confidently; report results, not process.
 - No hedging, no apologies, no justifying that you followed the skill.
 - **End every report the same way.** `margi finalize` (also `margi status` and `margi respond`)
   ends with two lines: `next  /margi grade 3  Method changed since it was graded on 5 Oct.` and
-  `dashboard  file:///…/margi/dash.html  (…)`. Close your report with them, in that order: the
-  command in code, then its reason; the dashboard as a link with the note in brackets. If the
-  student asked for a different next step in this conversation, name that one instead (and put
-  it into the draft's `next_steps`). Nothing comes after these two lines. Exception: when a
+  `dashboard  file:///…/margi/dash.html  (…)`. Right before you write the report, run
+  `uv run margi open` as your last command: it opens the dashboard in the student's browser if it
+  changed since it was last opened, and prints a new `dashboard` line that replaces finalize's.
+  Run it whenever your report closes with these lines, and not before. Close your report with
+  them, in that order: the command in code, then its reason; the dashboard as a link with the
+  note in brackets. If the student asked for a different next step in this conversation, name
+  that one instead (and put it into the draft's `next_steps`). Nothing comes after these two lines. Exception: when a
   command continues as a conversation (`/margi propose`, `/margi challenge`), its messages
   end with the current question instead, and the two lines close the conversation.
 

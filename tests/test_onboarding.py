@@ -111,3 +111,32 @@ def test_finalize_without_draft_warns_when_it_commits(repo, monkeypatch):
     assert "no draft in margi/.staging/" in out.output
     quiet = CliRunner().invoke(main, ["finalize", "--message", "noop"])
     assert "no draft" not in quiet.output
+
+
+def test_open_opens_the_dashboard_only_when_it_changed(repo, cfg, monkeypatch):
+    import webbrowser
+
+    opened = []
+    monkeypatch.setattr(webbrowser, "open", lambda url: opened.append(url) or True)
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.chdir(repo)
+    run = lambda *a: CliRunner().invoke(main, ["open", *a]).output.strip()  # noqa: E731
+    assert run().endswith("margi/dash.html  (opened in your browser; setup 0 of 6)")
+    assert opened == [(repo / "margi/dash.html").resolve().as_uri()]
+    assert not run_git(repo, "status", "--porcelain").stdout  # the stamp is gitignored
+    assert run().endswith("(unchanged since it was last opened; setup 0 of 6)") and len(opened) == 1
+    assert "opened in your browser" in run("--always") and len(opened) == 2
+    (repo / "PROPOSAL.md").write_text((repo / "PROPOSAL.md").read_text() + "\nMy research question.\n")
+    human_commit(repo, "plan", "PROPOSAL.md")
+    refresh(cfg)
+    assert "opened in your browser; setup 1 of 6" in run() and len(opened) == 3
+
+
+def test_open_never_opens_in_ci(repo, monkeypatch):
+    import webbrowser
+
+    monkeypatch.setattr(webbrowser, "open", lambda url: (_ for _ in ()).throw(AssertionError(url)))
+    monkeypatch.setenv("CI", "true")
+    monkeypatch.chdir(repo)
+    out = CliRunner().invoke(main, ["open"])
+    assert out.exit_code == 0 and out.output.rstrip().endswith("(open it in a browser; setup 0 of 6)")

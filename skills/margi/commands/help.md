@@ -21,7 +21,7 @@ next. Read-only: no preflight, no draft, no `margi finalize`, nothing written or
      its reason, never recommended. If nothing is pending, say so.
    - **Commands**: a compact list of every command from the Commands table in `SKILL.md`,
      one line each (`/margi help` itself excluded), so the student has the cheat sheet.
-   - Close with the dashboard line from the output as a link, naming its Guide tab.
+   - Run `uv run margi open` and close with its dashboard line as a link, naming its Guide tab.
 
 Don't invent steps that aren't backed by the output or the conversation, and don't propose
 thesis text. Keep everything but the command list to about eight lines.

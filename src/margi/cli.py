@@ -119,17 +119,12 @@ def init(
             click.echo(f"  commit {c}")
     for s in report.skipped:
         click.echo(f"  skipped {s}")
-    from .dashboard import DASH_HTML
+    from .dashboard import DASH_HTML, open_page
 
     dash = (root / DASH_HTML).resolve()
     opened = False
     if should_open_dashboard(report.first, no_open, sys.stdout.isatty(), os.environ):
-        import webbrowser
-
-        try:
-            opened = webbrowser.open(dash.as_uri())
-        except webbrowser.Error:
-            opened = False
+        opened = open_page(root, only_if_changed=False) == "opened"
     click.echo("\nmargi is ready." + ("" if verbose else
                                        f" Set up {_plural(len(report.written), 'file')}"
                                        + (f", kept {len(report.kept)} existing" if report.kept else "")
@@ -263,6 +258,22 @@ def status() -> None:
     click.echo(status_mod.render(cfg))
     click.echo("")
     _handover(cfg)
+
+
+@main.command(name="open", hidden=True)
+@click.option("--always", is_flag=True, help="Open it even if nothing changed since it was last opened.")
+def open_(always: bool) -> None:
+    """[plumbing] Open the dashboard in the browser if it changed since it was last opened.
+
+    The agent runs this last, before its report; the printed line replaces finalize's dashboard line.
+    """
+    from .dashboard import dashboard_line, open_page
+
+    cfg = _cfg()
+    state = open_page(cfg.root, only_if_changed=not always)
+    click.echo(dashboard_line(cfg, {"opened": "opened in your browser",
+                                    "unchanged": "unchanged since it was last opened",
+                                    "failed": "open it in a browser"}[state]))
 
 
 @main.command(name="next", hidden=True)
