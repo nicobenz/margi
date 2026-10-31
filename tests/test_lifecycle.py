@@ -61,21 +61,84 @@ def test_finalize_numbers_major_and_minor_comments(repo, cfg):
     assert states(cfg) == {"c1": "open", "c2": "open", "c3": "open"}
 
 
-def test_regrade_must_judge_every_open_comment(repo, cfg):
+def revise(repo, old, new):
+    (repo / FILE).write_text((repo / FILE).read_text().replace(old, new))
+    run_git(repo, "commit", "-qam", "revise 2.1")
+
+
+def test_regrade_must_judge_every_changed_comment(repo, cfg):
     first_grade(repo, cfg)
+    revise(repo, "Moretti proposed counting instead of reading.", "Moretti counted.")
+    revise(repo, "strongly.", "loudly.")
+    assert {c["ref"]: c["due"] for c in lifecycle.comments(cfg)} == {"c1": "passage changed", "c2": "passage changed"}
     with pytest.raises(FinalizeError, match="no verdict for c1, c2"):
         run(repo, cfg, grade())
     with pytest.raises(FinalizeError, match="no such comment"):
         run(repo, cfg, grade(verdicts=[{"ref": "c9", "verdict": "open", "reason": "x"}]))
     rec = run(repo, cfg, grade(verdicts=[
         {"ref": "c1", "verdict": "resolved", "reason": "Now cited (prior-work.typ:5)."},
-        {"ref": "c2", "verdict": "open", "reason": "Passage unchanged."},
+        {"ref": "c2", "verdict": "open", "reason": "The new verb still hides who objected."},
     ]))
     assert len(rec["verdicts"]) == 2
     assert states(cfg) == {"c1": "resolved", "c2": "open"}
     with pytest.raises(FinalizeError, match="already closed"):
-        run(repo, cfg, grade(verdicts=[{"ref": "c1", "verdict": "open", "reason": "x"},
-                                       {"ref": "c2", "verdict": "open", "reason": "x"}]))
+        run(repo, cfg, grade(verdicts=[{"ref": "c1", "verdict": "open", "reason": "x"}]))
+
+
+def test_unchanged_comments_get_no_reply(repo, cfg):
+    first_grade(repo, cfg)
+    revise(repo, "Networks model relations.", "Networks model ties.")  # another section of the same file
+    revise(repo, "The idea was *provocative*.", "The idea was bold.")  # same line, quote intact
+    assert {c["ref"]: c["due"] for c in lifecycle.comments(cfg)} == {"c1": None, "c2": None}
+    with pytest.raises(FinalizeError, match="c1: nothing changed since margi last looked"):
+        run(repo, cfg, grade(verdicts=[{"ref": "c1", "verdict": "open", "reason": "The source is missing."}]))
+    run(repo, cfg, grade())  # silence is the default
+    run(repo, cfg, grade(verdicts=[{"ref": "c2", "verdict": "resolved", "reason": "Fixed in 1.2 (intro.typ:4)."}]))
+    assert states(cfg) == {"c1": "open", "c2": "resolved"}
+    assert [len(c["history"]) for c in lifecycle.comments(cfg)] == [0, 1]
+
+
+def test_a_changed_passage_needs_one_reply_not_one_per_grade(repo, cfg):
+    first_grade(repo, cfg)
+    revise(repo, "strongly.", "loudly.")
+    run(repo, cfg, grade(verdicts=[{"ref": "c2", "verdict": "open", "reason": "The new verb still hides who objected."}]))
+    assert {c["ref"]: c["due"] for c in lifecycle.comments(cfg)} == {"c1": None, "c2": None}
+    run(repo, cfg, grade())  # the passage is still changed, but margi has replied to that version
+    revise(repo, "loudly.", "at length.")
+    assert next(c for c in lifecycle.comments(cfg) if c["ref"] == "c2")["due"] == "passage changed"
+
+
+def test_answered_comments_always_get_a_reply(repo, cfg):
+    first_grade(repo, cfg)
+    respond(cfg, [("c1", "addressed")])
+    assert {c["ref"]: c["due"] for c in lifecycle.comments(cfg)} == {"c1": "answered", "c2": None}
+    with pytest.raises(FinalizeError, match="no verdict for c1;"):
+        run(repo, cfg, grade())
+
+
+def test_comment_without_anchor_follows_its_section_files(repo, cfg):
+    run(repo, cfg, grade(comments=[comment("c1", quote=None)]))
+    assert lifecycle.comments(cfg)[0]["due"] is None
+    revise(repo, "Networks model relations.", "Networks model ties.")
+    assert lifecycle.comments(cfg)[0]["due"] == "section changed"
+
+
+@pytest.mark.parametrize("reason", ["Still open.", "still open: the jump is unexplained", "Unchanged.",
+                                    "Not changed since the last grade.", "The passage is unchanged; …",
+                                    "Remains open.", "No change.", "Nothing has changed.", "Still there.",
+                                    "- Open: the source is missing"])
+def test_open_reason_must_not_restate_the_state(repo, cfg, reason):
+    first_grade(repo, cfg)
+    revise(repo, "strongly.", "loudly.")
+    with pytest.raises(FinalizeError, match="c2: the reason opens by restating the state"):
+        run(repo, cfg, grade(verdicts=[{"ref": "c2", "verdict": "open", "reason": reason}]))
+
+
+@pytest.mark.parametrize("reason", ["The jump from corpus to genre is still unexplained.",
+                                    "Opening the paragraph with Da helps, but the claim needs a source.",
+                                    "There is now a citation, but it supports a different claim."])
+def test_open_reason_may_describe_the_problem(reason):
+    assert not lifecycle.ECHO.match(reason)
 
 
 def test_parent_grade_covers_subsections_and_others_are_out_of_scope(repo, cfg):
@@ -184,7 +247,8 @@ def test_cli_comments_and_respond(repo, cfg, monkeypatch):
     monkeypatch.chdir(repo)
     out = CliRunner().invoke(main, ["comments", "2.1"])
     assert out.exit_code == 0, out.output
-    assert "2 comments in 2.1 need a verdict" in out.output and "passage unchanged" in out.output
+    assert "2 comments in 2.1 unchanged since margi last looked" in out.output
+    assert "need a verdict" not in out.output and "passage unchanged" in out.output
     out = CliRunner().invoke(main, ["respond", "c1=addressed", "c2=wont-fix", "--reason", "c2", "Kept on purpose."])
     assert out.exit_code == 0, out.output
     assert "margi: respond c1 c2" in out.output

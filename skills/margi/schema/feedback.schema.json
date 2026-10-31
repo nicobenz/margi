@@ -91,7 +91,7 @@
         }
       },
       "verdicts": {
-        "description": "grade only. A verdict on every earlier comment in the graded section (and its subsections) that isn't closed: resolved, still open, or withdrawn (a disputed comment whose dispute is accepted). The reason names evidence (file and lines) or the problem; never thesis prose.",
+        "description": "grade only. A reply to every earlier comment in the graded section (and its subsections) that isn't closed and where something happened since margi last looked (the student answered, the quoted passage changed, or the section changed for a comment without an anchor): resolved, still open, or withdrawn (a disputed comment whose dispute is accepted). Comments where nothing happened get no verdict, except resolved when fixed elsewhere. The reason names evidence (file and lines) or what changed and why it isn't enough; it never restates the state, and never contains thesis prose.",
         "type": "array",
         "items": {
           "type": "object",
