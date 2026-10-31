@@ -67,23 +67,49 @@ commit brings it up to date. The page can't count commits made since; it has no 
 
 ## Regrade
 
-A grade of section S must give a verdict on every Open, Addressed and Disputed comment in S and
-its subsections. Comments follow their anchors, so a renamed or renumbered section keeps them.
+A grade of section S covers every Open, Addressed and Disputed comment in S and its
+subsections. Comments follow their anchors, so a renamed or renumbered section keeps them.
+
+A verdict is a reply under the comment, so margi gives one only when something happened since
+it last looked (the grade that made the comment, or its latest verdict). The comment is then
+*due* (`due` in `lifecycle.comments`), for one of three reasons:
+
+- *answered*: the comment is Addressed or Disputed. The student asked for a reply.
+- *passage changed*: the quote is no longer in the text, and the anchor's file differs from what
+  margi last looked at. A passage margi already replied to doesn't make it due again until it
+  changes again.
+- *section changed*: for a comment without an anchor, a file of its section differs from what
+  margi last looked at.
+
+File contents are compared through the sha256 hashes every record keeps in `provenance.files`.
+A file no look hashed counts as changed.
+
+Every other comment is *unchanged*: margi says nothing about it. A comment that is still there
+already says it is open, so "still open, passage unchanged" was noise. The only verdict allowed
+on an unchanged comment is `resolved`, for a problem fixed elsewhere (a definition added in
+another section). A changed quote with the rest of the file the same, or a changed file with the
+quote intact, is not enough: the quote is what the comment is about.
 
 The draft gets a top-level `verdicts` list:
 
 ```json
 "verdicts": [
   {"ref": "c17", "verdict": "resolved", "reason": "The claim now cites Underwood 2019 (ch02.typ:41–44)."},
-  {"ref": "c18", "verdict": "open", "reason": "Passage unchanged; the jump from corpus to genre is still unexplained."},
+  {"ref": "c18", "verdict": "open", "reason": "The new paragraph names the corpus, but the jump to genre is unexplained."},
   {"ref": "c21", "verdict": "withdrawn", "reason": "Accepted: the term is defined in 1.2, as the student says."}
 ]
 ```
 
 - `verdict`: `resolved | open | withdrawn`. `withdrawn` only for a disputed comment.
-- `reason`: ≤ 600 chars. For `resolved`, it cites file and lines. It never proposes text.
-- `finalize` rejects a draft that leaves a comment out or names one that isn't Open, Addressed or
-  Disputed. Completeness is enforced mechanically, not trusted.
+- `reason`: ≤ 600 chars. For `resolved`, it cites file and lines. For `open`, it says what
+  changed and why it isn't enough, and never opens by restating the state ("Still open",
+  "Unchanged", "Not addressed"): finalize rejects that (`ECHO` in `lifecycle.py`). It never
+  proposes text.
+- `finalize` rejects a draft that leaves out a due comment, gives `open` on an unchanged one, or
+  names one that isn't Open, Addressed or Disputed. Completeness and silence are enforced
+  mechanically, not trusted.
+- `uv run margi comments <scope>` lists the due comments (with the reason in brackets) apart
+  from the unchanged ones.
 - New problems become new comments. A problem that is still there stays under its old number.
 - A *not ready to grade* record makes no verdicts. The comments stay as they are.
 
