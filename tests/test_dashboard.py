@@ -60,8 +60,8 @@ def test_session_step_drops_once_carried_out(repo, cfg):
     finalize(cfg)
     assert [s["command"] for s in data(repo)["next_steps"] if s["source"] == "session"] == ["/margi outline", "/margi grade 2"]
 
-    # a grade of chapter 2 judges the earlier comment on 2.1
-    stage(repo, {**DRAFT, "scope": "2", "verdicts": [{"ref": "c1", "verdict": "open", "reason": "Still there."}]})
+    # a grade of chapter 2 covers the earlier comment on 2.1; it is unchanged, so no verdict
+    stage(repo, {**DRAFT, "scope": "2"})
     finalize(cfg)
     assert [s["command"] for s in data(repo)["next_steps"] if s["source"] == "session"] == ["/margi outline"]
 

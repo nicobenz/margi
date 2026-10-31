@@ -6,9 +6,13 @@ derived from later records, in time order:
 * the grade that creates a comment opens it and gives it a thesis-wide number (``c17``);
 * a ``respond`` record holds the student's answer: addressed, disputed or won't fix, with an
   optional reason in their own words (see ``respond`` below);
-* a later grade of the same section gives a verdict on every comment that isn't closed:
-  resolved, still open, or withdrawn (only for a disputed comment). Finalize refuses a grade
-  that leaves one out.
+* a later grade of the same section replies to a comment that isn't closed only when something
+  happened since margi last looked at it (see ``due``): the student answered, the quoted passage
+  changed, or, for a comment without an anchor, the section's files changed. Then it gives a
+  verdict: resolved, still open, or withdrawn (only for a disputed comment), and finalize
+  refuses a grade that leaves one out. When nothing happened, margi stays silent: an ``open``
+  verdict is refused, because it would only repeat what the state already says. It may still
+  resolve the comment, since a fix can be made elsewhere.
 
 Won't fix closes a comment for good: the thesis is the student's. Whether the quoted passage is
 still in the text is shown as a signal only; it never changes a state.
@@ -33,6 +37,16 @@ AWAITING = ("open", "addressed", "disputed")  # need a verdict at the next grade
 CLOSED = ("resolved", "withdrawn", "wont_fix")
 MAX_REASON = 600
 REF = re.compile(r"^c[1-9][0-9]*$")
+# An open verdict's reason that opens by restating the state ("Still open.", "Unchanged: …").
+# The state is shown next to the reply, so the reason says what changed and why it isn't enough.
+ECHO = re.compile(r"""^\W*
+    (?:(?:the\s+)?(?:comment|problem|issue|passage|point|text|section)\s+)?
+    (?:(?:is|remains|stays)\s+)?
+    (?:still\s+(?:open|there|present|unresolved|unchanged|unaddressed|the\s+case)\b
+      |(?:open|unresolved|unchanged|unaddressed)\b
+      |not\s+(?:yet\s+)?(?:changed|addressed|resolved|fixed)\b
+      |no\s+changes?\b
+      |nothing\s+(?:has\s+)?changed\b)""", re.VERBOSE | re.IGNORECASE)
 
 
 class LifecycleError(RuntimeError):
@@ -139,6 +153,10 @@ class _Sections:
     def title(self, sid: str) -> str | None:
         return next((s.title for s in self.sections if s.id == sid), None)
 
+    def files(self, sid: str) -> list[str]:
+        """The files a section and its subsections span; empty if the section isn't known."""
+        return list(dict.fromkeys(seg.file for s in self.sections if covers(sid, s.id) for seg in s.segments))
+
 
 def covers(scope_id: str, section: str | None) -> bool:
     """Does a grade of ``scope_id`` cover a comment in ``section`` (the section or a subsection)?"""
@@ -166,15 +184,57 @@ def _apply(state: str, by: str, value: str) -> str:
     return state
 
 
+def _changed_since(paths: list[str], looks: list[dict], current) -> bool:
+    """Does any of ``paths`` differ from what the latest look that hashed it saw? A path no look
+    hashed counts as changed: margi can't tell, so it has to check."""
+    if not paths:
+        return True
+    for path in paths:
+        seen = None
+        for rec in reversed(looks):
+            seen = next((f.get("sha256") for f in rec["provenance"].get("files", []) if f.get("path") == path), None)
+            if seen:
+                break
+        if not seen or current(path) != seen:
+            return True
+    return False
+
+
+def _due(entry: dict, looks: list[dict], where: _Sections, current) -> str | None:
+    """Why the next grade must reply to this comment, or None if nothing happened since margi last
+    looked at it (the grade that made it, or the latest verdict on it)."""
+    if entry["state"] in CLOSED:
+        return None
+    if entry["state"] in ("addressed", "disputed"):
+        return "answered"
+    if entry.get("anchor"):
+        if entry["signal"] == "changed" and _changed_since([entry["anchor"]["file"]], looks, current):
+            return "passage changed"
+        return None
+    files = where.files(entry["section"]) if entry["section"] else []
+    return "section changed" if _changed_since(files, looks, current) else None
+
+
 def comments(cfg: Config, records: list[dict] | None = None) -> list[dict]:
-    """Every tracked comment with its number, section, state, history and passage signal."""
+    """Every tracked comment with its number, section, state, history, passage signal and ``due``:
+    why the next grade of its section must reply to it, or None (see ``_due``)."""
     from .finalize import _read_source, verify_anchor
+    from .gitutil import sha256
 
     records = load_records(cfg) if records is None else records
     refs = numbers(records)
     where = _Sections(cfg)
     sources: dict[str, bytes | None] = {}
+    hashes: dict[str, str | None] = {}
+
+    def current(path: str) -> str | None:
+        if path not in hashes:
+            data = sources[path] if path in sources else _read_source(cfg, path)[0]
+            hashes[path] = sha256(data) if data is not None else None
+        return hashes[path]
+
     out: dict[str, dict] = {}
+    looks: dict[str, list[dict]] = {}
     for rec in records:
         ts = rec["provenance"].get("timestamp")
         cmd = rec.get("command")
@@ -199,9 +259,11 @@ def comments(cfg: Config, records: list[dict] | None = None) -> list[dict]:
                         section = where.at(a["file"], now["line_start"])
                 entry["section"] = section or where.resolve(rec.get("scope", "")) or rec.get("scope")
                 out[ref] = entry
+                looks[ref] = [rec]
             for v in rec.get("verdicts", []):
                 if v["ref"] in out:
                     e = out[v["ref"]]
+                    looks[v["ref"]].append(rec)
                     e["state"] = _apply(e["state"], "margi", v["verdict"])
                     e["history"].append({"by": "margi", "value": v["verdict"], "reason": v.get("reason"),
                                          "timestamp": ts, "record": rec["_file"]})
@@ -215,24 +277,28 @@ def comments(cfg: Config, records: list[dict] | None = None) -> list[dict]:
                                          "timestamp": ts, "record": rec["_file"], "author": author.get("name")})
     for e in out.values():
         e["title"] = where.title(e["section"]) if e["section"] else None
+        e["due"] = _due(e, looks[e["ref"]], where, current)
     return list(out.values())
 
 
 def pending(cfg: Config, scope: str, records: list[dict] | None = None) -> tuple[str, list[dict]]:
-    """The section id a grade scope names, and the comments that grade must give a verdict on."""
+    """The section id a grade scope names, and the comments it covers that aren't closed. The grade
+    must give a verdict on those with a ``due`` reason; on the others it may only resolve."""
     where = _Sections(cfg)
     sid = "all" if scope == "all" else (where.resolve(scope) or scope)
     return sid, [c for c in comments(cfg, records) if c["state"] in AWAITING and covers(sid, c["section"])]
 
 
 def check_verdicts(cfg: Config, draft: dict, records: list[dict]) -> list[str]:
-    """Problems with a draft's verdicts. A grade with scores must judge every comment it covers."""
+    """Problems with a draft's verdicts. A grade with scores must reply to every comment it covers
+    where something happened, must not repeat "still open" where nothing did, and an open verdict's
+    reason must not just restate the state."""
     verdicts = draft.get("verdicts", [])
     if draft.get("command") != "grade":
         return ["only a grade gives verdicts on earlier comments"] if verdicts else []
     if (draft.get("readiness") or {}).get("decision") == "not_ready" or not (draft.get("scores") or draft.get("comments")):
         return ["a grade without scores gives no verdicts; the comments stay as they are"] if verdicts else []
-    sid, due = pending(cfg, draft["scope"], records)
+    sid, covered = pending(cfg, draft["scope"], records)
     by_ref = {c["ref"]: c for c in comments(cfg, records)}
     problems, seen = [], set()
     for v in verdicts:
@@ -249,10 +315,16 @@ def check_verdicts(cfg: Config, draft: dict, records: list[dict]) -> list[str]:
             problems.append(f"{ref}: belongs to section {c['section']}, which this grade of {sid} doesn't cover")
         elif v["verdict"] == "withdrawn" and c["state"] != "disputed":
             problems.append(f"{ref}: only a disputed comment can be withdrawn")
-    missing = [c["ref"] for c in due if c["ref"] not in seen]
+        elif v["verdict"] == "open" and not c["due"]:
+            problems.append(f"{ref}: nothing changed since margi last looked at it, so leave it out; "
+                            f"its state already says it is open (resolve it only if it is fixed elsewhere)")
+        elif v["verdict"] == "open" and (m := ECHO.match(v.get("reason", ""))):
+            problems.append(f"{ref}: the reason opens by restating the state ({m.group(0).strip()!r}); the state "
+                            f"is shown already. Say what changed and why it isn't enough yet")
+    missing = [c["ref"] for c in covered if c["due"] and c["ref"] not in seen]
     if missing:
-        problems.append(f"no verdict for {', '.join(missing)}; a grade of {sid} must judge every comment in it "
-                        f"that isn't closed (see `uv run margi comments {draft['scope']}`)")
+        problems.append(f"no verdict for {', '.join(missing)}; something changed since margi last looked at them "
+                        f"(see `uv run margi comments {draft['scope']}`)")
     return problems
 
 
@@ -356,8 +428,9 @@ def render(entries: list[dict]) -> str:
     for c in entries:
         where = f"{c['anchor']['file']}:{(c.get('now') or c['anchor'])['line_start']}" if c.get("anchor") else "no anchor"
         signal = f"passage {c['signal']}" if c.get("signal") else ""
+        due = f"  [{c['due']}]" if c.get("due") else ""
         lines.append(f"{c['ref']:<5} {c['severity']:<5} {STATE_LABEL[c['state']]:<10} {c['section'] or '?':<6} "
-                     f"{where}  {signal}".rstrip())
+                     f"{where}  {signal}".rstrip() + due)
         lines.append(f"      {c['body']}")
         if c.get("anchor"):
             lines.append(f"      quote: \"{c['anchor']['quote']}\"")

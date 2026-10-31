@@ -316,7 +316,8 @@ def next_() -> None:
 @click.argument("scope", required=False)
 @click.option("--all", "show_all", is_flag=True, help="Also list closed comments.")
 def comments(scope: str | None, show_all: bool) -> None:
-    """[plumbing] Comments that aren't closed; with SCOPE, those a grade of SCOPE must give a verdict on."""
+    """[plumbing] Comments that aren't closed; with SCOPE, those a grade of SCOPE covers, split into
+    the ones it must reply to and the ones where nothing changed (silence, or resolve only)."""
     from . import lifecycle
 
     cfg = _cfg()
@@ -325,12 +326,22 @@ def comments(scope: str | None, show_all: bool) -> None:
         if not entries:
             click.echo(f"no open comments in {sid}; the grade gives no verdicts")
             return
-        click.echo(f"{len(entries)} comment{'s' if len(entries) != 1 else ''} in {sid} need a verdict in this grade:\n")
-    else:
-        entries = [c for c in lifecycle.comments(cfg) if show_all or c["state"] in lifecycle.AWAITING]
-        if not entries:
-            click.echo("no open comments")
-            return
+        due = [c for c in entries if c["due"]]
+        quiet = [c for c in entries if not c["due"]]
+        parts = []
+        if due:
+            parts.append(f"{len(due)} comment{'s' if len(due) != 1 else ''} in {sid} need a verdict in this grade "
+                         f"(something changed since margi last looked):\n\n" + lifecycle.render(due))
+        if quiet:
+            parts.append(f"{len(quiet)} comment{'s' if len(quiet) != 1 else ''} in {sid} unchanged since margi last "
+                         f"looked: leave them out of the verdicts, unless one is now resolved by a change "
+                         f"elsewhere:\n\n" + lifecycle.render(quiet))
+        click.echo("\n\n".join(parts))
+        return
+    entries = [c for c in lifecycle.comments(cfg) if show_all or c["state"] in lifecycle.AWAITING]
+    if not entries:
+        click.echo("no open comments")
+        return
     click.echo(lifecycle.render(entries))
 
 
